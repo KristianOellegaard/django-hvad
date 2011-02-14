@@ -24,4 +24,5 @@ Planned Features
 Again, DO NOT USE THIS! I'm serious, DON'T! I will *NOT* support this in any way
 yet.
 
-You are however very welcome to contribute to the project.
+You are however very welcome to contribute to the project. (I'm especially
+looking for a good name!)
