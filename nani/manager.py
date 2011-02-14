@@ -2,28 +2,7 @@ from django.db import models
 from django.db.models.query import QuerySet
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
-
-
-def combine(trans):
-    """
-    'Combine' the shared and translated instances by setting the translation
-    on the 'translations_cache' attribute of the shared instance and returning
-    the shared instance.
-    """
-    combined = trans.master
-    opts = combined._meta
-    setattr(combined, opts.translations_cache, trans)
-    return combined
-
-def get_cached_translation(instance):
-    return getattr(instance, instance._meta.translations_cache, None)
-
-def get_translation(instance, language_code=None):
-    opts = instance._meta
-    if not language_code:
-        language_code = get_language()
-    accessor = getattr(instance, opts.translations_accessor)
-    return accessor.get(language_code=language_code)
+from nani.utils import R, combine
 
 class FieldTranslator(dict):
     """
@@ -143,7 +122,7 @@ class TranslationManager(models.Manager):
         # 'master_<shared_field>' where necessary.
         newargs = []
         for q in args:
-            newargs.append(self.recurse_q(q))
+            newargs.append(self._recurse_q(q))
         # Enforce 'select related' onto 'mastser'
         qs = self.translations_manager.select_related('master')
         # Get the translated instance
@@ -151,15 +130,19 @@ class TranslationManager(models.Manager):
         # Return a combined instance
         return combine(trans)
 
-    def recurse_q(self, q):
+    def _recurse_q(self, q):
         """
         Recursively translate fieldnames in a Q object.
+        
+        TODO: What happens if we span multiple relations?
         """
         newchildren =  []
         for child in q.children:
-            if isinstance(child, Q):
-                newq = self.recurse_q(child)
-                newchildren.append(self.recurse_q(newq))
+            if isinstance(child, R):
+                newchildren.append(child)
+            elif isinstance(child, Q):
+                newq = self._recurse_q(child)
+                newchildren.append(self._recurse_q(newq))
             else:
                 key, value = child
                 newchildren.append((self.field_translator.get(key), value))

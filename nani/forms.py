@@ -5,8 +5,8 @@ from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions
 from django.forms.util import ErrorList
 from django.forms.widgets import media_property
 from django.utils.translation import get_language
-from nani.manager import get_translation, get_cached_translation, combine
 from nani.models import TranslateableModel
+from nani.utils import get_cached_translation, get_translation, combine
 
 class TranslateableModelFormMetaclass(ModelFormMetaclass):
     def __new__(cls, name, bases, attrs):

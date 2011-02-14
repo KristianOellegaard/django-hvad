@@ -6,6 +6,12 @@ from testproject.app.models import Normal, Related
 
 class NormalToNormalFKTest(SingleNormalTestCase):
     def test_relation(self):
+        """
+        'normal' (aka 'shared') relations are relations from the shared (or
+        normal) model to another shared (or normal) model.
+        
+        They should behave like normal foreign keys in Django
+        """
         normal = self.get_obj()
         related = Related.objects.create(normal=normal)
         self.assertEqual(related.normal.pk, normal.pk)
@@ -16,6 +22,12 @@ class NormalToNormalFKTest(SingleNormalTestCase):
 
 class NormalToTransFKTest(SingleNormalTestCase):
     def test_relation(self):
+        """
+        TranslatedForeignKeys are FKs linking to a specific translation.
+        
+        While they are used the same way as normal FKs, they internally change
+        their target model to the translation model.
+        """
         en = self.get_obj()
         ja = en
         ja.language_code = 'ja'

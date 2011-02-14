@@ -1,4 +1,4 @@
-from nani.manager import get_translation
+from nani.utils import get_translation
 
 class NULL:pass
 
@@ -29,6 +29,7 @@ class TranslatedAttribute(BaseDescriptor):
         
     def __get__(self, instance, instance_type=None):
         if not instance:
+            # Don't raise an attribute error so we can use it in admin.
             return self.opts.translations_model._meta.get_field_by_name(self.name)[0].default
         return getattr(self.translation(instance), self.name)
     
@@ -47,11 +48,31 @@ class LanguageCodeAttribute(TranslatedAttribute):
     """
     The language_code attribute is different from other attribtues as it cannot
     be deleted. Trying to do so will always cause an attribute error.
+    
     """
     def __init__(self, opts):
         super(LanguageCodeAttribute, self).__init__(opts, 'language_code')
     
     def __set__(self, instance, value):
+        """
+        Setting the language_code attribute is a bit odd.
+        
+        When changing the language_code on an instance, we try to grab the 
+        existing translation and copy over the unfilled fields from that
+        translation onto the instance. If no such translation exist, create one
+        and copy over the fields from the instance.
+        
+        This is used to translate instances.
+        
+        This will also refresh the translations cache attribute on the instance.
+        
+        EG:
+        
+            english = MyModel.objects.get(pk=1, language_code='en')
+            english.language_code = 'ja'
+            english.save()
+            japanese = MyModel.objects.get(pk=1, language_code='ja')
+        """
         if not instance:
             raise AttributeError()
         tmodel = instance._meta.translations_model
