@@ -2,6 +2,8 @@ from setuptools import setup, find_packages
 
 version = 'EXPERIMENTAL'
 
+raise Exception("DO NOT USE THIS YET!")
+
 setup(
     name = 'project-nani',
     version = version,
@@ -10,4 +12,7 @@ setup(
     author_email = 'jonas.obrist@divio.ch',
     packages = find_packages(),
     zip_safe=False,
+    install_requires=[
+        'Django>=1.2',
+    ],
 )
