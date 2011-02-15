@@ -17,10 +17,9 @@ class OptionsTest(NaniTestCase):
 class CreateTest(NaniTestCase):
     def test_create(self):
         with self.assertNumQueries(2):
-            en = Normal.objects.create(
+            en = Normal.objects.language('en').create(
                 shared_field="shared",
                 translated_field='English',
-                language_code='en'
             )
         self.assertEqual(en.shared_field, "shared")
         self.assertEqual(en.translated_field, "English")
@@ -73,7 +72,7 @@ class BasicQueryTest(SingleNormalTestCase):
     def test_basic(self):
         en = self.get_obj()
         with self.assertNumQueries(1):
-            queried = Normal.objects.get(pk=en.pk, language_code='en')
+            queried = Normal.objects.language('en').get(pk=en.pk)
             self.assertEqual(queried.shared_field, en.shared_field)
             self.assertEqual(queried.translated_field, en.translated_field)
             self.assertEqual(queried.language_code, en.language_code)

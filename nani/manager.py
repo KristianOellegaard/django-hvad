@@ -11,8 +11,8 @@ class FieldTranslator(dict):
     """
     def __init__(self, manager):
         self.manager = manager
-        self.shared_fields = tuple(self.manager.model._meta.get_all_field_names())
-        self.translated_fields  = tuple(self.manager.translations_model._meta.get_all_field_names())
+        self.shared_fields = tuple(self.manager.shared_model._meta.get_all_field_names()) + ('pk',)
+        self.translated_fields  = tuple(self.manager.model._meta.get_all_field_names())
         super(FieldTranslator, self).__init__()
         
     def get(self, key):
@@ -26,40 +26,32 @@ class FieldTranslator(dict):
         else:
             return key
 
-
-class TranslationManager(models.Manager):
-    """
-    Manager class for models with translated fields
-    """
-    def __init__(self):
+        
+class TranslationMixin(QuerySet):
+    def __init__(self, model=None, query=None, using=None, real=None):
         self._local_field_names = None
         self._field_translator = None
-        super(TranslationManager, self).__init__()
+        self._real_manager = real
+        self._language_code = None
+        super(TranslationMixin, self).__init__(model=model, query=query, using=using)
 
     #===========================================================================
-    # Helpers and properties 
+    # Helpers and properties (ITNERNAL!)
     #===========================================================================
 
     @property
     def translations_manager(self):
         """
-        Get manager of translations model
+        Get the (real) manager of translations model
         """
-        return self.translations_model.objects
+        return self.model.objects
     
     @property
-    def translations_accessor(self):
+    def shared_model(self):
         """
-        Get the name of the reverse FK from the shared model
+        Get the shared model class
         """
-        return self.model._meta.translations_accessor
-    
-    @property
-    def translations_model(self):
-        """
-        Get the translations model class
-        """
-        return self.model._meta.translations_model
+        return self._real_manager.model
         
     @property
     def field_translator(self):
@@ -71,10 +63,29 @@ class TranslationManager(models.Manager):
         return self._field_translator
         
     @property
-    def local_field_names(self):
+    def shared_local_field_names(self):
         if self._local_field_names is None:
-            self._local_field_names = self.model._meta.get_all_field_names()
+            self._local_field_names = self.shared_model._meta.get_all_field_names()
         return self._local_field_names
+    
+    def _translate(self, *args, **kwargs):
+        # Translated kwargs from '<shared_field>' to 'master__<shared_field>'
+        # where necessary.
+        newkwargs = {}
+        for key, value in kwargs.items():
+            newkwargs[self.field_translator.get(key)] = value
+        # Translate args (Q objects) from '<shared_field>' to
+        # 'master_<shared_field>' where necessary.
+        newargs = []
+        for q in args:
+            newargs.append(self._recurse_q(q))
+        return newargs, newkwargs
+    
+    def _translate_fieldnames(self, fieldnames):
+        newnames = []
+        for name in fieldnames:
+            newnames.append(self.field_translator.get(name))
+        return newnames        
 
     def _recurse_q(self, q):
         """
@@ -99,15 +110,11 @@ class TranslationManager(models.Manager):
     # Queryset/Manager API 
     #===========================================================================
     
-    def get_queryset(self):
-        """
-        Make sure that querysets inherit the methods on this manager (chaining)
-        """
-        qs = super(TranslationManager, self).get_queryset()
-        bases = [QuerySet, TranslationManager]
-        new_queryset_cls = type('TranslationManagerQueryset', tuple(bases), {})
-        qs.__class__ = new_queryset_cls
-        return qs
+    def language(self, language_code=None):
+        if not language_code:
+            language_code = get_language()
+        self._language_code = language_code
+        return self.filter(language_code=language_code)
         
     def create(self, **kwargs):
         """
@@ -121,11 +128,14 @@ class TranslationManager(models.Manager):
         """
         tkwargs = {}
         for key in kwargs.keys():
-            if not key in self.local_field_names:
+            if not key in self.shared_local_field_names:
                 tkwargs[key] = kwargs.pop(key)
-        # Enforce the language_code kwarg
+        # enforce a language_code
         if 'language_code' not in tkwargs:
-            tkwargs['language_code'] = get_language()
+            if self._language_code:
+                tkwargs['language_code'] = self._language_code
+            else:
+                tkwargs['language_code'] = get_language()
         # Allow a pre-existing master to be passed, but only if no shared fields
         # are given.
         if 'master' in tkwargs:
@@ -135,10 +145,10 @@ class TranslationManager(models.Manager):
                 )
         else:
             # create shared instance
-            shared = super(TranslationManager, self).create(**kwargs)
+            shared = self._real_manager.create(**kwargs)
             tkwargs['master'] = shared
         # create translated instance
-        trans = self.translations_model.objects.create(**tkwargs)
+        trans = self.translations_manager.create(**tkwargs)
         # return combined instance
         return combine(trans)
     
@@ -148,24 +158,29 @@ class TranslationManager(models.Manager):
         combined instance.
         """
         # Enforce a language_code to be used
-        if not 'language_code' in kwargs:
-            kwargs['language_code'] = get_language()
-        # Translated kwargs from '<shared_field>' to 'master__<shared_field>'
-        # where necessary.
-        newkwargs = {}
-        for key, value in kwargs.items():
-            newkwargs[self.field_translator.get(key)] = value
-        # Translate args (Q objects) from '<shared_field>' to
-        # 'master_<shared_field>' where necessary.
-        newargs = []
-        for q in args:
-            newargs.append(self._recurse_q(q))
-        # Enforce 'select related' onto 'mastser'
-        qs = self.translations_manager.select_related('master')
+        newargs, newkwargs = self._translate(*args, **kwargs)
+        # Enforce 'select related' onto 'master'
+        qs = self.select_related('master')
         # Get the translated instance
-        trans = qs.get(*newargs, **newkwargs)
+        found = False
+        if 'language_code' in newkwargs:
+            language_code = newkwargs.pop('language_code')
+            qs = qs.language(language_code)
+        else:
+            for where in qs.query.where.children:
+                if where.children:
+                    for child in where.children:
+                        if child[0].field.name == 'language_code':
+                            found = True
+            if not found:
+                qs = qs.language()
+        trans = QuerySet.get(qs, *newargs, **newkwargs)
         # Return a combined instance
         return combine(trans)
+
+    def filter(self, *args, **kwargs):
+        newargs, newkwargs = self._translate(*args, **kwargs)
+        return super(TranslationMixin, self).filter(*newargs, **newkwargs)
 
     def aggregate(self, *args, **kwargs):
         raise NotImplementedError()
@@ -193,9 +208,6 @@ class TranslationManager(models.Manager):
     def dates(self, field_name, kind, order='ASC'):
         raise NotImplementedError()
 
-    def filter(self, *args, **kwargs):
-        raise NotImplementedError()
-
     def exclude(self, *args, **kwargs):
         raise NotImplementedError()
 
@@ -206,8 +218,12 @@ class TranslationManager(models.Manager):
         raise NotImplementedError()
 
     def order_by(self, *field_names):
-        raise NotImplementedError()
-
+        """
+        Returns a new QuerySet instance with the ordering changed.
+        """
+        fieldnames = self._translate_fieldnames(field_names)
+        return super(TranslationMixin, self).order_by(*fieldnames)
+    
     def reverse(self):
         raise NotImplementedError()
 
@@ -217,6 +233,43 @@ class TranslationManager(models.Manager):
     def only(self, *fields):
         raise NotImplementedError()
     
+    def _clone(self, klass=None, setup=False, **kwargs):
+        cloned = super(TranslationMixin, self)._clone(self.__class__, setup, **kwargs)
+        cloned._local_field_names = self._local_field_names
+        cloned._field_translator = self._field_translator
+        cloned._language_code = self._language_code 
+        cloned._real_manager = self._real_manager
+        return cloned
+    
+    def __getitem__(self, item):
+        return super(TranslationMixin, self).__getitem__(item)
+    
     def __iter__(self):
-        for obj in super(TranslationManager, self):
+        for obj in super(TranslationMixin, self).__iter__():
             yield combine(obj)
+
+
+class TranslationManager(models.Manager):
+    """
+    Manager class for models with translated fields
+    """
+    def language(self, language_code=None):
+        return self.get_query_set().language(language_code)
+    
+    @property
+    def translations_model(self):
+        """
+        Get the translations model class
+        """
+        return self.model._meta.translations_model
+
+    def get_query_set(self):
+        """
+        Make sure that querysets inherit the methods on this manager (chaining)
+        """
+        return TranslationMixin(self.translations_model, using=self.db, real=self._real_manager)
+    
+    def contribute_to_class(self, model, name):
+        super(TranslationManager, self).contribute_to_class(model, name)
+        self._real_manager = models.Manager()
+        self._real_manager.contribute_to_class(self.model, '_%s' % name)

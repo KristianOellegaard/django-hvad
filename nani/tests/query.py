@@ -21,12 +21,12 @@ class FilterTests(NaniTestCase):
     }
     
     def test_simple_filter(self):
-        qs = Normal.objects.filter(shared_field__contains='2', language_code='en')
+        qs = Normal.objects.language('en').filter(shared_field__contains='2')
         self.assertEqual(qs.count(), 1)
         obj = qs[0]
         self.assertEqual(obj.shared_field, self.data[2]['shared_field'])
         self.assertEqual(obj.translated_field, self.data[2]['translated_field_en'])
-        qs = Normal.objects.filter(shared_field__contains='1', language_code='ja')
+        qs = Normal.objects.language('ja').filter(shared_field__contains='1')
         self.assertEqual(qs.count(), 1)
         obj = qs[0]
         self.assertEqual(obj.shared_field, self.data[1]['shared_field'])
@@ -62,14 +62,14 @@ class IterTests(NaniTestCase):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
                 index = 0
-                for obj in Normal.objects.all():
+                for obj in Normal.objects.language().all():
                     index += 1
                     self.assertEqual(obj.shared_field, self.data[index]['shared_field'])
                     self.assertEqual(obj.translated_field, self.data[index]['translated_field_en'])
         with LanguageOverride('ja'):
             with self.assertNumQueries(1):
                 index = 0
-                for obj in Normal.objects.all():
+                for obj in Normal.objects.language().all():
                     index += 1
                     self.assertEqual(obj.shared_field, self.data[index]['shared_field'])
                     self.assertEqual(obj.translated_field, self.data[index]['translated_field_ja'])

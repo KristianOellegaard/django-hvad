@@ -76,4 +76,4 @@ class SingleNormalTestCase(NaniTestCase):
     fixtures = ['single_normal.json']
     
     def get_obj(self):
-        return Normal.objects.get(pk=1, language_code='en')
+        return Normal.objects.language('en').get(pk=1)
