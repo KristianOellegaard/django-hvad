@@ -36,6 +36,10 @@ class TranslationManager(models.Manager):
         self._field_translator = None
         super(TranslationManager, self).__init__()
 
+    #===========================================================================
+    # Helpers and properties 
+    #===========================================================================
+
     @property
     def translations_manager(self):
         """
@@ -71,6 +75,39 @@ class TranslationManager(models.Manager):
         if self._local_field_names is None:
             self._local_field_names = self.model._meta.get_all_field_names()
         return self._local_field_names
+
+    def _recurse_q(self, q):
+        """
+        Recursively translate fieldnames in a Q object.
+        
+        TODO: What happens if we span multiple relations?
+        """
+        newchildren =  []
+        for child in q.children:
+            if isinstance(child, R):
+                newchildren.append(child)
+            elif isinstance(child, Q):
+                newq = self._recurse_q(child)
+                newchildren.append(self._recurse_q(newq))
+            else:
+                key, value = child
+                newchildren.append((self.field_translator.get(key), value))
+        q.children = newchildren
+        return q
+    
+    #===========================================================================
+    # Queryset/Manager API 
+    #===========================================================================
+    
+    def get_queryset(self):
+        """
+        Make sure that querysets inherit the methods on this manager (chaining)
+        """
+        qs = super(TranslationManager, self).get_queryset()
+        bases = [QuerySet, TranslationManager]
+        new_queryset_cls = type('TranslationManagerQueryset', tuple(bases), {})
+        qs.__class__ = new_queryset_cls
+        return qs
         
     def create(self, **kwargs):
         """
@@ -130,28 +167,56 @@ class TranslationManager(models.Manager):
         # Return a combined instance
         return combine(trans)
 
-    def _recurse_q(self, q):
-        """
-        Recursively translate fieldnames in a Q object.
-        
-        TODO: What happens if we span multiple relations?
-        """
-        newchildren =  []
-        for child in q.children:
-            if isinstance(child, R):
-                newchildren.append(child)
-            elif isinstance(child, Q):
-                newq = self._recurse_q(child)
-                newchildren.append(self._recurse_q(newq))
-            else:
-                key, value = child
-                newchildren.append((self.field_translator.get(key), value))
-        q.children = newchildren
-        return q
+    def aggregate(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def latest(self, field_name=None):
+        raise NotImplementedError()
+
+    def in_bulk(self, id_list):
+        raise NotImplementedError()
+
+    def delete(self):
+        raise NotImplementedError()
+    delete.alters_data = True
+
+    def update(self, **kwargs):
+        raise NotImplementedError()
+    update.alters_data = True
+
+    def values(self, *fields):
+        raise NotImplementedError()
+
+    def values_list(self, *fields, **kwargs):
+        raise NotImplementedError()
+
+    def dates(self, field_name, kind, order='ASC'):
+        raise NotImplementedError()
+
+    def filter(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def exclude(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def complex_filter(self, filter_obj):
+        raise NotImplementedError()
+
+    def annotate(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def order_by(self, *field_names):
+        raise NotImplementedError()
+
+    def reverse(self):
+        raise NotImplementedError()
+
+    def defer(self, *fields):
+        raise NotImplementedError()
+
+    def only(self, *fields):
+        raise NotImplementedError()
     
-    def get_queryset(self):
-        qs = super(TranslationManager, self).get_queryset()
-        bases = [QuerySet, TranslationManager]
-        new_queryset_cls = type('TranslationManagerQueryset', tuple(bases), {})
-        qs.__class__ = new_queryset_cls
-        return qs
+    def __iter__(self):
+        for obj in super(TranslationManager, self):
+            yield combine(obj)
