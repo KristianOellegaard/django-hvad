@@ -6,3 +6,4 @@ dist
 *.xml
 htmlcov
 *.sqlite
+docs/_build
