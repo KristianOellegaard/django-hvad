@@ -28,6 +28,12 @@ class FieldTranslator(dict):
 
         
 class TranslationMixin(QuerySet):
+    """
+    This is where things happen.
+    
+    IMPORTANT: the `model` attribute on this class is the *translated* Model,
+    despite this being used as the queryset for the *shared* Model!
+    """
     def __init__(self, model=None, query=None, using=None, real=None):
         self._local_field_names = None
         self._field_translator = None
@@ -68,7 +74,7 @@ class TranslationMixin(QuerySet):
             self._local_field_names = self.shared_model._meta.get_all_field_names()
         return self._local_field_names
     
-    def _translate(self, *args, **kwargs):
+    def _translate_args_kwargs(self, *args, **kwargs):
         # Translated kwargs from '<shared_field>' to 'master__<shared_field>'
         # where necessary.
         newkwargs = {}
@@ -158,14 +164,14 @@ class TranslationMixin(QuerySet):
         combined instance.
         """
         # Enforce a language_code to be used
-        newargs, newkwargs = self._translate(*args, **kwargs)
+        newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         # Enforce 'select related' onto 'master'
-        qs = self.select_related('master')
         # Get the translated instance
         found = False
+        qs = self
         if 'language_code' in newkwargs:
             language_code = newkwargs.pop('language_code')
-            qs = qs.language(language_code)
+            qs = self.language(language_code)
         else:
             for where in qs.query.where.children:
                 if where.children:
@@ -173,13 +179,12 @@ class TranslationMixin(QuerySet):
                         if child[0].field.name == 'language_code':
                             found = True
             if not found:
-                qs = qs.language()
-        trans = QuerySet.get(qs, *newargs, **newkwargs)
-        # Return a combined instance
-        return combine(trans)
+                qs = self.language()
+        # self.iterator already combines! Isn't that nice?
+        return QuerySet.get(qs, *newargs, **newkwargs)
 
     def filter(self, *args, **kwargs):
-        newargs, newkwargs = self._translate(*args, **kwargs)
+        newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationMixin, self).filter(*newargs, **newkwargs)
 
     def aggregate(self, *args, **kwargs):
@@ -234,18 +239,19 @@ class TranslationMixin(QuerySet):
         raise NotImplementedError()
     
     def _clone(self, klass=None, setup=False, **kwargs):
-        cloned = super(TranslationMixin, self)._clone(self.__class__, setup, **kwargs)
-        cloned._local_field_names = self._local_field_names
-        cloned._field_translator = self._field_translator
-        cloned._language_code = self._language_code 
-        cloned._real_manager = self._real_manager
-        return cloned
+        kwargs.update({
+            '_local_field_names': self._local_field_names,
+            '_field_translator': self._field_translator,
+            '_language_code': self._language_code,
+            '_real_manager': self._real_manager,
+        })
+        return super(TranslationMixin, self)._clone(self.__class__, setup, **kwargs)
     
     def __getitem__(self, item):
         return super(TranslationMixin, self).__getitem__(item)
     
-    def __iter__(self):
-        for obj in super(TranslationMixin, self).__iter__():
+    def iterator(self):
+        for obj in super(TranslationMixin, self).iterator():
             yield combine(obj)
 
 
@@ -267,9 +273,16 @@ class TranslationManager(models.Manager):
         """
         Make sure that querysets inherit the methods on this manager (chaining)
         """
-        return TranslationMixin(self.translations_model, using=self.db, real=self._real_manager)
+        if not hasattr(self, '_real_manager'):
+            self.contribute_real_manager()
+        qs = TranslationMixin(self.translations_model, using=self.db, real=self._real_manager)
+        return qs.select_related('master')
     
     def contribute_to_class(self, model, name):
         super(TranslationManager, self).contribute_to_class(model, name)
+        self.name = name
+        self.contribute_real_manager()
+        
+    def contribute_real_manager(self):
         self._real_manager = models.Manager()
-        self._real_manager.contribute_to_class(self.model, '_%s' % name)
+        self._real_manager.contribute_to_class(self.model, '_%s' % getattr(self, 'name', 'objects'))

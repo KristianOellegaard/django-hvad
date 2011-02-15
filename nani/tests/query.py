@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from django.conf import settings
+from django.db import connection
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
@@ -62,14 +64,14 @@ class IterTests(NaniTestCase):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
                 index = 0
-                for obj in Normal.objects.language().all():
+                for obj in Normal.objects.language():
                     index += 1
                     self.assertEqual(obj.shared_field, self.data[index]['shared_field'])
                     self.assertEqual(obj.translated_field, self.data[index]['translated_field_en'])
         with LanguageOverride('ja'):
             with self.assertNumQueries(1):
                 index = 0
-                for obj in Normal.objects.language().all():
+                for obj in Normal.objects.language():
                     index += 1
                     self.assertEqual(obj.shared_field, self.data[index]['shared_field'])
                     self.assertEqual(obj.translated_field, self.data[index]['translated_field_ja'])
