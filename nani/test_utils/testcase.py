@@ -69,7 +69,10 @@ else:
 class NaniTestCase(TestCase):
     def reload(self, obj):
         model = obj.__class__
-        return model.objects.get(**{obj._meta.pk.name: obj.pk})
+        qs = model.objects
+        if callable(getattr(qs, 'language', None)):
+            qs = qs.language()
+        return qs.get(**{obj._meta.pk.name: obj.pk})
     
 
 class SingleNormalTestCase(NaniTestCase):

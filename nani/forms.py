@@ -33,6 +33,11 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             sexclude = [field for field in opts.exclude or [] if field in shared_fields]
             texclude = [field for field in opts.exclude or [] if field not in shared_fields]
             
+            if not sfieldnames:
+                sfieldnames = None
+            if not tfieldnames:
+                tfieldnames = None  
+            
             # If a model is defined, extract form fields from it.
             sfields = fields_for_model(opts.model, sfieldnames, sexclude,
                                        opts.widgets, formfield_callback)

@@ -34,7 +34,7 @@ class NormalToTransFKTest(SingleNormalTestCase):
         ja.translated_field = u'何'
         ja.save()
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
-        related = Related.objects.create(normal_trans=ja)
+        related = Related.objects.language('en').create(normal_trans=ja)
         with LanguageOverride('en'):
             related = self.reload(related)
             self.assertEqual(related.normal_trans.pk, ja.pk)
