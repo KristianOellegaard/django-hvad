@@ -112,6 +112,22 @@ class TranslationMixin(QuerySet):
         q.children = newchildren
         return q
     
+    def _find_language_code(self, q):
+        """
+        Checks if it finds a language code in a Q object (and it's children).
+        """
+        language_code = None
+        for child in q.children:
+            if isinstance(child, Q):
+                language_code = self._find_language_code(child)
+            elif isinstance(child, tuple):
+                key, value = child
+                if key == 'language_code':
+                    language_code = value
+            if language_code:
+                break
+        return language_code
+    
     #===========================================================================
     # Queryset/Manager API 
     #===========================================================================
@@ -172,6 +188,18 @@ class TranslationMixin(QuerySet):
         if 'language_code' in newkwargs:
             language_code = newkwargs.pop('language_code')
             qs = self.language(language_code)
+        elif args:
+            language_code = None
+            for arg in args:
+                if not isinstance(arg, Q):
+                    continue
+                language_code = self._find_language_code(arg)
+                if language_code:
+                    break
+            if language_code:
+                qs = self.language(language_code)
+            else:
+                qs = self.language()
         else:
             for where in qs.query.where.children:
                 if where.children:

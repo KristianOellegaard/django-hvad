@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+from django.db.models.query_utils import Q
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase, SingleNormalTestCase
 from testproject.app.models import Normal
@@ -67,6 +68,41 @@ class GetTest(SingleNormalTestCase):
             self.assertEqual(got.translated_field, "English")
             self.assertEqual(got.language_code, "en")
 
+class GetByLanguageTest(NaniTestCase):
+    fixtures = ['double_normal.json']
+    
+    data = {
+        1: {
+            'shared_field': 'Shared1',
+            'translated_field_en': 'English1',
+            'translated_field_ja': u'日本語一',
+        },
+        2: {
+            'shared_field': 'Shared2',
+            'translated_field_en': 'English2',
+            'translated_field_ja': u'日本語二',
+        },
+    }
+    
+    def test_args(self):
+        with LanguageOverride('en'):
+            q = Q(language_code='ja', pk=1)
+            obj = Normal.objects.get(q)
+            self.assertEqual(obj.shared_field, self.data[1]['shared_field'])
+            self.assertEqual(obj.translated_field, self.data[1]['translated_field_ja'])
+    
+    def test_kwargs(self):
+        with LanguageOverride('en'):
+            kwargs = {'language_code':'ja', 'pk':1}
+            obj = Normal.objects.get(**kwargs)
+            self.assertEqual(obj.shared_field, self.data[1]['shared_field'])
+            self.assertEqual(obj.translated_field, self.data[1]['translated_field_ja'])
+        
+    def test_language(self):
+        with LanguageOverride('en'):
+            obj = Normal.objects.language('ja').get(pk=1)
+            self.assertEqual(obj.shared_field, self.data[1]['shared_field'])
+            self.assertEqual(obj.translated_field, self.data[1]['translated_field_ja'])
 
 class BasicQueryTest(SingleNormalTestCase):
     def test_basic(self):

@@ -28,7 +28,7 @@ def create_translations_model(model, related_name, meta, **fields):
     meta['unique_together'] = list(meta.get('unique_together', [])) + unique
     # Create inner Meta class 
     Meta = type('Meta', (object,), meta)
-    name = '%sTranslations' % model.__name__
+    name = '%sTranslation' % model.__name__
     attrs = {}
     attrs.update(fields)
     attrs['Meta'] = Meta

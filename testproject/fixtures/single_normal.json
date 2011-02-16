@@ -1,1 +1,1 @@
-[{"pk": 1, "model": "app.normaltranslations", "fields": {"language_code": "en", "master": 1, "translated_field": "English"}}, {"pk": 1, "model": "app.normal", "fields": {"shared_field": "shared"}}]
+[{"pk": 1, "model": "app.normaltranslation", "fields": {"language_code": "en", "master": 1, "translated_field": "English"}}, {"pk": 1, "model": "app.normal", "fields": {"shared_field": "shared"}}]
