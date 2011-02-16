@@ -256,7 +256,12 @@ class TranslationMixin(QuerySet):
         if translated:
             super(TranslationMixin, self).update(**translated)
         if shared:
-            raise NotImplementedError()
+            qs = super(TranslationMixin, self)._clone()
+            qs.__class__ = QuerySet
+            del qs.query.select_related['master']
+            accessor = self.shared_model._meta.translations_accessor
+            self._real_manager.filter(**{'%s__in' % accessor:qs}).update(**shared)
+            #raise NotImplementedError()
     update.alters_data = True
 
     def values(self, *fields):

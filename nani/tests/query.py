@@ -60,7 +60,7 @@ class UpdateTests(NaniTestCase):
         n2 = Normal.objects.language('en').get(pk=2)
         ja1 = Normal.objects.language('ja').get(pk=1)
         ja2 = Normal.objects.language('ja').get(pk=2)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(1):
             Normal.objects.language('en').update(shared_field=NEW_SHARED)
         new1 = Normal.objects.language('en').get(pk=1)
         new2 = Normal.objects.language('en').get(pk=2)
@@ -68,11 +68,10 @@ class UpdateTests(NaniTestCase):
         self.assertEqual(new1.translated_field, n1.translated_field)
         self.assertEqual(new2.shared_field, NEW_SHARED)
         self.assertEqual(new2.translated_field, n2.translated_field)
-        # check it didn't touch japanese
         newja1 = Normal.objects.language('ja').get(pk=1)
         newja2 = Normal.objects.language('ja').get(pk=2)
-        self.assertEqual(newja1.shared_field, ja1.shared_field)
-        self.assertEqual(newja2.shared_field, ja2.shared_field)
+        self.assertEqual(newja1.shared_field, NEW_SHARED)
+        self.assertEqual(newja2.shared_field, NEW_SHARED)
         self.assertEqual(newja1.translated_field, ja1.translated_field)
         self.assertEqual(newja2.translated_field, ja2.translated_field)
         
@@ -97,3 +96,27 @@ class UpdateTests(NaniTestCase):
         self.assertEqual(newja2.shared_field, ja2.shared_field)
         self.assertEqual(newja1.translated_field, ja1.translated_field)
         self.assertEqual(newja2.translated_field, ja2.translated_field)
+        
+    def test_update_mixed(self):
+        NEW_SHARED = 'new shared'
+        NEW_TRANSLATED = 'new translated'
+        n1 = Normal.objects.language('en').get(pk=1)
+        n2 = Normal.objects.language('en').get(pk=2)
+        ja1 = Normal.objects.language('ja').get(pk=1)
+        ja2 = Normal.objects.language('ja').get(pk=2)
+        with self.assertNumQueries(2):
+            Normal.objects.language('en').update(shared_field=NEW_SHARED, translated_field=NEW_TRANSLATED)
+        new1 = Normal.objects.language('en').get(pk=1)
+        new2 = Normal.objects.language('en').get(pk=2)
+        self.assertEqual(new1.shared_field, NEW_SHARED)
+        self.assertEqual(new1.translated_field, NEW_TRANSLATED)
+        self.assertEqual(new2.shared_field, NEW_SHARED)
+        self.assertEqual(new2.translated_field, NEW_TRANSLATED)
+        newja1 = Normal.objects.language('ja').get(pk=1)
+        newja2 = Normal.objects.language('ja').get(pk=2)
+        self.assertEqual(newja1.shared_field, NEW_SHARED)
+        self.assertEqual(newja2.shared_field, NEW_SHARED)
+        # check it didn't touch japanese translated fields
+        self.assertEqual(newja1.translated_field, ja1.translated_field)
+        self.assertEqual(newja2.translated_field, ja2.translated_field)
+        
