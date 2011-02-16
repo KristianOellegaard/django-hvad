@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import SingleNormalTestCase, NaniTestCase
-from testproject.app.models import Normal, Related
+from testproject.app.models import Normal, Related, Standard
 
 
 class NormalToNormalFKTest(SingleNormalTestCase):
@@ -49,3 +49,60 @@ class TransToNormalFKTest(NaniTestCase):
 
 class TransToTransFKTest(NaniTestCase):
     pass
+
+
+class StandardToTransFKTest(NaniTestCase):
+    fixtures = ['standard.json']
+    
+    def test_relation(self):
+        en = Normal.objects.language('en').get(pk=1)
+        ja = Normal.objects.language('ja').get(pk=1)
+        related = Standard.objects.get(pk=1)
+        with LanguageOverride('en'):
+            related = self.reload(related)
+            self.assertEqual(related.normal.pk, en.pk)
+            self.assertEqual(related.normal.shared_field, en.shared_field)
+            self.assertEqual(related.normal.translated_field, en.translated_field)
+            self.assertTrue(related in en.standards.all())
+        with LanguageOverride('ja'):
+            related = self.reload(related)
+            self.assertEqual(related.normal.pk, ja.pk)
+            self.assertEqual(related.normal.shared_field, ja.shared_field)
+            self.assertEqual(related.normal.translated_field, ja.translated_field)
+            self.assertTrue(related in ja.standards.all())
+            
+    def test_num_queries(self):
+        with LanguageOverride('en'):
+            en = Normal.objects.language('en').get(pk=1)
+            with self.assertNumQueries(1):
+                related = Standard.objects.select_related('normal').get(pk=1)
+                self.assertEqual(related.normal.pk, en.pk)
+                self.assertEqual(related.normal.shared_field, en.shared_field)
+                self.assertEqual(related.normal.translated_field, en.translated_field)
+
+    def test_lookup_by_pk(self):
+        en = Normal.objects.language('en').get(pk=1)
+        by_pk = Standard.objects.get(normal__pk=en.pk)
+        with LanguageOverride('en'):
+            self.assertEqual(by_pk.normal.pk, en.pk)
+            self.assertEqual(by_pk.normal.shared_field, en.shared_field)
+            self.assertEqual(by_pk.normal.translated_field, en.translated_field)
+            self.assertTrue(by_pk in en.standards.all())
+            
+    def test_lookup_by_shared_field(self):
+        en = Normal.objects.language('en').get(pk=1)
+        by_shared_field = Standard.objects.get(normal__shared_field=en.shared_field)
+        with LanguageOverride('en'):
+            self.assertEqual(by_shared_field.normal.pk, en.pk)
+            self.assertEqual(by_shared_field.normal.shared_field, en.shared_field)
+            self.assertEqual(by_shared_field.normal.translated_field, en.translated_field)
+            self.assertTrue(by_shared_field in en.standards.all())
+    
+    def test_lookup_by_translated_field(self):
+        en = Normal.objects.language('en').get(pk=1)
+        by_translated_field = Standard.objects.get(normal__translated_field=en.translated_field)
+        with LanguageOverride('en'):
+            self.assertEqual(by_translated_field.normal.pk, en.pk)
+            self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
+            self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
+            self.assertTrue(by_translated_field in en.standards.all())

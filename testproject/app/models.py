@@ -20,3 +20,4 @@ class Related(TranslateableModel):
 
 class Standard(models.Model):
     normal_field = models.CharField(max_length=255)
+    normal = models.ForeignKey(Normal, related_name='standards')

@@ -5,4 +5,3 @@ from testproject.app.models import Standard
 
 
 admin.site.register(Normal, TranslateableAdmin)
-admin.site.register(Standard)

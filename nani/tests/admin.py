@@ -52,16 +52,3 @@ class NormalAdminTests(NaniTestCase):
         ja = Normal.objects.get(language_code='ja')
         self.assertEqual(ja.shared_field, SHARED)
         self.assertEqual(ja.translated_field, TRANS_JA)
-        
-    def test_admin_standard(self):
-        NORMAL = 'normal'
-        self.client.login(username='admin', password='admin')
-        url = reverse('admin:app_standard_add')
-        data = {
-            'normal_field': NORMAL,
-        }
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(Standard.objects.count(), 1)
-        obj = Standard.objects.all()[0]
-        self.assertEqual(obj.normal_field, NORMAL)
