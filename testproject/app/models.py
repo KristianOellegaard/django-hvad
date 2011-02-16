@@ -21,3 +21,11 @@ class Related(TranslateableModel):
 class Standard(models.Model):
     normal_field = models.CharField(max_length=255)
     normal = models.ForeignKey(Normal, related_name='standards')
+    
+
+class Date(TranslateableModel):
+    shared_date = models.DateTimeField()
+    
+    translated_fields = TranslatedFields(
+        translated_date = models.DateTimeField()
+    )

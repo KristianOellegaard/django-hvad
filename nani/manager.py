@@ -31,6 +31,11 @@ class TranslationMixin(QuerySet):
     """
     This is where things happen.
     
+    To fully understand this project, you have to understand this class.
+    
+    Go through each method individually, maybe start with 'get', 'create' and
+    'iterator'.
+    
     IMPORTANT: the `model` attribute on this class is the *translated* Model,
     despite this being used as the queryset for the *shared* Model!
     """
@@ -219,6 +224,9 @@ class TranslationMixin(QuerySet):
                     for child in where.children:
                         if child[0].field.name == 'language_code':
                             found = True
+                            break
+                if found:
+                    break
             if not found:
                 qs = self.language()
         # self.iterator already combines! Isn't that nice?
@@ -232,7 +240,9 @@ class TranslationMixin(QuerySet):
         raise NotImplementedError()
 
     def latest(self, field_name=None):
-        raise NotImplementedError()
+        if field_name:
+            field_name = self.field_translator.get(field_name)
+        return super(TranslationMixin, self).latest(field_name)
 
     def in_bulk(self, id_list):
         raise NotImplementedError()
