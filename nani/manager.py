@@ -269,7 +269,8 @@ class TranslationMixin(QuerySet):
         return super(TranslationMixin, self).values(*fields)
 
     def values_list(self, *fields, **kwargs):
-        raise NotImplementedError()
+        fields = self._translate_fieldnames(fields)
+        return super(TranslationMixin, self).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind, order='ASC'):
         raise NotImplementedError()
