@@ -128,6 +128,19 @@ class TranslationMixin(QuerySet):
                 break
         return language_code
     
+    def _split_kwargs(self, **kwargs):
+        """
+        Split kwargs into shared and translated fields
+        """
+        shared = {}
+        translated = {}
+        for key, value in kwargs.items():
+            if key in self.shared_local_field_names:
+                shared[key] = value
+            else:
+                translated[key] = value
+        return shared, translated
+    
     #===========================================================================
     # Queryset/Manager API 
     #===========================================================================
@@ -229,11 +242,16 @@ class TranslationMixin(QuerySet):
     delete.alters_data = True
 
     def update(self, **kwargs):
-        raise NotImplementedError()
+        shared, translated = self._split_kwargs(**kwargs)
+        if translated:
+            super(TranslationMixin, self).update(**translated)
+        if shared:
+            raise NotImplementedError()
     update.alters_data = True
 
     def values(self, *fields):
-        raise NotImplementedError()
+        fields = self._translate_fieldnames(fields)
+        return super(TranslationMixin, self).values(*fields)
 
     def values_list(self, *fields, **kwargs):
         raise NotImplementedError()
