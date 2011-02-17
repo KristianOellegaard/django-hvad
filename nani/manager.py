@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models.query import QuerySet
+from django.db.models.query import QuerySet, ValuesQuerySet
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from nani.utils import R, combine
@@ -26,6 +26,20 @@ class FieldTranslator(dict):
         else:
             return key
 
+
+class ValuesMixin(object):
+    def _strip_master(self, key):
+        if key.startswith('master__'):
+            return key[8:]
+        return key
+       
+    def iterator(self):
+        for row in super(ValuesMixin, self).iterator():
+            if isinstance(row, dict):
+                yield dict([(self._strip_master(k), v) for k,v in row.items()])
+            else:
+                yield row
+
         
 class TranslationMixin(QuerySet):
     """
@@ -39,6 +53,10 @@ class TranslationMixin(QuerySet):
     IMPORTANT: the `model` attribute on this class is the *translated* Model,
     despite this being used as the queryset for the *shared* Model!
     """
+    override_classes = {
+        ValuesQuerySet: ValuesMixin,
+    }
+    
     def __init__(self, model=None, query=None, using=None, real=None):
         self._local_field_names = None
         self._field_translator = None
@@ -145,6 +163,12 @@ class TranslationMixin(QuerySet):
             else:
                 translated[key] = value
         return shared, translated
+    
+    def _get_class(self, klass):
+        for key, value in self.override_classes.items():
+            if issubclass(klass, key):
+                return type(value.__name__, (value, klass, TranslationMixin,), {})
+        return klass
     
     #===========================================================================
     # Queryset/Manager API 
@@ -253,15 +277,19 @@ class TranslationMixin(QuerySet):
 
     def update(self, **kwargs):
         shared, translated = self._split_kwargs(**kwargs)
+        count = 0
         if translated:
-            super(TranslationMixin, self).update(**translated)
+            count += super(TranslationMixin, self).update(**translated)
         if shared:
             qs = super(TranslationMixin, self)._clone()
             qs.__class__ = QuerySet
+            # un-select-related the 'master' relation
             del qs.query.select_related['master']
             accessor = self.shared_model._meta.translations_accessor
-            self._real_manager.filter(**{'%s__in' % accessor:qs}).update(**shared)
-            #raise NotImplementedError()
+            # update using the real manager
+            realqs = self._real_manager.filter(**{'%s__in' % accessor:qs})
+            count += realqs.update(**shared)
+        return count
     update.alters_data = True
 
     def values(self, *fields):
@@ -307,7 +335,11 @@ class TranslationMixin(QuerySet):
             '_language_code': self._language_code,
             '_real_manager': self._real_manager,
         })
-        return super(TranslationMixin, self)._clone(self.__class__, setup, **kwargs)
+        if klass:
+            klass = self._get_class(klass)
+        else:
+            klass = self.__class__
+        return super(TranslationMixin, self)._clone(klass, setup, **kwargs)
     
     def __getitem__(self, item):
         return super(TranslationMixin, self).__getitem__(item)

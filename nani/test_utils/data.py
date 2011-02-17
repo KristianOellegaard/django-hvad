@@ -3,13 +3,13 @@ from datetime import datetime
     
 DOUBLE_NORMAL = {
     1: {
-        'shared_field': 'Shared1',
-        'translated_field_en': 'English1',
+        'shared_field': u'Shared1',
+        'translated_field_en': u'English1',
         'translated_field_ja': u'日本語一',
     },
     2: {
-        'shared_field': 'Shared2',
-        'translated_field_en': 'English2',
+        'shared_field': u'Shared2',
+        'translated_field_en': u'English2',
         'translated_field_ja': u'日本語二',
     },
 }

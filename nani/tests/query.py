@@ -100,8 +100,6 @@ class UpdateTests(NaniTestCase):
     def test_update_mixed(self):
         NEW_SHARED = 'new shared'
         NEW_TRANSLATED = 'new translated'
-        n1 = Normal.objects.language('en').get(pk=1)
-        n2 = Normal.objects.language('en').get(pk=2)
         ja1 = Normal.objects.language('ja').get(pk=1)
         ja2 = Normal.objects.language('ja').get(pk=2)
         with self.assertNumQueries(2):
@@ -126,16 +124,32 @@ class ValuesListTests(NaniTestCase):
     
     def test_values_list_translated(self):
         values = Normal.objects.language('en').values_list('translated_field', flat=True)
-        self.assertEqual(values, [DOUBLE_NORMAL[1]['translated_field_en'], DOUBLE_NORMAL[2]['translated_field_en']])
+        values_list = list(values)
+        self.assertEqual(values_list, [DOUBLE_NORMAL[1]['translated_field_en'], DOUBLE_NORMAL[2]['translated_field_en']])
         
     def test_values_list_shared(self):
         values = Normal.objects.language('en').values_list('shared_field', flat=True)
-        self.assertEqual(values, [DOUBLE_NORMAL[1]['shared_field'], DOUBLE_NORMAL[2]['shared_field']])
+        values_list = list(values)
+        self.assertEqual(values_list, [DOUBLE_NORMAL[1]['shared_field'], DOUBLE_NORMAL[2]['shared_field']])
     
     def test_values_list_mixed(self):
         values = Normal.objects.language('en').values_list('shared_field', 'translated_field')
+        values_list = list(values)
         check = [
             (DOUBLE_NORMAL[1]['shared_field'], DOUBLE_NORMAL[1]['translated_field_en']),
             (DOUBLE_NORMAL[2]['shared_field'], DOUBLE_NORMAL[2]['translated_field_en']),
         ]
-        self.assertEqual(values, check)
+        self.assertEqual(values_list, check)
+        
+
+class ValuesTests(NaniTestCase):
+    fixtures = ['double_normal.json']
+    
+    def test_values_shared(self):
+        values = Normal.objects.language('en').values('shared_field')
+        values_list = list(values)
+        check = [
+            {'shared_field': DOUBLE_NORMAL[1]['shared_field']},
+            {'shared_field': DOUBLE_NORMAL[2]['shared_field']},
+        ]
+        self.assertEqual(values_list, check)
