@@ -34,3 +34,4 @@ class TranslatedForeignKey(ForeignKey):
 
     def contribute_to_related_class(self, cls, related):
         super(TranslatedForeignKey, self).contribute_to_related_class(self._to, related)
+        super(TranslatedForeignKey, self).contribute_to_related_class(self.rel.to, related)

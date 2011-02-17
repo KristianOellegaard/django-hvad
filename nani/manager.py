@@ -281,7 +281,8 @@ class TranslationMixin(QuerySet):
         raise NotImplementedError()
 
     def delete(self):
-        self._get_shared_query_set().delete()
+        qs = self._get_shared_query_set()
+        qs.delete()
     delete.alters_data = True
     
     def delete_translations(self):

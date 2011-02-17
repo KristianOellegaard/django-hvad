@@ -88,7 +88,9 @@ class LanguageCodeAttribute(TranslatedAttribute):
                     continue
                 if field == tmodel._meta.pk.name:
                     continue
-                setattr(other_lang, field, getattr(instance, field, None))
+                if callable(getattr(val, 'all', None)):
+                    val = val.all()
+                setattr(other_lang, field, val)
             other_lang.language_code = value
             other_lang.master = instance
         setattr(instance, instance._meta.translations_cache, other_lang)
