@@ -153,3 +153,41 @@ class ValuesTests(NaniTestCase):
             {'shared_field': DOUBLE_NORMAL[2]['shared_field']},
         ]
         self.assertEqual(values_list, check)
+    
+    def test_values_translated(self):
+        values = Normal.objects.language('en').values('translated_field')
+        values_list = list(values)
+        check = [
+            {'translated_field': DOUBLE_NORMAL[1]['translated_field_en']},
+            {'translated_field': DOUBLE_NORMAL[2]['translated_field_en']},
+        ]
+        self.assertEqual(values_list, check)
+        
+    def test_values_mixed(self):
+        values = Normal.objects.language('en').values('translated_field', 'shared_field')
+        values_list = list(values)
+        check = [
+            {'translated_field': DOUBLE_NORMAL[1]['translated_field_en'],
+             'shared_field': DOUBLE_NORMAL[1]['shared_field']},
+            {'translated_field': DOUBLE_NORMAL[2]['translated_field_en'],
+             'shared_field': DOUBLE_NORMAL[2]['shared_field']},
+        ]
+        self.assertEqual(values_list, check)
+        
+    def test_values_post_language(self):
+        values = Normal.objects.values('shared_field').language('en')
+        values_list = list(values)
+        check = [
+            {'shared_field': DOUBLE_NORMAL[1]['shared_field']},
+            {'shared_field': DOUBLE_NORMAL[2]['shared_field']},
+        ]
+        self.assertEqual(values_list, check)
+        
+    def test_values_post_filter(self):
+        qs = Normal.objects.language('en').values('shared_field')
+        values = qs.filter(shared_field=DOUBLE_NORMAL[1]['shared_field'])
+        values_list = list(values)
+        check = [
+            {'shared_field': DOUBLE_NORMAL[1]['shared_field']},
+        ]
+        self.assertEqual(values_list, check)
