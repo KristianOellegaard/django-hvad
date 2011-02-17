@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.test.simple import DjangoTestSuiteRunner
-import os
 
 try: # pragma: no cover
     from xmlrunner import XMLTestRunner as runner

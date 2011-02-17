@@ -170,6 +170,15 @@ class TranslationMixin(QuerySet):
                 return type(value.__name__, (value, klass, TranslationMixin,), {})
         return klass
     
+    def _get_shared_query_set(self):
+        qs = super(TranslationMixin, self)._clone()
+        qs.__class__ = QuerySet
+        # un-select-related the 'master' relation
+        del qs.query.select_related['master']
+        accessor = self.shared_model._meta.translations_accessor
+        # update using the real manager
+        return self._real_manager.filter(**{'%s__in' % accessor:qs})
+    
     #===========================================================================
     # Queryset/Manager API 
     #===========================================================================
@@ -272,8 +281,14 @@ class TranslationMixin(QuerySet):
         raise NotImplementedError()
 
     def delete(self):
-        raise NotImplementedError()
+        self._get_shared_query_set().delete()
     delete.alters_data = True
+    
+    def delete_translations(self):
+        self.update(master=None)
+        super(TranslationMixin, self).delete()
+    delete_translations.alters_data = True
+        
 
     def update(self, **kwargs):
         shared, translated = self._split_kwargs(**kwargs)
@@ -281,14 +296,8 @@ class TranslationMixin(QuerySet):
         if translated:
             count += super(TranslationMixin, self).update(**translated)
         if shared:
-            qs = super(TranslationMixin, self)._clone()
-            qs.__class__ = QuerySet
-            # un-select-related the 'master' relation
-            del qs.query.select_related['master']
-            accessor = self.shared_model._meta.translations_accessor
-            # update using the real manager
-            realqs = self._real_manager.filter(**{'%s__in' % accessor:qs})
-            count += realqs.update(**shared)
+            shared_qs = self._get_shared_query_set()
+            count += shared_qs.update(**shared)
         return count
     update.alters_data = True
 
@@ -346,15 +355,26 @@ class TranslationMixin(QuerySet):
     
     def iterator(self):
         for obj in super(TranslationMixin, self).iterator():
-            yield combine(obj)
+            # non-cascade-deletion hack:
+            if not obj.master:
+                yield obj
+            else:
+                yield combine(obj)
 
 
 class TranslationManager(models.Manager):
     """
     Manager class for models with translated fields
     """
+    #===========================================================================
+    # API 
+    #===========================================================================
     def language(self, language_code=None):
         return self.get_query_set().language(language_code)
+    
+    #===========================================================================
+    # Internals
+    #===========================================================================
     
     @property
     def translations_model(self):

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from django.conf import settings
-from django.db import connection
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.testcase import NaniTestCase
@@ -191,3 +189,19 @@ class ValuesTests(NaniTestCase):
             {'shared_field': DOUBLE_NORMAL[1]['shared_field']},
         ]
         self.assertEqual(values_list, check)
+        
+
+class DeleteTests(NaniTestCase):
+    fixtures = ['double_normal.json']
+    
+    def test_delete_all(self):
+        Normal.objects.all().delete()
+        self.assertEqual(Normal.objects.count(), 0)
+        self.assertEqual(Normal.objects._real_manager.count(), 0)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 0)
+        
+    def test_delete_translation(self):
+        Normal.objects.language('en').delete_translations()
+        self.assertEqual(Normal.objects.count(), 2)
+        self.assertEqual(Normal.objects._real_manager.count(), 2)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 2)

@@ -34,7 +34,8 @@ def create_translations_model(model, related_name, meta, **fields):
     attrs['Meta'] = Meta
     attrs['__module__'] = model.__module__
     attrs['language_code'] = models.CharField(max_length=15, db_index=True)
-    attrs['master'] = models.ForeignKey(model, related_name=related_name, editable=False)
+    # null=True is so we can prevent cascade deletion
+    attrs['master'] = models.ForeignKey(model, related_name=related_name, editable=False, null=True)
     # Create and return the new model
     return ModelBase(name, (BaseTranslationModel,), attrs)
 
