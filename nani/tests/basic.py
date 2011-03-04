@@ -26,7 +26,87 @@ class CreateTest(NaniTestCase):
         self.assertEqual(en.shared_field, "shared")
         self.assertEqual(en.translated_field, "English")
         self.assertEqual(en.language_code, "en")
+    
+    def test_create_nolang(self):
+        with self.assertNumQueries(2):
+            with LanguageOverride('en'):
+                en = Normal.objects.create(
+                    shared_field="shared",
+                    translated_field='English',
+                )
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
+    
+    def test_create_instance_simple(self):
+        obj = Normal(language_code='en')
+        obj.shared_field = "shared"
+        obj.translated_field = "English"
+        obj.save()
+        en = Normal.objects.language('en').get(pk=obj.pk)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
         
+    def test_create_instance_shared(self):
+        obj = Normal(language_code='en', shared_field = "shared")
+        obj.save()
+        en = Normal.objects.language('en').get(pk=obj.pk)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.language_code, "en")
+        
+    def test_create_instance_translated(self):
+        obj = Normal(language_code='en', translated_field = "English")
+        obj.save()
+        en = Normal.objects.language('en').get(pk=obj.pk)
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
+    
+    def test_create_instance_both(self):
+        obj = Normal(language_code='en', shared_field = "shared",
+                     translated_field = "English")
+        obj.save()
+        en = Normal.objects.language('en').get(pk=obj.pk)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
+        
+    def test_create_instance_simple_nolang(self):
+        with LanguageOverride('en'):
+            obj = Normal(language_code='en')
+            obj.shared_field = "shared"
+            obj.translated_field = "English"
+            obj.save()
+            en = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(en.shared_field, "shared")
+            self.assertEqual(en.translated_field, "English")
+            self.assertEqual(en.language_code, "en")
+        
+    def test_create_instance_shared_nolang(self):
+        with LanguageOverride('en'):
+            obj = Normal(language_code='en', shared_field = "shared")
+            obj.save()
+            en = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(en.shared_field, "shared")
+            self.assertEqual(en.language_code, "en")
+        
+    def test_create_instance_translated_nolang(self):
+        with LanguageOverride('en'):
+            obj = Normal(language_code='en', translated_field = "English")
+            obj.save()
+            en = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(en.translated_field, "English")
+            self.assertEqual(en.language_code, "en")
+    
+    def test_create_instance_both_nolang(self):
+        with LanguageOverride('en'):
+            obj = Normal(language_code='en', shared_field = "shared",
+                         translated_field = "English")
+            obj.save()
+            en = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(en.shared_field, "shared")
+            self.assertEqual(en.translated_field, "English")
+            self.assertEqual(en.language_code, "en")
 
 class TranslatedTest(SingleNormalTestCase):
     def test_translate(self):

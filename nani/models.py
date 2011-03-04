@@ -2,6 +2,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
+from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager
 
@@ -114,6 +115,36 @@ class TranslateableModel(models.Model):
     class Meta:
         abstract = True
     
+    def __init__(self, *args, **kwargs):
+        tkwargs = {} # translated fields
+        skwargs = {} # shared fields
+        
+        # filter out all the translated fields (including 'master' and 'language_code')
+        for key in kwargs.keys():
+            if key in self._meta.translations_model._meta.get_all_field_names():
+                if not key in ('pk',self._meta.pk.name):
+                    # we exclude the pk of the shared model
+                    tkwargs[key] = kwargs.pop(key)
+        if not len(tkwargs.keys()):
+            # if there where no translated options, then we assume this is a
+            # regular init and don't want to do any funky stuff
+            super(TranslateableModel, self).__init__(*args, **kwargs)
+            return
+        
+        # there was at least one of the translated fields in kwargs. We need to
+        # do magic.
+        # extract all the shared fields (including the pk)
+        for key in kwargs.keys():
+            if key in self._meta.get_all_field_names():
+                skwargs[key] = kwargs.pop(key)
+        # do the regular init minus the translated fields
+        super(TranslateableModel, self).__init__(*args, **skwargs)
+        # prepopulate the translations model cache with an translation model
+        tkwargs['language_code'] = tkwargs.get('language_code', get_language())
+        tkwargs['master'] = self
+        translated = self._meta.translations_model(*args, **tkwargs)
+        setattr(self, self._meta.translations_cache, translated)
+    
     @classmethod
     def contribute_translations(cls, rel):
         """
@@ -150,4 +181,6 @@ class TranslateableModel(models.Model):
         opts = cls._meta
         if hasattr(instance, opts.translations_cache):
             trans = getattr(instance, opts.translations_cache)
+            if not trans.master_id:
+                trans.master = instance
             trans.save()

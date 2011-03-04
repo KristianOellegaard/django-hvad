@@ -190,40 +190,15 @@ class TranslationMixin(QuerySet):
         return self.filter(language_code=language_code)
         
     def create(self, **kwargs):
-        """
-        When we create an instance, what we actually need to do is create two
-        separate instances: One shared, and one translated.
-        For this, we split the 'kwargs' into translated and shared kwargs
-        and set the 'master' FK from in the translated kwargs to the shared
-        instance.
-        If 'language_code' is not given in kwargs, set it to the current
-        language.
-        """
-        tkwargs = {}
-        for key in kwargs.keys():
-            if not key in self.shared_local_field_names:
-                tkwargs[key] = kwargs.pop(key)
-        # enforce a language_code
-        if 'language_code' not in tkwargs:
+        if 'language_code' not in kwargs:
             if self._language_code:
-                tkwargs['language_code'] = self._language_code
+                kwargs['language_code'] = self._language_code
             else:
-                tkwargs['language_code'] = get_language()
-        # Allow a pre-existing master to be passed, but only if no shared fields
-        # are given.
-        if 'master' in tkwargs:
-            if kwargs:
-                raise RuntimeError(
-                    "Cannot explicitly use a master (shared) instance and shared fields in create"
-                )
-        else:
-            # create shared instance
-            shared = self._real_manager.create(**kwargs)
-            tkwargs['master'] = shared
-        # create translated instance
-        trans = self.translations_manager.create(**tkwargs)
-        # return combined instance
-        return combine(trans)
+                kwargs['language_code'] = get_language()
+        obj = self.shared_model(**kwargs)
+        self._for_write = True
+        obj.save(force_insert=True, using=self.db)
+        return obj
     
     def get(self, *args, **kwargs):
         """
