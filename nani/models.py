@@ -61,6 +61,8 @@ class BaseTranslationModel(models.Model):
     Needed for detection of translation models. Due to the way dynamic classes
     are created, we cannot put the 'language_code' field on here.
     """
+    def __init__(self, *args, **kwargs):
+        super(BaseTranslationModel, self).__init__(*args, **kwargs)
     class Meta:
         abstract = True
         
@@ -119,23 +121,29 @@ class TranslateableModel(models.Model):
         tkwargs = {} # translated fields
         skwargs = {} # shared fields
         
+        if 'master' in kwargs.keys():
+            raise RuntimeError(
+                    "Cannot init  %s class with a 'master' argument" % \
+                    self.__class__.__name__
+            )
+        
         # filter out all the translated fields (including 'master' and 'language_code')
         for key in kwargs.keys():
-            if key in self._meta.translations_model._meta.get_all_field_names():
+            if key in self._translated_field_names:
                 if not key in ('pk',self._meta.pk.name):
                     # we exclude the pk of the shared model
                     tkwargs[key] = kwargs.pop(key)
-        if not len(tkwargs.keys()):
+        if not tkwargs.keys():
             # if there where no translated options, then we assume this is a
             # regular init and don't want to do any funky stuff
             super(TranslateableModel, self).__init__(*args, **kwargs)
             return
         
-        # there was at least one of the translated fields in kwargs. We need to
-        # do magic.
+        # there was at least one of the translated fields (or a language_code) 
+        # in kwargs. We need to do magic.
         # extract all the shared fields (including the pk)
         for key in kwargs.keys():
-            if key in self._meta.get_all_field_names():
+            if key in self._shared_field_names:
                 skwargs[key] = kwargs.pop(key)
         # do the regular init minus the translated fields
         super(TranslateableModel, self).__init__(*args, **skwargs)
@@ -184,3 +192,18 @@ class TranslateableModel(models.Model):
             if not trans.master_id:
                 trans.master = instance
             trans.save()
+    
+    #===========================================================================
+    # Internals
+    #===========================================================================
+    
+    @property
+    def _shared_field_names(self):
+        if getattr(self, '_shared_field_names_cache', None) is None:
+            self._shared_field_names_cache = self._meta.get_all_field_names()
+        return self._shared_field_names_cache
+    @property
+    def _translated_field_names(self):
+        if getattr(self, '_translated_field_names_cache', None) is None:
+            self._translated_field_names_cache = self._meta.translations_model._meta.get_all_field_names()
+        return self._translated_field_names_cache
