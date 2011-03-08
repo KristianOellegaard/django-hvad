@@ -61,7 +61,8 @@ class TranslateableAdmin(ModelAdmin):
             "form": self.form,
             "fields": fields,
             "exclude": exclude,
-            "formfield_callback": curry(self.formfield_for_dbfield, request=request),
+            "formfield_callback": curry(self.formfield_for_dbfield, 
+                                        request=request),
         }
         defaults.update(kwargs)
         return translateable_modelform_factory(self.model, **defaults)

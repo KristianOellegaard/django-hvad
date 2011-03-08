@@ -30,7 +30,8 @@ class TranslatedAttribute(BaseDescriptor):
     def __get__(self, instance, instance_type=None):
         if not instance:
             # Don't raise an attribute error so we can use it in admin.
-            return self.opts.translations_model._meta.get_field_by_name(self.name)[0].default
+            return self.opts.translations_model._meta.get_field_by_name(
+                                                    self.name)[0].default
         return getattr(self.translation(instance), self.name)
     
     def __set__(self, instance, value):
@@ -56,7 +57,8 @@ class LanguageCodeAttribute(TranslatedAttribute):
     def __set__(self, instance, value):
         if not instance:
             raise AttributeError()
-        raise AttributeError("The 'language_code' attribute cannot be changed directly! Use the translate() method instead.")
+        raise AttributeError("The 'language_code' attribute cannot be " +\
+                    "changed directly! Use the translate() method instead.")
     
     def __delete__(self, instance):
         if not instance:
