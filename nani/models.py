@@ -193,6 +193,22 @@ class TranslateableModel(models.Model):
                 trans.master = instance
             trans.save()
     
+    def translate(self, language_code):
+        """
+        Returns an Model instance in the specified language.
+        Does NOT check if the translagtion already exists!
+        Does NOT interact with the database.
+        
+        This will refresh the translations cache attribute on the instance.
+        """
+        tkwargs = {
+            'language_code': language_code,
+            'master': self,
+        }
+        translated = self._meta.translations_model(**tkwargs)
+        setattr(self, self._meta.translations_cache, translated)
+        return self
+    
     #===========================================================================
     # Internals
     #===========================================================================

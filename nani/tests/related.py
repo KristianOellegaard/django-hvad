@@ -30,7 +30,7 @@ class NormalToTransFKTest(SingleNormalTestCase):
         """
         en = self.get_obj()
         ja = en
-        ja.language_code = 'ja'
+        ja.translate('ja')
         ja.translated_field = u'何'
         ja.save()
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)

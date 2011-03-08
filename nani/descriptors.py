@@ -54,46 +54,9 @@ class LanguageCodeAttribute(TranslatedAttribute):
         super(LanguageCodeAttribute, self).__init__(opts, 'language_code')
     
     def __set__(self, instance, value):
-        """
-        Setting the language_code attribute is a bit odd.
-        
-        When changing the language_code on an instance, we try to grab the 
-        existing translation and copy over the unfilled fields from that
-        translation onto the instance. If no such translation exist, create one
-        and copy over the fields from the instance.
-        
-        This is used to translate instances.
-        
-        This will also refresh the translations cache attribute on the instance.
-        
-        EG:
-        
-            english = MyModel.objects.get(pk=1, language_code='en')
-            english.language_code = 'ja'
-            english.save()
-            japanese = MyModel.objects.get(pk=1, language_code='ja')
-        """
         if not instance:
             raise AttributeError()
-        tmodel = instance._meta.translations_model
-        try:
-            other_lang = get_translation(instance, value)
-        except tmodel.DoesNotExist:
-            other_lang = tmodel()
-            for field in other_lang._meta.get_all_field_names():
-                val = getattr(instance, field, NULL)
-                if val is NULL:
-                    continue
-                if field == 'pk':
-                    continue
-                if field == tmodel._meta.pk.name:
-                    continue
-                if callable(getattr(val, 'all', None)):
-                    val = val.all()
-                setattr(other_lang, field, val)
-            other_lang.language_code = value
-            other_lang.master = instance
-        setattr(instance, instance._meta.translations_cache, other_lang)
+        raise AttributeError("The 'language_code' attribute cannot be changed directly! Use the translate() method instead.")
     
     def __delete__(self, instance):
         if not instance:

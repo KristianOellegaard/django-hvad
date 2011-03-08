@@ -119,11 +119,11 @@ class TranslatedTest(SingleNormalTestCase):
         self.assertEqual(en.shared_field, SHARED_EN)
         self.assertEqual(en.translated_field, TRANS_EN)
         ja = en
-        ja.language_code = 'ja'
+        ja.translate('ja')
         ja.save()
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
         self.assertEqual(ja.shared_field, SHARED_JA)
-        self.assertEqual(ja.translated_field, TRANS_EN)
+        self.assertEqual(ja.translated_field, '')
         ja.translated_field = TRANS_JA
         ja.save()
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
