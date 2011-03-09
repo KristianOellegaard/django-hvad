@@ -186,3 +186,17 @@ class DeleteLanguageCodeTest(SingleNormalTestCase):
     def test_delete_language_code(self):
         en = self.get_obj()
         self.assertRaises(AttributeError, delattr, en, 'language_code')
+
+class FallbackTest(NaniTestCase):
+    fixtures = ['double_normal.json']
+    def test_single_instance_fallback(self):
+        # fetch an object in a language that does not exist
+        with LanguageOverride('de'):
+            obj = Normal.objects.untranslated().use_fallbacks().get(pk=1)
+            self.assertEqual(obj.language_code, 'en')
+            self.assertEqual(obj.translated_field, 'English1')
+    
+    def test_shared_only(self):
+        with LanguageOverride('de'):
+            obj = Normal.objects.untranslated().get(pk=1)
+            self.assertEqual(obj.shared_field, 'Shared1')

@@ -1,8 +1,12 @@
+from django.conf import settings
 from django.db import models
 from django.db.models.query import QuerySet, ValuesQuerySet
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
-from nani.utils import R, combine
+from nani.utils import R, combine, get_translation
+
+# maybe there should be an extra settings for this
+FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
 
 class FieldTranslator(dict):
     """
@@ -61,6 +65,7 @@ class TranslationMixin(QuerySet):
         self._local_field_names = None
         self._field_translator = None
         self._real_manager = real
+        self._fallback_manager = None
         self._language_code = None
         super(TranslationMixin, self).__init__(model=model, query=query, using=using)
 
@@ -292,6 +297,9 @@ class TranslationMixin(QuerySet):
         raise NotImplementedError()
 
     def complex_filter(self, filter_obj):
+        # admin calls this with an empy filter_obj sometimes
+        if filter_obj == {}:
+            return self
         raise NotImplementedError()
 
     def annotate(self, *args, **kwargs):
@@ -319,6 +327,7 @@ class TranslationMixin(QuerySet):
             '_field_translator': self._field_translator,
             '_language_code': self._language_code,
             '_real_manager': self._real_manager,
+            '_fallback_manager': self._fallback_manager,
         })
         if klass:
             klass = self._get_class(klass)
@@ -358,7 +367,10 @@ class TranslationManager(models.Manager):
         Get the translations model class
         """
         return self.model._meta.translations_model
-
+    
+    def untranslated(self):
+        return self._fallback_manager.get_query_set()
+    
     def get_query_set(self):
         """
         Make sure that querysets inherit the methods on this manager (chaining)
@@ -372,7 +384,59 @@ class TranslationManager(models.Manager):
         super(TranslationManager, self).contribute_to_class(model, name)
         self.name = name
         self.contribute_real_manager()
+        self.contribute_fallback_manager()
         
     def contribute_real_manager(self):
         self._real_manager = models.Manager()
         self._real_manager.contribute_to_class(self.model, '_%s' % getattr(self, 'name', 'objects'))
+    
+    def contribute_fallback_manager(self):
+        self._fallback_manager = TranslationFallbackManager()
+        self._fallback_manager.contribute_to_class(self.model, '_%s_fallback' % getattr(self, 'name', 'objects'))
+    
+class TranslationFallbackMixin(QuerySet):
+    '''
+    Queryset that tries to load a translated version using fallbacks on a per
+    instance basis.
+    BEWARE: creates a lot of queries!
+    '''
+    def __init__(self, *args, **kwargs):
+        self._translation_fallbacks = None
+        super(TranslationFallbackMixin, self).__init__(*args, **kwargs)
+    def iterator(self):
+        i = super(TranslationFallbackMixin, self).iterator()
+        opts = self.model._meta
+        for instance in i:
+            if self._translation_fallbacks:
+                fallbacks = iter(self._translation_fallbacks)
+                while not hasattr(instance, opts.translations_cache):
+                    try:
+                        cached = get_translation(instance, fallbacks.next())
+                        setattr(instance, opts.translations_cache, cached)
+                    except opts.translations_model.DoesNotExist:
+                        pass
+                    except StopIteration:
+                        break
+            yield instance
+    
+    def use_fallbacks(self):
+        self._translation_fallbacks = FALLBACK_LANGUAGES
+        return self
+    def _clone(self, klass=None, setup=False, **kwargs):
+        kwargs.update({
+            '_translation_fallbacks': self._translation_fallbacks,
+        })
+        return super(TranslationFallbackMixin, self)._clone(klass, setup, **kwargs)
+    
+class TranslationFallbackManager(models.Manager):
+    """
+    Manager class for the shared model, without specific translations. Allows
+    using `use_fallbacks()` to enable per object language fallback.
+    """
+    def use_fallbacks(self):
+        return self.get_query_set().use_fallbacks()
+    
+    def get_query_set(self):
+        qs = TranslationFallbackMixin(self.model, using=self.db)
+        return qs
+        
