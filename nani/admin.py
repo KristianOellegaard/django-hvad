@@ -1,7 +1,9 @@
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.util import flatten_fieldsets
 from django.utils.functional import curry
+from django.utils.translation import ugettext_lazy as _
 from nani.forms import TranslateableModelForm
+
 
 
 def translateable_modelform_factory(model, form=TranslateableModelForm,
@@ -66,3 +68,25 @@ class TranslateableAdmin(ModelAdmin):
         }
         defaults.update(kwargs)
         return translateable_modelform_factory(self.model, **defaults)
+    
+    def all_translations(self, obj):
+        """
+        use this to display all languages the object has been translated to
+        in the changelist view:
+        
+        class MyAdmin(admin.ModelAdmin):
+            list_display = ('__str__', 'all_translations',)
+        
+        """
+        if obj and obj.pk:
+            languages = []
+            for language in [t.language_code for t in obj.translations.all()]:
+                if language == obj.language_code:
+                    languages.append(u'<strong>%s</strong>' % language)
+                else:
+                    languages.append(language)
+            return u' '.join(languages)
+        else:
+            return ''
+    all_translations.allow_tags = True
+    all_translations.short_description = _('all translations')
