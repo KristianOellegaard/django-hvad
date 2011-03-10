@@ -2,8 +2,6 @@ from setuptools import setup, find_packages
 
 version = 'EXPERIMENTAL'
 
-raise Exception("DO NOT USE THIS YET!")
-
 setup(
     name = 'project-nani',
     version = version,
