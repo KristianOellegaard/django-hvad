@@ -80,7 +80,7 @@ class TranslateableAdmin(ModelAdmin):
         """
         if obj and obj.pk:
             languages = []
-            for language in [t.language_code for t in obj.translations.all()]:
+            for language in [t.language_code for t in obj.translations.order_by('language_code')]:
                 if language == obj.language_code:
                     languages.append(u'<strong>%s</strong>' % language)
                 else:
