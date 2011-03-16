@@ -98,17 +98,22 @@ class TranslateableModelForm(ModelForm):
     def save(self, commit=True):
         if self.instance.pk is None:
             fail_message = 'created'
+            new = True
         else:
             fail_message = 'changed'
+            new = False
         super(TranslateableModelForm, self).save(True)
         trans_model = self.instance._meta.translations_model
         language_code = self.cleaned_data.get('language_code', get_language())
-        trans = get_cached_translation(self.instance)
-        if not trans:
-            try:
-                trans = get_translation(self.instance, language_code)
-            except trans_model.DoesNotExist:
-                trans = trans_model()
+        if not new:
+            trans = get_cached_translation(self.instance)
+            if not trans:
+                try:
+                    trans = get_translation(self.instance, language_code)
+                except trans_model.DoesNotExist:
+                    trans = trans_model()
+        else:
+            trans = trans_model()
         trans = save_instance(self, trans, self._meta.fields, fail_message,
                               commit, construct=True)
         trans.language_code = language_code
