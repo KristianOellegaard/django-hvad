@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import SingleNormalTestCase, NaniTestCase
@@ -115,4 +116,15 @@ class StandardToTransFKTest(NaniTestCase):
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.get,
                               normal__translated_field=en.translated_field)
+    
+    def test_lookup_by_translated_field_using_q_objects(self):
+        en = Normal.objects.language('en').get(pk=1)
+        translation_aware_manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            q = Q(normal__translated_field=en.translated_field)
+            by_translated_field = translation_aware_manager.get(q)
+            self.assertEqual(by_translated_field.normal.pk, en.pk)
+            self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
+            self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
+            self.assertTrue(by_translated_field in en.standards.all())
             

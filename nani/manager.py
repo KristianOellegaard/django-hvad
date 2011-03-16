@@ -120,7 +120,7 @@ class TranslationMixin(QuerySet):
         newnames = []
         for name in fieldnames:
             newnames.append(self.field_translator.get(name))
-        return newnames        
+        return newnames
 
     def _recurse_q(self, q):
         """
@@ -402,6 +402,7 @@ class TranslationFallbackMixin(QuerySet):
     def __init__(self, *args, **kwargs):
         self._translation_fallbacks = None
         super(TranslationFallbackMixin, self).__init__(*args, **kwargs)
+    
     def iterator(self):
         i = super(TranslationFallbackMixin, self).iterator()
         opts = self.model._meta
@@ -444,7 +445,6 @@ class TranslationAwareManager(models.Manager):
     def _translate_args_kwargs(self, *args, **kwargs):
         self.language(self._language_code)
         language_joins = []
-        newargs = args
         newkwargs = {}
         extra_filters = Q()
         for key, value in kwargs.items():
@@ -453,9 +453,33 @@ class TranslationAwareManager(models.Manager):
                 if langjoin not in language_joins:
                     language_joins.append(langjoin)
             newkwargs[newkey] = value
+        newargs = []
+        for q in args:
+            new_q, langjoins = self._recurse_q(q)
+            newargs.append(new_q)
+            for langjoin in langjoins:
+                if langjoin not in language_joins:
+                    language_joins.append(langjoin)
         for langjoin in language_joins:
             extra_filters &= Q(**{langjoin: self._language_code})
         return newargs, newkwargs, extra_filters
+
+    def _recurse_q(self, q):
+        newchildren =  []
+        language_joins = []
+        for child in q.children:
+            if isinstance(child, Q):
+                newq = self._recurse_q(child)
+                newchildren.append(self._recurse_q(newq))
+            else:
+                key, value = child
+                newkey, langjoins =translate(key, self.model)
+                newchildren.append((newkey, value))
+                for langjoin in langjoins:
+                    if langjoin not in language_joins:
+                        language_joins.append(langjoin)
+        q.children = newchildren
+        return q, language_joins
     
     #===========================================================================
     # Queryset/Manager API 
