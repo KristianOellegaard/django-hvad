@@ -481,6 +481,21 @@ class TranslationAwareManager(models.Manager):
         q.children = newchildren
         return q, language_joins
     
+    def _translate_fieldnames(self, fields):
+        self.language(self._language_code)
+        newfields = []
+        extra_filters = Q()
+        language_joins = []
+        for field in fields:
+            newfield, langjoins = translate(self.model, field)
+            newfields.append(newfield)
+            for langjoin in langjoins:
+                if langjoin not in language_joins:
+                    language_joins.append(langjoin)
+        for langjoin in language_joins:
+            extra_filters &= Q(**{langjoin: self._language_code})
+        return newfields, 
+    
     #===========================================================================
     # Queryset/Manager API 
     #===========================================================================
@@ -506,42 +521,21 @@ class TranslationAwareManager(models.Manager):
         raise NotImplementedError()
 
     def latest(self, field_name=None):
+        extra_filters = Q()
         if field_name:
-            field_name = self.field_translator.get(field_name)
-        return super(TranslationAwareManager, self).latest(field_name)
+            field_name, extra_filters = translate(self, field_name)
+        return super(TranslationAwareManager, self).filter(extra_filters).latest(field_name)
 
     def in_bulk(self, id_list):
         raise NotImplementedError()
 
-    def delete(self):
-        qs = self._get_shared_query_set()
-        qs.delete()
-    delete.alters_data = True
-    
-    def delete_translations(self):
-        self.update(master=None)
-        super(TranslationAwareManager, self).delete()
-    delete_translations.alters_data = True
-        
-
-    def update(self, **kwargs):
-        shared, translated = self._split_kwargs(**kwargs)
-        count = 0
-        if translated:
-            count += super(TranslationAwareManager, self).update(**translated)
-        if shared:
-            shared_qs = self._get_shared_query_set()
-            count += shared_qs.update(**shared)
-        return count
-    update.alters_data = True
-
     def values(self, *fields):
-        fields = self._translate_fieldnames(fields)
-        return super(TranslationAwareManager, self).values(*fields)
+        fields, extra_filters = self._translate_fieldnames(fields)
+        return super(TranslationAwareManager, self).filer(extra_filters).values(*fields)
 
     def values_list(self, *fields, **kwargs):
-        fields = self._translate_fieldnames(fields)
-        return super(TranslationAwareManager, self).values_list(*fields, **kwargs)
+        fields, extra_filters = self._translate_fieldnames(fields)
+        return super(TranslationAwareManager, self).filter(extra_filters).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind, order='ASC'):
         raise NotImplementedError()
@@ -562,8 +556,8 @@ class TranslationAwareManager(models.Manager):
         """
         Returns a new QuerySet instance with the ordering changed.
         """
-        fieldnames = self._translate_fieldnames(field_names)
-        return super(TranslationAwareManager, self).order_by(*fieldnames)
+        fieldnames, extra_filters = self._translate_fieldnames(field_names)
+        return super(TranslationAwareManager, self).filter(extra_filters).order_by(*fieldnames)
     
     def reverse(self):
         raise NotImplementedError()
@@ -579,11 +573,3 @@ class TranslationAwareManager(models.Manager):
             '_language_code': self._language_code,
         })
         return super(TranslationAwareManager, self)._clone(klass, setup, **kwargs)
-    
-    def iterator(self):
-        for obj in super(TranslationAwareManager, self).iterator():
-            # non-cascade-deletion hack:
-            if not obj.master:
-                yield obj
-            else:
-                yield combine(obj)
