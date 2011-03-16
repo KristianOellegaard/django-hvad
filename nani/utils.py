@@ -36,6 +36,6 @@ def smart_get_field_by_name(self, name):
         if name in self.translations_model._meta.get_all_field_names():
             raise WrongManager("To access translated fields like %r from an "
                                "untranslated model, you must use a translation "
-                               "aware manager, you can get one using"
+                               "aware manager, you can get one using "
                                "nani.utils.get_translation_aware_manager.")
         raise

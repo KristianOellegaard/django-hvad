@@ -1,7 +1,8 @@
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.util import flatten_fieldsets
 from django.utils.functional import curry
-from django.utils.translation import (ugettext_lazy as _, get_language)
+from django.utils.translation import ugettext_lazy as _, get_language
+from django.core.exceptions import ValidationError
 from nani.forms import TranslateableModelForm
 
 
@@ -60,12 +61,13 @@ class TranslateableAdmin(ModelAdmin):
         # if exclude is an empty list we pass None to be consistant with the
         # default on modelform_factory
         exclude = exclude or None
+        old_formfield_callback = curry(self.formfield_for_dbfield, 
+                                       request=request)
         defaults = {
             "form": self.form,
             "fields": fields,
             "exclude": exclude,
-            "formfield_callback": curry(self.formfield_for_dbfield, 
-                                        request=request),
+            "formfield_callback": old_formfield_callback,
         }
         defaults.update(kwargs)
         return translateable_modelform_factory(self.model, **defaults)
@@ -100,6 +102,22 @@ class TranslateableAdmin(ModelAdmin):
                                                                   add, change,
                                                                   form_url, obj)
         
+    def get_object(self, request, object_id):
+        obj = super(TranslateableAdmin, self).get_object(request, object_id)
+        if obj:
+            return obj
+        queryset = self.model.objects.all()
+        model = self.model
+        try:
+            object_id = model._meta.pk.to_python(object_id)
+            obj = queryset.get(pk=object_id)
+        except (model.DoesNotExist, ValidationError):
+            return None
+        new_translation = model._meta.translations_model()
+        new_translation.language_code = self._language(request)
+        new_translation.master = obj
+        setattr(obj, model._meta.translations_cache, new_translation)
+        return obj
     
     def queryset(self, request):
         language = self._language(request)
