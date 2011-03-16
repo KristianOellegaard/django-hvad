@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models.query import QuerySet, ValuesQuerySet
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
-from nani.utils import R, combine, get_translation
+from nani.utils import combine, get_translation
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -129,9 +129,7 @@ class TranslationMixin(QuerySet):
         """
         newchildren =  []
         for child in q.children:
-            if isinstance(child, R):
-                newchildren.append(child)
-            elif isinstance(child, Q):
+            if isinstance(child, Q):
                 newq = self._recurse_q(child)
                 newchildren.append(self._recurse_q(newq))
             else:
@@ -439,4 +437,15 @@ class TranslationFallbackManager(models.Manager):
     def get_query_set(self):
         qs = TranslationFallbackMixin(self.model, using=self.db)
         return qs
-        
+    
+
+class TranslationAwareManager(models.Manager):
+    def get(self, **kwargs):
+        nkwargs = {
+            'normal__translations__language_code':get_language(),
+        }
+        for key, value in kwargs.items():
+            bits = key.split('__')
+            bits.insert(1, 'translations')
+            nkwargs['__'.join(bits)] = value
+        return super(TranslationAwareManager, self).get(**nkwargs)

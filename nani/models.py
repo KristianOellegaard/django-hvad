@@ -5,6 +5,8 @@ from django.db.models.signals import post_save
 from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager
+from nani.utils import smart_get_field_by_name
+from types import MethodType
 
 def create_translations_model(model, related_name, meta, **fields):
     """
@@ -101,7 +103,11 @@ class TranslateableModelBase(ModelBase):
             raise ImproperlyConfigured("not found)")
         
         post_save.connect(new_model.save_translations, sender=new_model, weak=False)
-        
+        new_model._meta._get_field_by_name = new_model._meta.get_field_by_name
+        new_model._meta.get_field_by_name = MethodType(smart_get_field_by_name,
+                                                       new_model._meta,
+                                                       new_model._meta.__class__)
+            
         return new_model
 
 

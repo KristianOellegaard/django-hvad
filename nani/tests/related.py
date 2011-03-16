@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import SingleNormalTestCase, NaniTestCase
+from nani.utils import get_translation_aware_manager
 from testproject.app.models import Normal, Related, Standard
 
 
@@ -100,9 +102,17 @@ class StandardToTransFKTest(NaniTestCase):
     
     def test_lookup_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=1)
-        by_translated_field = Standard.objects.get(normal__translated_field=en.translated_field)
+        translation_aware_manager = get_translation_aware_manager(Standard)
         with LanguageOverride('en'):
+            by_translated_field = translation_aware_manager.get(normal__translated_field=en.translated_field)
             self.assertEqual(by_translated_field.normal.pk, en.pk)
             self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
             self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
             self.assertTrue(by_translated_field in en.standards.all())
+            
+    def test_lookup_by_translated_field_requires_translation_aware_manager(self):
+        en = Normal.objects.language('en').get(pk=1)
+        with LanguageOverride('en'):
+            self.assertRaises(WrongManager, Standard.objects.get,
+                              normal__translated_field=en.translated_field)
+            

@@ -1,12 +1,6 @@
-from django.db.models.query_utils import Q
+from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
-
-
-class R(Q):
-    """
-    'Raw' Q object which will *not* be translated when used in filters.
-    """
-
+from nani.exceptions import WrongManager
 
 def combine(trans):
     """
@@ -28,3 +22,20 @@ def get_translation(instance, language_code=None):
         language_code = get_language()
     accessor = getattr(instance, opts.translations_accessor)
     return accessor.get(language_code=language_code)
+
+def get_translation_aware_manager(model):
+    from nani.manager import TranslationAwareManager
+    manager = TranslationAwareManager()
+    manager.model = model
+    return manager
+
+def smart_get_field_by_name(self, name):
+    try:
+        return self._get_field_by_name(name)
+    except FieldDoesNotExist:
+        if name in self.translations_model._meta.get_all_field_names():
+            raise WrongManager("To access translated fields like %r from an "
+                               "untranslated model, you must use a translation "
+                               "aware manager, you can get one using"
+                               "nani.utils.get_translation_aware_manager.")
+        raise
