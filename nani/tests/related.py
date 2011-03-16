@@ -128,3 +128,59 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
             self.assertTrue(by_translated_field in en.standards.all())
             
+    def test_filter_by_shared_field(self):
+        en = Normal.objects.language('en').get(pk=1)
+        with LanguageOverride('en'):
+            by_shared_field = Standard.objects.filter(normal__shared_field=en.shared_field)
+            normals = [obj.normal.pk for obj in by_shared_field]
+            expected = [en.pk]
+            self.assertEqual(normals, expected)
+            shared_fields = [obj.normal.shared_field for obj in by_shared_field]
+            expected_fields = [en.shared_field]
+            self.assertEqual(shared_fields, expected_fields)
+            translated_fields = [obj.normal.translated_field for obj in by_shared_field]
+            expected_fields = [en.translated_field]
+            self.assertEqual(translated_fields, expected_fields)
+            for obj in by_shared_field:
+                self.assertTrue(obj in en.standards.all())
+    
+    def test_filter_by_translated_field(self):
+        en = Normal.objects.language('en').get(pk=1)
+        translation_aware_manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            by_translated_field = translation_aware_manager.filter(normal__translated_field=en.translated_field)
+            normals = [obj.normal.pk for obj in by_translated_field]
+            expected = [en.pk]
+            self.assertEqual(normals, expected)
+            shared_fields = [obj.normal.shared_field for obj in by_translated_field]
+            expected_fields = [en.shared_field]
+            self.assertEqual(shared_fields, expected_fields)
+            translated_fields = [obj.normal.translated_field for obj in by_translated_field]
+            expected_fields = [en.translated_field]
+            self.assertEqual(translated_fields, expected_fields)
+            for obj in by_translated_field:
+                self.assertTrue(obj in en.standards.all())
+            
+    def test_filter_by_translated_field_requires_translation_aware_manager(self):
+        en = Normal.objects.language('en').get(pk=1)
+        with LanguageOverride('en'):
+            self.assertRaises(WrongManager, Standard.objects.filter,
+                              normal__translated_field=en.translated_field)
+    
+    def test_filter_by_translated_field_using_q_objects(self):
+        en = Normal.objects.language('en').get(pk=1)
+        translation_aware_manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            q = Q(normal__translated_field=en.translated_field)
+            by_translated_field = translation_aware_manager.filter(q)
+            normals = [obj.normal.pk for obj in by_translated_field]
+            expected = [en.pk]
+            self.assertEqual(normals, expected)
+            shared_fields = [obj.normal.shared_field for obj in by_translated_field]
+            expected_fields = [en.shared_field]
+            self.assertEqual(shared_fields, expected_fields)
+            translated_fields = [obj.normal.translated_field for obj in by_translated_field]
+            expected_fields = [en.translated_field]
+            self.assertEqual(translated_fields, expected_fields)
+            for obj in by_translated_field:
+                self.assertTrue(obj in en.standards.all())
