@@ -7,6 +7,9 @@ class Normal(TranslateableModel):
     translations = TranslatedFields(
         translated_field = models.CharField(max_length=255)
     )
+    
+    def __unicode__(self):
+        return self.safe_getter('translated_field', self.shared_field)
 
     
 class Related(TranslateableModel):

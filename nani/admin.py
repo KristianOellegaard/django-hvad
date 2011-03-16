@@ -1,9 +1,8 @@
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.util import flatten_fieldsets
 from django.utils.functional import curry
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import (ugettext_lazy as _, get_language)
 from nani.forms import TranslateableModelForm
-
 
 
 def translateable_modelform_factory(model, form=TranslateableModelForm,
@@ -38,6 +37,8 @@ def translateable_modelform_factory(model, form=TranslateableModelForm,
     return type(class_name, (form,), form_class_attrs)
 
 class TranslateableAdmin(ModelAdmin):
+    
+    query_language_key = 'language'
     
     form = TranslateableModelForm
     
@@ -90,3 +91,20 @@ class TranslateableAdmin(ModelAdmin):
             return ''
     all_translations.allow_tags = True
     all_translations.short_description = _('all translations')
+    
+    def render_change_form(self, request, context, add=False, change=False,
+                           form_url='', obj=None):
+        context['title'] = '%s (%s)' % (context['title'], self._language(request))
+        return super(TranslateableAdmin, self).render_change_form(request,
+                                                                  context,
+                                                                  add, change,
+                                                                  form_url, obj)
+        
+    
+    def queryset(self, request):
+        language = self._language(request)
+        qs = super(TranslateableAdmin, self).queryset(request)
+        return qs.language(language)
+    
+    def _language(self, request):
+        return request.GET.get(self.query_language_key, get_language())

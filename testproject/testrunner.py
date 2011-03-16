@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.test.simple import DjangoTestSuiteRunner
+from nani.test_utils.unittest import TextTestRunner
 
 try: # pragma: no cover
     from xmlrunner import XMLTestRunner as runner
@@ -15,4 +16,4 @@ class TestSuiteRunner(DjangoTestSuiteRunner): # pragma: no cover
                 output=getattr(settings, 'JUNIT_OUTPUT_DIR', '.')
             ).run(suite)
         else:
-            return super(TestSuiteRunner, self).run_suite(suite, **kwargs)
+            return TextTestRunner(**kwargs).run(suite)

@@ -3,8 +3,8 @@ from django.core.signals import request_started
 from django.db import reset_queries, connections
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.test import testcases
-from nani.models import TranslateableModel
 from testproject.app.models import Normal
+from nani.test_utils import unittest as ut2
 import sys
 
 class _AssertNumQueriesContext(object):
@@ -38,7 +38,7 @@ class _AssertNumQueriesContext(object):
 if hasattr(testcases.TestCase, 'assertNumQueries'):
     TestCase = testcases.TestCase
 else:
-    class TestCase(testcases.TestCase):
+    class TestCase(testcases.TestCase, ut2.TestCase):
         def assertNumQueries(self, num, func=None, *args, **kwargs):
             if hasattr(testcases.TestCase, 'assertNumQueries'):
                 return super(TestCase, self).assertNumQueries(num, func, *args, **kwargs)

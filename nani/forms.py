@@ -70,7 +70,7 @@ class TranslateableModelForm(ModelForm):
     __metaclass__ = TranslateableModelFormMetaclass
     
     class Meta:
-        exclude = ('language_code', 'translations', 'master',)
+        exclude = ('translations', 'master',)
 
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',

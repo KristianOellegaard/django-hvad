@@ -217,6 +217,12 @@ class TranslateableModel(models.Model):
         setattr(self, self._meta.translations_cache, translated)
         return self
     
+    def safe_getter(self, name, default=None):
+        cache = getattr(self, self._meta.translations_cache, None)
+        if not cache:
+            return default
+        return getattr(cache, name, default)
+    
     #===========================================================================
     # Internals
     #===========================================================================

@@ -16,6 +16,7 @@ class NormalAdminTests(NaniTestCase):
         data = {
             'shared_field': SHARED,
             'translated_field': TRANS,
+            'language_code': 'en',
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
@@ -33,10 +34,12 @@ class NormalAdminTests(NaniTestCase):
         data_en = {
             'shared_field': SHARED,
             'translated_field': TRANS_EN,
+            'language_code': 'en',
         }
         data_ja = {
             'shared_field': SHARED,
             'translated_field': TRANS_JA,
+            'language_code': 'ja',
         }
         with LanguageOverride('en'):
             response = self.client.post(url, data_en)
