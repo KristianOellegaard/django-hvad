@@ -40,7 +40,9 @@ def create_translations_model(model, related_name, meta, **fields):
     # null=True is so we can prevent cascade deletion
     attrs['master'] = models.ForeignKey(model, related_name=related_name, editable=False, null=True)
     # Create and return the new model
-    return ModelBase(name, (BaseTranslationModel,), attrs)
+    translations_model = ModelBase(name, (BaseTranslationModel,), attrs)
+    translations_model._meta.shared_model = model
+    return translations_model
 
 
 class TranslatedFields(object):

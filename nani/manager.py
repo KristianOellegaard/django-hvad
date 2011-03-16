@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models.query import QuerySet, ValuesQuerySet
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
+from nani.fieldtranslator import translate
 from nani.utils import combine, get_translation
 
 # maybe there should be an extra settings for this
@@ -440,12 +441,125 @@ class TranslationFallbackManager(models.Manager):
     
 
 class TranslationAwareManager(models.Manager):
-    def get(self, **kwargs):
-        nkwargs = {
-            'normal__translations__language_code':get_language(),
-        }
+    def _translate_args_kwargs(self, *args, **kwargs):
+        self.language(self._language_code)
+        language_joins = []
+        newargs = args
+        newkwargs = {}
+        extra_filters = Q()
         for key, value in kwargs.items():
-            bits = key.split('__')
-            bits.insert(1, 'translations')
-            nkwargs['__'.join(bits)] = value
-        return super(TranslationAwareManager, self).get(**nkwargs)
+            newkey, langjoins = translate(key, self.model)
+            for langjoin in langjoins:
+                if langjoin not in language_joins:
+                    language_joins.append(langjoin)
+            newkwargs[newkey] = value
+        for langjoin in language_joins:
+            extra_filters &= Q(**{langjoin: self._language_code})
+        return newargs, newkwargs, extra_filters
+    
+    #===========================================================================
+    # Queryset/Manager API 
+    #===========================================================================
+    def __init__(self):
+        super(TranslationAwareManager, self).__init__()
+        self._language_code = None
+        
+    def language(self, language_code=None):
+        if not language_code:
+            language_code = get_language()
+        self._language_code = language_code
+        return self
+    
+    def get(self, *args, **kwargs):
+        newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
+        return super(TranslationAwareManager, self).filter(extra_filters).get(*newargs, **newkwargs)
+
+    def filter(self, *args, **kwargs):
+        newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
+        return super(TranslationAwareManager, self).filter(extra_filters).filter(*newargs, **newkwargs)
+
+    def aggregate(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def latest(self, field_name=None):
+        if field_name:
+            field_name = self.field_translator.get(field_name)
+        return super(TranslationAwareManager, self).latest(field_name)
+
+    def in_bulk(self, id_list):
+        raise NotImplementedError()
+
+    def delete(self):
+        qs = self._get_shared_query_set()
+        qs.delete()
+    delete.alters_data = True
+    
+    def delete_translations(self):
+        self.update(master=None)
+        super(TranslationAwareManager, self).delete()
+    delete_translations.alters_data = True
+        
+
+    def update(self, **kwargs):
+        shared, translated = self._split_kwargs(**kwargs)
+        count = 0
+        if translated:
+            count += super(TranslationAwareManager, self).update(**translated)
+        if shared:
+            shared_qs = self._get_shared_query_set()
+            count += shared_qs.update(**shared)
+        return count
+    update.alters_data = True
+
+    def values(self, *fields):
+        fields = self._translate_fieldnames(fields)
+        return super(TranslationAwareManager, self).values(*fields)
+
+    def values_list(self, *fields, **kwargs):
+        fields = self._translate_fieldnames(fields)
+        return super(TranslationAwareManager, self).values_list(*fields, **kwargs)
+
+    def dates(self, field_name, kind, order='ASC'):
+        raise NotImplementedError()
+
+    def exclude(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def complex_filter(self, filter_obj):
+        # admin calls this with an empy filter_obj sometimes
+        if filter_obj == {}:
+            return self
+        raise NotImplementedError()
+
+    def annotate(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def order_by(self, *field_names):
+        """
+        Returns a new QuerySet instance with the ordering changed.
+        """
+        fieldnames = self._translate_fieldnames(field_names)
+        return super(TranslationAwareManager, self).order_by(*fieldnames)
+    
+    def reverse(self):
+        raise NotImplementedError()
+
+    def defer(self, *fields):
+        raise NotImplementedError()
+
+    def only(self, *fields):
+        raise NotImplementedError()
+    
+    def _clone(self, klass=None, setup=False, **kwargs):
+        kwargs.update({
+            '_language_code': self._language_code,
+        })
+        return super(TranslationAwareManager, self)._clone(klass, setup, **kwargs)
+    
+    def iterator(self):
+        for obj in super(TranslationAwareManager, self).iterator():
+            # non-cascade-deletion hack:
+            if not obj.master:
+                yield obj
+            else:
+                yield combine(obj)
