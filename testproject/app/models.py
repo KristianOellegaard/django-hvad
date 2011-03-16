@@ -9,7 +9,7 @@ class Normal(TranslateableModel):
     )
     
     def __unicode__(self):
-        return self.safe_getter('translated_field', self.shared_field)
+        return self.safe_translation_getter('translated_field', self.shared_field)
 
     
 class Related(TranslateableModel):

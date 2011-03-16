@@ -1,9 +1,13 @@
+from django.conf import settings
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.util import flatten_fieldsets
+from django.core.exceptions import ValidationError
+from django.template import TemplateDoesNotExist
+from django.template.loader import find_template
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
-from django.core.exceptions import ValidationError
 from nani.forms import TranslateableModelForm
+import urllib
 
 
 def translateable_modelform_factory(model, form=TranslateableModelForm,
@@ -42,6 +46,8 @@ class TranslateableAdmin(ModelAdmin):
     query_language_key = 'language'
     
     form = TranslateableModelForm
+    
+    change_form_template = 'admin/nani/change_form.html'
     
     def get_form(self, request, obj=None, **kwargs):
         """
@@ -97,6 +103,8 @@ class TranslateableAdmin(ModelAdmin):
     def render_change_form(self, request, context, add=False, change=False,
                            form_url='', obj=None):
         context['title'] = '%s (%s)' % (context['title'], self._language(request))
+        context['language_tabs'] = self.get_language_tabs(request, obj)
+        context['base_template'] = self.get_change_form_base_template()
         return super(TranslateableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,
@@ -126,3 +134,39 @@ class TranslateableAdmin(ModelAdmin):
     
     def _language(self, request):
         return request.GET.get(self.query_language_key, get_language())
+    
+    def get_language_tabs(self, request, obj):
+        tabs = []
+        get = dict(request.GET)
+        language = self._language(request)
+        available_languages = []
+        if obj:
+            available_languages = obj.get_available_languages()
+        for key, name in settings.LANGUAGES:
+            get.update({'language': key})
+            url = '%s://%s%s?%s' % (request.is_secure() and 'https' or 'http',
+                                    request.get_host(), request.path,
+                                    urllib.urlencode(get))
+            if language == key:
+                status = 'current'
+            elif key in available_languages:
+                status = 'available'
+            else:
+                status = 'empty' 
+            tabs.append((url, name, status))
+        return tabs
+    
+    def get_change_form_base_template(self):
+        opts = self.model._meta
+        app_label = opts.app_label
+        search_templates = [
+            "admin/%s/%s/change_form.html" % (app_label, opts.object_name.lower()),
+            "admin/%s/change_form.html" % app_label,
+            "admin/change_form.html"
+        ]
+        for template in search_templates:
+            try:
+                find_template(template)
+                return template
+            except TemplateDoesNotExist:
+                pass

@@ -1,0 +1,15 @@
+{% extends base_template %}
+{% load i18n admin_modify %}
+
+{% block object-tools %}
+{{ block.super }}
+<div class="nani-language-tabs">
+	{% for url,name,status in language_tabs %}
+	   {% if status == 'current' %}
+	       <span class="current">{{ name }}</span>
+       {% else %}
+	       <a href="{{ url }}" class="{{ status }}">{{ name }}</a>
+       {% endif %} 
+    {% endfor %}
+</div>
+{% endblock %}

@@ -8,6 +8,7 @@ from nani.manager import TranslationManager
 from nani.utils import smart_get_field_by_name
 from types import MethodType
 
+
 def create_translations_model(model, related_name, meta, **fields):
     """
     Create the translations model for the shared model 'model'.
@@ -110,9 +111,9 @@ class TranslateableModelBase(ModelBase):
         new_model._meta.get_field_by_name = MethodType(smart_get_field_by_name,
                                                        new_model._meta,
                                                        new_model._meta.__class__)
-            
+        
         return new_model
-
+    
 
 class TranslateableModel(models.Model):
     """
@@ -218,11 +219,15 @@ class TranslateableModel(models.Model):
         setattr(self, self._meta.translations_cache, translated)
         return self
     
-    def safe_getter(self, name, default=None):
+    def safe_translation_getter(self, name, default=None):
         cache = getattr(self, self._meta.translations_cache, None)
         if not cache:
             return default
         return getattr(cache, name, default)
+    
+    def get_available_languages(self):
+        manager = self._meta.translations_model.objects
+        return manager.filter(master=self).values_list('language_code', flat=True)
     
     #===========================================================================
     # Internals
