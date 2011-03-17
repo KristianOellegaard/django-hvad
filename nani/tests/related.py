@@ -25,7 +25,7 @@ class NormalToNormalFKTest(SingleNormalTestCase):
 
 
 class NormalToTransFKTest(SingleNormalTestCase):
-    @ut2.skip("TranslatedForeignKeys might never be implemented")
+    @ut2.expectedFailure
     def test_relation(self):
         """
         TranslatedForeignKeys are FKs linking to a specific translation.
@@ -76,7 +76,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(related.normal.translated_field, ja.translated_field)
             self.assertTrue(related in ja.standards.all())
     
-    @ut2.skip("For now, having 2 queries and the correct result is more important than having 1 query")
+    @ut2.expectedFailure
     def test_num_queries(self):
         with LanguageOverride('en'):
             en = Normal.objects.language('en').get(pk=1)

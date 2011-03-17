@@ -3,8 +3,9 @@ from django.core.signals import request_started
 from django.db import reset_queries, connections
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.test import testcases
-from testproject.app.models import Normal
 from nani.test_utils import unittest as ut2
+from nani.test_utils.request_factory import RequestFactory
+from testproject.app.models import Normal
 import sys
 
 class _AssertNumQueriesContext(object):
@@ -67,6 +68,12 @@ else:
                 context.__exit__(*sys.exc_info())
 
 class NaniTestCase(TestCase):
+    @property
+    def request_factory(self):
+        if not hasattr(self, '_request_factory'):
+            self._request_factory = RequestFactory()
+        return self._request_factory
+    
     def reload(self, obj):
         model = obj.__class__
         qs = model.objects

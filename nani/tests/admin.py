@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
+from django.conf import settings
+from django.contrib import admin
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal, Standard
+from testproject.app.models import Normal
 
 
-class NormalAdminTests(NaniTestCase):
+class BaseAdminTests(object):
+    def _get_admin(self, model):
+        return admin.site._registry[model]
+
+
+class NormalAdminTests(NaniTestCase, BaseAdminTests):
     fixtures = ['superuser.json']
     
     def test_admin_simple(self):
@@ -55,3 +63,35 @@ class NormalAdminTests(NaniTestCase):
         ja = Normal.objects.get(language_code='ja')
         self.assertEqual(ja.shared_field, SHARED)
         self.assertEqual(ja.translated_field, TRANS_JA)
+
+
+class AdminEditTests(NaniTestCase, BaseAdminTests):
+    fixtures = ['double_normal.json', 'superuser.json']
+        
+    def test_changelist(self):
+        url = reverse('admin:app_normal_changelist')
+        request = self.request_factory.get(url)
+        normaladmin = self._get_admin(Normal)
+        with LanguageOverride('en'):
+            queryset = normaladmin.queryset(request)
+            self.assertEqual(queryset.count(), 2)
+
+class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
+    def test_language_tabs(self):
+        obj = Normal()
+        url = reverse('admin:app_normal_change', args=(1,))
+        request = self.request_factory.get(url)
+        normaladmin = self._get_admin(Normal)
+        tabs = normaladmin.get_language_tabs(request, obj)
+        languages = settings.LANGUAGES
+        self.assertEqual(len(languages), len(tabs))
+        for tab, lang in zip(tabs, languages):
+            _, tab_name, status = tab
+            _, lang_name = lang
+            self.assertEqual(tab_name, lang_name)
+            self.assertEqual(status, 'empty')
+    
+    def test_get_change_form_base_template(self):
+        normaladmin = self._get_admin(Normal)
+        template = normaladmin.get_change_form_base_template()
+        self.assertEqual(template, 'admin/change_form.html')
