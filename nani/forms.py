@@ -1,3 +1,4 @@
+from django import forms
 from django.core.exceptions import FieldError
 from django.forms.forms import get_declared_fields
 from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 

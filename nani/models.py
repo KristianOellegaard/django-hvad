@@ -5,7 +5,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager
-from nani.utils import smart_get_field_by_name
+from nani.utils import SmartGetFieldByName
 from types import MethodType
 
 
@@ -87,9 +87,10 @@ class TranslateableModelBase(ModelBase):
         if not isinstance(new_model.objects, TranslationManager):
             raise ImproperlyConfigured("wrong manager")
         
+        opts = new_model._meta
         found = False
-        local_field_names = [ff.name for ff in new_model._meta.fields]
-        field_names = new_model._meta.get_all_field_names()
+        local_field_names = [ff.name for ff in opts.fields]
+        field_names = opts.get_all_field_names()
         for relation in [f for f in field_names if not f in local_field_names]:
             obj = getattr(new_model, relation)
             if not hasattr(obj, 'related'):
@@ -107,10 +108,11 @@ class TranslateableModelBase(ModelBase):
             raise ImproperlyConfigured("not found)")
         
         post_save.connect(new_model.save_translations, sender=new_model, weak=False)
-        new_model._meta._get_field_by_name = new_model._meta.get_field_by_name
-        new_model._meta.get_field_by_name = MethodType(smart_get_field_by_name,
-                                                       new_model._meta,
-                                                       new_model._meta.__class__)
+        
+        if not isinstance(opts.get_field_by_name, SmartGetFieldByName):
+            smart_get_field_by_name = SmartGetFieldByName(opts.get_field_by_name)
+            opts.get_field_by_name = MethodType(smart_get_field_by_name , opts,
+                                                opts.__class__)
         
         return new_model
     
@@ -206,7 +208,7 @@ class TranslateableModel(models.Model):
     def translate(self, language_code):
         """
         Returns an Model instance in the specified language.
-        Does NOT check if the translagtion already exists!
+        Does NOT check if the translation already exists!
         Does NOT interact with the database.
         
         This will refresh the translations cache attribute on the instance.

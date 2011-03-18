@@ -45,8 +45,12 @@ class ValuesMixin(object):
             else:
                 yield row
 
+#===============================================================================
+# Default 
+#===============================================================================
+
         
-class TranslationMixin(QuerySet):
+class TranslationQueryset(QuerySet):
     """
     This is where things happen.
     
@@ -68,7 +72,7 @@ class TranslationMixin(QuerySet):
         self._real_manager = real
         self._fallback_manager = None
         self._language_code = None
-        super(TranslationMixin, self).__init__(model=model, query=query, using=using)
+        super(TranslationQueryset, self).__init__(model=model, query=query, using=using)
 
     #===========================================================================
     # Helpers and properties (ITNERNAL!)
@@ -171,11 +175,11 @@ class TranslationMixin(QuerySet):
     def _get_class(self, klass):
         for key, value in self.override_classes.items():
             if issubclass(klass, key):
-                return type(value.__name__, (value, klass, TranslationMixin,), {})
+                return type(value.__name__, (value, klass, TranslationQueryset,), {})
         return klass
     
     def _get_shared_query_set(self):
-        qs = super(TranslationMixin, self)._clone()
+        qs = super(TranslationQueryset, self)._clone()
         qs.__class__ = QuerySet
         # un-select-related the 'master' relation
         del qs.query.select_related['master']
@@ -246,7 +250,7 @@ class TranslationMixin(QuerySet):
 
     def filter(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
-        return super(TranslationMixin, self).filter(*newargs, **newkwargs)
+        return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
 
     def aggregate(self, *args, **kwargs):
         raise NotImplementedError()
@@ -254,7 +258,7 @@ class TranslationMixin(QuerySet):
     def latest(self, field_name=None):
         if field_name:
             field_name = self.field_translator.get(field_name)
-        return super(TranslationMixin, self).latest(field_name)
+        return super(TranslationQueryset, self).latest(field_name)
 
     def in_bulk(self, id_list):
         raise NotImplementedError()
@@ -266,15 +270,14 @@ class TranslationMixin(QuerySet):
     
     def delete_translations(self):
         self.update(master=None)
-        super(TranslationMixin, self).delete()
+        super(TranslationQueryset, self).delete()
     delete_translations.alters_data = True
         
-
     def update(self, **kwargs):
         shared, translated = self._split_kwargs(**kwargs)
         count = 0
         if translated:
-            count += super(TranslationMixin, self).update(**translated)
+            count += super(TranslationQueryset, self).update(**translated)
         if shared:
             shared_qs = self._get_shared_query_set()
             count += shared_qs.update(**shared)
@@ -283,11 +286,11 @@ class TranslationMixin(QuerySet):
 
     def values(self, *fields):
         fields = self._translate_fieldnames(fields)
-        return super(TranslationMixin, self).values(*fields)
+        return super(TranslationQueryset, self).values(*fields)
 
     def values_list(self, *fields, **kwargs):
         fields = self._translate_fieldnames(fields)
-        return super(TranslationMixin, self).values_list(*fields, **kwargs)
+        return super(TranslationQueryset, self).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind, order='ASC'):
         raise NotImplementedError()
@@ -309,7 +312,7 @@ class TranslationMixin(QuerySet):
         Returns a new QuerySet instance with the ordering changed.
         """
         fieldnames = self._translate_fieldnames(field_names)
-        return super(TranslationMixin, self).order_by(*fieldnames)
+        return super(TranslationQueryset, self).order_by(*fieldnames)
     
     def reverse(self):
         raise NotImplementedError()
@@ -332,13 +335,13 @@ class TranslationMixin(QuerySet):
             klass = self._get_class(klass)
         else:
             klass = self.__class__
-        return super(TranslationMixin, self)._clone(klass, setup, **kwargs)
+        return super(TranslationQueryset, self)._clone(klass, setup, **kwargs)
     
     def __getitem__(self, item):
-        return super(TranslationMixin, self).__getitem__(item)
+        return super(TranslationQueryset, self).__getitem__(item)
     
     def iterator(self):
-        for obj in super(TranslationMixin, self).iterator():
+        for obj in super(TranslationQueryset, self).iterator():
             # non-cascade-deletion hack:
             if not obj.master:
                 yield obj
@@ -356,6 +359,9 @@ class TranslationManager(models.Manager):
     def language(self, language_code=None):
         return self.get_query_set().language(language_code)
     
+    def untranslated(self):
+        return self._fallback_manager.get_query_set()
+    
     #===========================================================================
     # Internals
     #===========================================================================
@@ -367,16 +373,13 @@ class TranslationManager(models.Manager):
         """
         return self.model._meta.translations_model
     
-    def untranslated(self):
-        return self._fallback_manager.get_query_set()
-    
     def get_query_set(self):
         """
         Make sure that querysets inherit the methods on this manager (chaining)
         """
         if not hasattr(self, '_real_manager'):
             self.contribute_real_manager()
-        qs = TranslationMixin(self.translations_model, using=self.db, real=self._real_manager)
+        qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
         return qs.select_related('master')
     
     def contribute_to_class(self, model, name):
@@ -392,8 +395,13 @@ class TranslationManager(models.Manager):
     def contribute_fallback_manager(self):
         self._fallback_manager = TranslationFallbackManager()
         self._fallback_manager.contribute_to_class(self.model, '_%s_fallback' % getattr(self, 'name', 'objects'))
-    
-class TranslationFallbackMixin(QuerySet):
+
+
+#===============================================================================
+# Fallbacks
+#===============================================================================
+
+class FallbackQueryset(QuerySet):
     '''
     Queryset that tries to load a translated version using fallbacks on a per
     instance basis.
@@ -401,10 +409,10 @@ class TranslationFallbackMixin(QuerySet):
     '''
     def __init__(self, *args, **kwargs):
         self._translation_fallbacks = None
-        super(TranslationFallbackMixin, self).__init__(*args, **kwargs)
+        super(FallbackQueryset, self).__init__(*args, **kwargs)
     
     def iterator(self):
-        i = super(TranslationFallbackMixin, self).iterator()
+        i = super(FallbackQueryset, self).iterator()
         opts = self.model._meta
         for instance in i:
             if self._translation_fallbacks:
@@ -419,15 +427,20 @@ class TranslationFallbackMixin(QuerySet):
                         break
             yield instance
     
-    def use_fallbacks(self):
-        self._translation_fallbacks = FALLBACK_LANGUAGES
+    def use_fallbacks(self, *fallbacks):
+        if fallbacks:
+            self._translation_fallbacks = fallbacks
+        else:
+            self._translation_fallbacks = FALLBACK_LANGUAGES 
         return self
+
     def _clone(self, klass=None, setup=False, **kwargs):
         kwargs.update({
             '_translation_fallbacks': self._translation_fallbacks,
         })
-        return super(TranslationFallbackMixin, self)._clone(klass, setup, **kwargs)
-    
+        return super(FallbackQueryset, self)._clone(klass, setup, **kwargs)
+
+
 class TranslationFallbackManager(models.Manager):
     """
     Manager class for the shared model, without specific translations. Allows
@@ -437,9 +450,14 @@ class TranslationFallbackManager(models.Manager):
         return self.get_query_set().use_fallbacks()
     
     def get_query_set(self):
-        qs = TranslationFallbackMixin(self.model, using=self.db)
+        qs = FallbackQueryset(self.model, using=self.db)
         return qs
-    
+
+
+#===============================================================================
+# TranslationAware
+#===============================================================================
+
 
 class TranslationAwareManager(models.Manager):
     def _translate_args_kwargs(self, *args, **kwargs):

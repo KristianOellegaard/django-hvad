@@ -29,20 +29,26 @@ def get_translation_aware_manager(model):
     manager.model = model
     return manager
 
-def smart_get_field_by_name(self, name):
+class SmartGetFieldByName(object):
     """
     Get field by name from a shared model or raise a smart exception to help the
     developer.
     """
-    try:
-        return self._get_field_by_name(name)
-    except FieldDoesNotExist:
-        if name in self.translations_model._meta.get_all_field_names():
-            raise WrongManager("To access translated fields like %r from an "
-                               "untranslated model, you must use a translation "
-                               "aware manager, you can get one using "
-                               "nani.utils.get_translation_aware_manager.")
-        raise
+    def __init__(self, real):
+        self.real = real
+    
+    def __call__(self, meta, name):
+        assert not isinstance(self.real, SmartGetFieldByName)
+        try:
+            return self.real(name)
+        except FieldDoesNotExist:
+            if name in self.translations_model._meta.get_all_field_names():
+                raise WrongManager("To access translated fields like %r from "
+                                   "an untranslated model, you must use a "
+                                   "translation aware manager, you can get one "
+                                   "using "
+                                   "nani.utils.get_translation_aware_manager.")
+            raise
 
 def permissive_field_by_name(self, name):
     """

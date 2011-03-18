@@ -1,13 +1,36 @@
-.. Project 何 documentation master file, created by
-   sphinx-quickstart on Tue Feb 15 11:19:28 2011.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
+######################################
 Welcome to Project 何's documentation!
-=====================================
+######################################
 
-.. warning:: Because you **SHOULD NOT USE** this project yet, there is no
-             documentation on how to use it yet.
+.. warning:: Please **do NOT** use this project yet! It's in a very early and
+             experimental stage and not all APIs are implemented or finalized
+             yet.
+
+*************************
+Before you dive into this
+*************************
+
+Please note that this documentation assumes that you are very familiar with
+Django and Python, if you are not, please familiarize yourself with those first.
+
+***************
+Contents
+***************
+
+.. toctree::
+    :maxdepth: 2
+    :numbered:
+
+    public/installation
+    public/quickstart
+    public/models
+    public/queryset
+    public/forms
+    public/admin
+    internal/index
+    
+    glossary
+    
 
 Indices and tables
 ==================
@@ -15,4 +38,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
+* :ref:`glossary`
