@@ -10,7 +10,7 @@ Welcome to Project 何's documentation!
 Before you dive into this
 *************************
 
-Please note that this documentation assumes that you are very familiar with
+Please note that this documentation assumes that you are very familiar with 
 Django and Python, if you are not, please familiarize yourself with those first.
 
 ***************
@@ -19,7 +19,6 @@ Contents
 
 .. toctree::
     :maxdepth: 2
-    :numbered:
 
     public/installation
     public/quickstart
