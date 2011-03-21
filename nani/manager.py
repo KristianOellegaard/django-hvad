@@ -447,8 +447,8 @@ class TranslationFallbackManager(models.Manager):
     Manager class for the shared model, without specific translations. Allows
     using `use_fallbacks()` to enable per object language fallback.
     """
-    def use_fallbacks(self):
-        return self.get_query_set().use_fallbacks()
+    def use_fallbacks(self, *fallbacks):
+        return self.get_query_set().use_fallbacks(*fallbacks)
     
     def get_query_set(self):
         qs = FallbackQueryset(self.model, using=self.db)

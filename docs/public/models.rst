@@ -39,15 +39,13 @@ A full example of a model with translations::
         )
 
 
-*******
-Methods
-*******
-
+***********
 New methods
-===========
+***********
+
 
 translate
----------
+=========
 
 .. method:: translate(language_code)
 
@@ -61,7 +59,7 @@ translate
 
 
 safe_translation_getter
------------------------
+=======================
 
 .. method:: safe_translation_getter(name, default=None)
 
@@ -88,7 +86,7 @@ Example usage::
 
 
 get_available_languages
------------------------
+=======================
 
 .. method:: get_available_languages
 
@@ -98,12 +96,13 @@ get_available_languages
               languages.
 
 
+***************
 Changed methods
-===============
+***************
 
 
 save
-----
+====
 
 .. method:: save(force_insert=False, force_update=False, using=None)
 
