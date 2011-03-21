@@ -40,10 +40,14 @@ def get_model_info(model):
     return MODEL_INFO[model]
 
 def _get_model_from_field(starting_model, fieldname):
-    field, model, _, _ = starting_model._meta.get_field_by_name(fieldname)
+    # TODO: m2m handling
+    field, model, direct, _ = starting_model._meta.get_field_by_name(fieldname)
     if model:
         return model
-    return field.rel.to
+    elif direct:
+        return field.rel.to
+    else:
+        return field.model
 
 def translate(querykey, starting_model):
     """

@@ -192,7 +192,7 @@ class FallbackTest(NaniTestCase):
     def test_single_instance_fallback(self):
         # fetch an object in a language that does not exist
         with LanguageOverride('de'):
-            obj = Normal.objects.untranslated().use_fallbacks().get(pk=1)
+            obj = Normal.objects.untranslated().use_fallbacks('en', 'ja').get(pk=1)
             self.assertEqual(obj.language_code, 'en')
             self.assertEqual(obj.translated_field, 'English1')
     
@@ -200,3 +200,5 @@ class FallbackTest(NaniTestCase):
         with LanguageOverride('de'):
             obj = Normal.objects.untranslated().get(pk=1)
             self.assertEqual(obj.shared_field, 'Shared1')
+            self.assertRaises(Normal._meta.translations_model.DoesNotExist,
+                              getattr, obj, 'translated_field')

@@ -412,20 +412,21 @@ class FallbackQueryset(QuerySet):
         super(FallbackQueryset, self).__init__(*args, **kwargs)
     
     def iterator(self):
-        i = super(FallbackQueryset, self).iterator()
-        opts = self.model._meta
-        for instance in i:
-            if self._translation_fallbacks:
-                fallbacks = iter(self._translation_fallbacks)
-                while not hasattr(instance, opts.translations_cache):
+        if self._translation_fallbacks:
+            opts = self.model._meta
+            fallbacks = list(self._translation_fallbacks)
+            for instance in super(FallbackQueryset, self).iterator():
+                for fallback in fallbacks:
                     try:
-                        cached = get_translation(instance, fallbacks.next())
-                        setattr(instance, opts.translations_cache, cached)
+                        cached = get_translation(instance, fallback)
                     except opts.translations_model.DoesNotExist:
-                        pass
-                    except StopIteration:
-                        break
-            yield instance
+                        continue
+                    setattr(instance, opts.translations_cache, cached)
+                    break
+                yield instance
+        else:
+            for instance in super(FallbackQueryset, self).iterator():
+                yield instance
     
     def use_fallbacks(self, *fallbacks):
         if fallbacks:
@@ -459,7 +460,11 @@ class TranslationFallbackManager(models.Manager):
 #===============================================================================
 
 
-class TranslationAwareManager(models.Manager):
+class TranslationAwareQueryset(QuerySet):
+    def __init__(self, *args, **kwargs):
+        super(TranslationAwareQueryset, self).__init__(*args, **kwargs)
+        self._language_code = None
+        
     def _translate_args_kwargs(self, *args, **kwargs):
         self.language(self._language_code)
         language_joins = []
@@ -512,14 +517,11 @@ class TranslationAwareManager(models.Manager):
                     language_joins.append(langjoin)
         for langjoin in language_joins:
             extra_filters &= Q(**{langjoin: self._language_code})
-        return newfields, 
+        return newfields, extra_filters
     
     #===========================================================================
     # Queryset/Manager API 
     #===========================================================================
-    def __init__(self):
-        super(TranslationAwareManager, self).__init__()
-        self._language_code = None
         
     def language(self, language_code=None):
         if not language_code:
@@ -529,11 +531,11 @@ class TranslationAwareManager(models.Manager):
     
     def get(self, *args, **kwargs):
         newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
-        return super(TranslationAwareManager, self).filter(extra_filters).get(*newargs, **newkwargs)
+        return self._filter_extra(extra_filters).get(*newargs, **newkwargs)
 
     def filter(self, *args, **kwargs):
         newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
-        return super(TranslationAwareManager, self).filter(extra_filters).filter(*newargs, **newkwargs)
+        return self._filter_extra(extra_filters).filter(*newargs, **newkwargs)
 
     def aggregate(self, *args, **kwargs):
         raise NotImplementedError()
@@ -542,18 +544,18 @@ class TranslationAwareManager(models.Manager):
         extra_filters = Q()
         if field_name:
             field_name, extra_filters = translate(self, field_name)
-        return super(TranslationAwareManager, self).filter(extra_filters).latest(field_name)
+        return self._filter_extra(extra_filters).latest(field_name)
 
     def in_bulk(self, id_list):
         raise NotImplementedError()
 
     def values(self, *fields):
         fields, extra_filters = self._translate_fieldnames(fields)
-        return super(TranslationAwareManager, self).filer(extra_filters).values(*fields)
+        return self._filter_extra(extra_filters).values(*fields)
 
     def values_list(self, *fields, **kwargs):
         fields, extra_filters = self._translate_fieldnames(fields)
-        return super(TranslationAwareManager, self).filter(extra_filters).values_list(*fields, **kwargs)
+        return self._filter_extra(extra_filters).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind, order='ASC'):
         raise NotImplementedError()
@@ -575,7 +577,7 @@ class TranslationAwareManager(models.Manager):
         Returns a new QuerySet instance with the ordering changed.
         """
         fieldnames, extra_filters = self._translate_fieldnames(field_names)
-        return super(TranslationAwareManager, self).filter(extra_filters).order_by(*fieldnames)
+        return self._filter_extra(extra_filters).order_by(*fieldnames)
     
     def reverse(self):
         raise NotImplementedError()
@@ -590,4 +592,14 @@ class TranslationAwareManager(models.Manager):
         kwargs.update({
             '_language_code': self._language_code,
         })
-        return super(TranslationAwareManager, self)._clone(klass, setup, **kwargs)
+        return super(TranslationAwareQueryset, self)._clone(klass, setup, **kwargs)
+    
+    def _filter_extra(self, extra_filters):
+        qs = super(TranslationAwareQueryset, self).filter(extra_filters)
+        return super(TranslationAwareQueryset, qs)
+    
+
+class TranslationAwareManager(models.Manager):
+    def get_query_set(self):
+        qs = TranslationAwareQueryset(self.model, using=self.db)
+        return qs

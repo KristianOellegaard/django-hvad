@@ -42,7 +42,7 @@ class SmartGetFieldByName(object):
         try:
             return self.real(name)
         except FieldDoesNotExist:
-            if name in self.translations_model._meta.get_all_field_names():
+            if name in meta.translations_model._meta.get_all_field_names():
                 raise WrongManager("To access translated fields like %r from "
                                    "an untranslated model, you must use a "
                                    "translation aware manager, you can get one "
