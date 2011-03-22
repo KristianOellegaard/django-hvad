@@ -219,9 +219,12 @@ class TranslationQueryset(QuerySet):
         # Get the translated instance
         found = False
         qs = self
+        
+        
         if 'language_code' in newkwargs:
             language_code = newkwargs.pop('language_code')
             qs = self.language(language_code)
+            found = True
         elif args:
             language_code = None
             for arg in args:
@@ -232,8 +235,7 @@ class TranslationQueryset(QuerySet):
                     break
             if language_code:
                 qs = self.language(language_code)
-            else:
-                qs = self.language()
+                found = True
         else:
             for where in qs.query.where.children:
                 if where.children:
@@ -243,8 +245,8 @@ class TranslationQueryset(QuerySet):
                             break
                 if found:
                     break
-            if not found:
-                qs = self.language()
+        if not found:
+            qs = self.language()
         # self.iterator already combines! Isn't that nice?
         return QuerySet.get(qs, *newargs, **newkwargs)
 
@@ -336,9 +338,6 @@ class TranslationQueryset(QuerySet):
         else:
             klass = self.__class__
         return super(TranslationQueryset, self)._clone(klass, setup, **kwargs)
-    
-    def __getitem__(self, item):
-        return super(TranslationQueryset, self).__getitem__(item)
     
     def iterator(self):
         for obj in super(TranslationQueryset, self).iterator():
