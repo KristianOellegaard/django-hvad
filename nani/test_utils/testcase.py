@@ -3,10 +3,17 @@ from django.core.signals import request_started
 from django.db import reset_queries, connections
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.test import testcases
-from nani.test_utils import unittest as ut2
 from nani.test_utils.request_factory import RequestFactory
 from testproject.app.models import Normal
 import sys
+try:
+    from django.utils.unittest import expectedFailure
+except:
+    def expectedFailure(meth):
+        def _decorated(self, *args, **kwargs):
+            self.fail("%s is expected to fail" % meth.__name__)
+        return _decorated
+
 
 class _AssertNumQueriesContext(object):
     def __init__(self, test_case, num, connection):
@@ -39,7 +46,7 @@ class _AssertNumQueriesContext(object):
 if hasattr(testcases.TestCase, 'assertNumQueries'):
     TestCase = testcases.TestCase
 else:
-    class TestCase(testcases.TestCase, ut2.TestCase):
+    class TestCase(testcases.TestCase):
         def assertNumQueries(self, num, func=None, *args, **kwargs):
             if hasattr(testcases.TestCase, 'assertNumQueries'):
                 return super(TestCase, self).assertNumQueries(num, func, *args, **kwargs)

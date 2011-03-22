@@ -120,4 +120,4 @@ use_fallbacks
                  case 1 + (n * x) with n being the amount of rows being fetched
                  and x the amount of languages given as fallbacks. Only ever use
                  this method when absolutely necessary and on a queryset with as
-                 few results as possibel
+                 few results as possibel.

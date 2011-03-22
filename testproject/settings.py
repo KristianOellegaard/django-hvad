@@ -16,8 +16,12 @@ JUNIT_OUTPUT_DIR = os.path.join(
 
 TEST_RUNNER = 'testproject.testrunner.TestSuiteRunner'
 
-DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'nani.sqlite'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'nani.sqlite',
+    }
+}
 
 TEST_DATABASE_CHARSET = "utf8"
 TEST_DATABASE_COLLATION = "utf8_general_ci"

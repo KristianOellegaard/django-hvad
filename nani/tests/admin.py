@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase

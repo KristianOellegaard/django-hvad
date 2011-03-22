@@ -1,2 +1,2 @@
 #!/bin/bash
-python manage.py test nani --failfast
+python manage.py test nani 

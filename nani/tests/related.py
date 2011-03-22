@@ -2,8 +2,8 @@
 from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.testcase import SingleNormalTestCase, NaniTestCase
-from nani.test_utils import unittest as ut2
+from nani.test_utils.testcase import (SingleNormalTestCase, NaniTestCase, 
+    expectedFailure)
 from nani.utils import get_translation_aware_manager
 from testproject.app.models import Normal, Related, Standard
 
@@ -25,7 +25,7 @@ class NormalToNormalFKTest(SingleNormalTestCase):
 
 
 class NormalToTransFKTest(SingleNormalTestCase):
-    @ut2.expectedFailure
+    @expectedFailure
     def test_relation(self):
         """
         TranslatedForeignKeys are FKs linking to a specific translation.
@@ -76,7 +76,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(related.normal.translated_field, ja.translated_field)
             self.assertTrue(related in ja.standards.all())
     
-    @ut2.expectedFailure
+    @expectedFailure
     def test_num_queries(self):
         with LanguageOverride('en'):
             en = Normal.objects.language('en').get(pk=1)
