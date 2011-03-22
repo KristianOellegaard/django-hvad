@@ -2,6 +2,8 @@
 :mod:`nani.utils`
 #################
 
+.. module:: nani.utils
+
 .. function:: combine(trans)
 
 .. function:: get_cached_translation(instance)

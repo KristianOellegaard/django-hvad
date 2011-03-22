@@ -21,6 +21,7 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             new_class.media = media_property(new_class)
         opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
         if opts.model:
+            # bail out if a wrong model uses this form class
             if not issubclass(opts.model, TranslateableModel):
                 raise Exception(
                     "Only TranslateableModel subclasses may use TranslateableModelForm"
@@ -29,11 +30,14 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             
             shared_fields = mopts.get_all_field_names()
             
+            # split exclude and include fieldnames into shared and translated
+            
             sfieldnames = [field for field in opts.fields or [] if field in shared_fields]
             tfieldnames = [field for field in opts.fields or [] if field not in shared_fields]
             sexclude = [field for field in opts.exclude or [] if field in shared_fields]
             texclude = [field for field in opts.exclude or [] if field not in shared_fields]
             
+            # required by fields_for_model
             if not sfieldnames:
                 sfieldnames = None
             if not tfieldnames:
@@ -64,12 +68,13 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             fields = declared_fields
         new_class.declared_fields = declared_fields
         new_class.base_fields = fields
+        
         if new_class._meta.exclude:
             new_class._meta.exclude = list(new_class._meta.exclude)
         else:
             new_class._meta.exclude = []
         # always exclude the FKs
-        for field in ('translations', 'master'):
+        for field in (mopts.translations_accessor, 'master'):
             if not field in new_class._meta.exclude:
                 new_class._meta.exclude.append(field)
         return new_class

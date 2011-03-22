@@ -2,6 +2,7 @@
 :mod:`nani.exceptions`
 ######################
 
+.. module:: nani.exceptions
 
 .. exception:: WrongManager
 

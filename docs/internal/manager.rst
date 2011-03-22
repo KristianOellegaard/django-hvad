@@ -2,7 +2,14 @@
 :mod:`nani.manager`
 ###################
 
+.. module:: nani.manager
+
+This module is where the mist of the functionality is implemented.
+
 .. data:: FALLBACK_LANGUAGES
+
+    The default sequence for fallback languages
+    
 
 .. class:: FieldTranslator(dict)
 
@@ -15,19 +22,54 @@
 
 .. class:: ValuesMixin
 
+    A mixin class for :class:`django.db.models.query.ValuesQuerySet` which
+    implements the functionality needed by :meth:`TranslationQueryset.values`
+    and :meth:`TranslationQueryset.values_list`.
+
     .. method:: _strip_master(self, key)
+    
+        Strips ``'master__'`` from the key if the key starts with that string.
 
     .. method:: iterator(self)
         
+        Iterates over the rows from the superclass iterator and calls
+        :meth:`_strip_master` on the key if the row is a dictionary.
+        
+
 .. class:: TranslationQueryset
 
     .. attribute:: override_classes
     
-    .. method:: __init__(self, model=None, query=None, using=None, real=None)
-
+        A dictionary of django classes to nani classes to mixin when
+        :meth:`_clone` is called with an explicit *klass* argument.
+        
+    .. attribute:: _local_field_names
+    
+        A list of field names on the :term:`Shared Model`.
+        
+    .. attribute:: _field_translator
+    
+        The cached field translator for this manager.
+    
+    .. attribute:: _real_manager
+    
+        The real manager of the :term:`Shared Model`.
+        
+    .. attribute:: _fallback_manager
+    
+        The fallback manager of the :term:`Shared Model`.
+    
+    .. attribute:: _language_code
+    
+        The language code of this queryset
+    
     .. attribute:: translations_manager
     
+        The (real) manager of the :term:`Translations Model`.
+    
     .. attribute:: shared_model
+    
+        The :term:`Shared Model`.
         
     .. attribute:: field_translator
 

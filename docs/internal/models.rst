@@ -2,6 +2,7 @@
 :mod:`nani.models`
 ##################
 
+.. module:: nani.models
 
 .. function:: create_translations_model(model, related_name, meta, **fields)
 

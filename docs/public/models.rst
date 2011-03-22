@@ -108,3 +108,23 @@ save
 
     This method runs an extra query when used to save the translation cached on
     this instance, if any translation was cached.
+
+
+**********************
+Working with relations
+**********************
+
+Foreign keys pointing to a translateable model always point to the
+:term:`Shared Model`. It is currently not possible to have a foreign key to a
+:term:`Translations Model`.
+
+Please note that :meth:`django.db.models.query.QuerySet.select_related` used on
+a foreign key pointing to a translateable model does not span to its
+:term:`Translations Model` and therefore accessing a translated field over the
+relation causes an extra query.
+
+If you wish to filter over a translated field over the relation from a normal
+model, you have to use :func:`nani.utils.get_translation_aware_manager` to get
+a manager that allows you to do so. That function takes your model class as
+argument and returns a manager that works with translated fields on related
+models.
