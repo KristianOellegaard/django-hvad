@@ -65,6 +65,15 @@ TranslateableModel
     A model which has translated fields on it. Must define one and exactly one
     attribute which is an instance of :class:`TranslatedFields`. This model is
     abstract.
+    
+    If initalized with data, it splits the shared and translated fields and
+    prepopulates both the :term:`Shared Model` and the
+    :term:`Translations Model`. If no *language_code* is given,
+    :func:`django.utils.translations.get_language` is used to get the language
+    for the :term:`Translations Model` instance that gets initialized.
+    
+    .. note:: When initializing a :class:`TranslateableModel`, positional
+              arguments are only supported for the shared fields.
 
     .. attribute:: objects
     
@@ -79,11 +88,28 @@ TranslateableModel
         A list of field on the :term:`Translations Model`.
     
     .. classmethod:: contribute_translations(cls, rel)
+    
+        Gets called from the :class:`TranslateableModelBase` to set the
+        descriptors of the fields on the :term:`Translations Model` onto the
+        model.
 
     .. classmethod:: save_translations(cls, instance, **kwargs)
     
+        This classmethod is connected to the model's post save signal from the
+        :class:`TranslateableModelBase` and saves the cached translation if it's
+        available.
+    
     .. method:: translate(self, language_code)
+    
+        Initializes a new instance of the :term:`Translations Model` (does not
+        check the database if one for the language given already exists) and
+        sets it as cached translation. Used by end users to translate instances
+        of a model.
     
     .. method:: safe_translation_getter(self, name, default=None)
     
+        Helper method to safely get a field from the :term:`Translations Model`.
+    
     .. method:: get_available_languages(self)
+    
+        Returns a list of language codes in which this instance is available.

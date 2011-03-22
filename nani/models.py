@@ -151,9 +151,10 @@ class TranslateableModel(models.Model):
             )
         
         # filter out all the translated fields (including 'master' and 'language_code')
+        primary_key_names = ('pk', self._meta.pk.name)
         for key in kwargs.keys():
             if key in self._translated_field_names:
-                if not key in ('pk',self._meta.pk.name):
+                if not key in primary_key_names:
                     # we exclude the pk of the shared model
                     tkwargs[key] = kwargs.pop(key)
         if not tkwargs.keys():
@@ -191,12 +192,13 @@ class TranslateableModel(models.Model):
         trans_opts = opts.translations_model._meta
         
         # Set descriptors
+        ignore_fields = [
+            'pk',
+            'master',
+            opts.translations_model._meta.pk.name,
+        ]
         for field in trans_opts.fields:
-            if field.name == 'pk':
-                continue
-            if field.name == 'master':
-                continue
-            if field.name == opts.translations_model._meta.pk.name:
+            if field.name in ignore_fields:
                 continue
             if field.name == 'language_code':
                 attr = LanguageCodeAttribute(opts)
