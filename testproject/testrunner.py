@@ -10,7 +10,7 @@ class TestSuiteRunner(DjangoTestSuiteRunner): # pragma: no cover
     use_runner = runner
 
     def run_suite(self, suite, **kwargs):
-        if self.use_runner and self.verbosity == 2: # cooler switch for xml
+        if self.use_runner and self.verbosity >= 2: # cooler switch for xml
             return self.use_runner(
                 output=getattr(settings, 'JUNIT_OUTPUT_DIR', '.')
             ).run(suite)
