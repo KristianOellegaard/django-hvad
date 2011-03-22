@@ -49,7 +49,9 @@ class StandardToTransFKTest(NaniTestCase):
             with self.assertNumQueries(1):
                 related = Standard.objects.select_related('normal').get(pk=1)
                 self.assertEqual(related.normal.pk, en.pk)
+            with self.assertNumQueries(0):
                 self.assertEqual(related.normal.shared_field, en.shared_field)
+            with self.assertNumQueries(1):
                 self.assertEqual(related.normal.translated_field, en.translated_field)
 
     def test_lookup_by_pk(self):
