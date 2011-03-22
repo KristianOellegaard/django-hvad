@@ -6,5 +6,4 @@ from nani.tests.dates import LatestTests
 from nani.tests.forms import FormTests
 from nani.tests.query import (FilterTests, IterTests, UpdateTests, 
     ValuesListTests, ValuesTests, DeleteTests)
-from nani.tests.related import (NormalToNormalFKTest, TransToNormalFKTest, 
-    TransToTransFKTest, NormalToTransFKTest, StandardToTransFKTest)
+from nani.tests.related import NormalToNormalFKTest, StandardToTransFKTest

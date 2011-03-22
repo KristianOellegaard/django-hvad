@@ -14,7 +14,6 @@ class Normal(TranslateableModel):
     
 class Related(TranslateableModel):
     normal = models.ForeignKey(Normal, related_name='rel1', null=True)
-    normal_trans = TranslatedForeignKey(Normal, related_name='rel2', null=True)
     
     translated_fields = TranslatedFields(
         translated = models.ForeignKey(Normal, related_name='rel3', null=True),
