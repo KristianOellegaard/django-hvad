@@ -2,6 +2,11 @@
 :mod:`nani.fields`
 ##################
 
+.. module:: nani.fields
+
+.. warning:: The classes in this module are probably going to be removed and are
+             therefore left undocumented for now.
+
 
 .. class:: ReverseTranslatedSingleRelatedObjectDescriptor
 
@@ -14,6 +19,6 @@
 
     .. method:: __init__(self, to, *args, **kwargs)
 
-    .. method:: contribute_to_.. class::(self, cls, name)
+    .. method:: contribute_to_class(self, cls, name)
 
-    .. method:: contribute_to_related_.. class::(self, cls, related)
+    .. method:: contribute_to_related_class(self, cls, related)

@@ -1,4 +1,5 @@
 from django.db.models.sql.constants import QUERY_TERMS
+
 TRANSLATIONS = 1
 TRANSLATED = 2
 NORMAL = 3

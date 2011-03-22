@@ -7,6 +7,19 @@ admin, you have to subclass :class:`nani.admin.TranslateableAdmin` instead of
 :class:`django.contrib.admin.ModelAdmin`.
 
 
+***********
+New methods
+***********
+
+all_translations
+================
+
+.. method:: all_translations(obj)
+
+    A method that can be used in :attr:`list_display` and shows a list of
+    languages in which this object is available.
+
+
 ***********************************************************
 ModelAdmin APIs you should not change on TranslateableAdmin
 ***********************************************************
