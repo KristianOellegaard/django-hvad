@@ -4,7 +4,14 @@
 
 .. module:: nani.forms
 
+
+*******************************
+TranslateableModelFormMetaclass
+*******************************
+
 .. class:: TranslateableModelFormMetaclass
+
+    Metaclass of :class:`TranslateableModelForm`.
 
     .. method:: __new__(cls, name, bases, attrs)
     
@@ -15,6 +22,10 @@
         enforces the translations accessor and the master foreign key to be
         excluded.
 
+
+**********************
+TranslateableModelForm
+**********************
 
 .. class:: TranslateableModelForm(ModelForm)
 

@@ -9,16 +9,28 @@ This module is where the mist of the functionality is implemented.
 .. data:: FALLBACK_LANGUAGES
 
     The default sequence for fallback languages
-    
+
+
+***************
+FieldTranslator
+***************
 
 .. class:: FieldTranslator(dict)
-
-    .. method:: __init__(self, manager)
         
     .. method:: get(self, key)
     
+        Returns the translated fieldname for *key*. If it's already cached,
+        return it from the cache, otherwise call :meth:`build`
+    
     .. method:: build(self, key)
+    
+        Returns the key prefixed by ``'master__'`` if it's a shared field,
+        otherwise returns the key unchanged.
 
+
+***********
+ValuesMixin
+***********
 
 .. class:: ValuesMixin
 
@@ -34,7 +46,11 @@ This module is where the mist of the functionality is implemented.
         
         Iterates over the rows from the superclass iterator and calls
         :meth:`_strip_master` on the key if the row is a dictionary.
-        
+
+
+*******************
+TranslationQueryset
+*******************
 
 .. class:: TranslationQueryset
 
@@ -297,88 +313,263 @@ This module is where the mist of the functionality is implemented.
         :meth:`get` and :meth:`__getitem__`.
 
 
+******************
+TranslationManager
+******************
+
 .. class:: TranslationManager
+
+    Manager to be used on :class:`nani.models.TranslateableModel`.
+    
+    .. attribute:: translations_model
+    
+        The :term:`Translations Model` for this manager.
 
     .. method:: language(self, language_code=None)
     
+        Calls :meth:`get_query_set` to get a queryset and calls
+        :meth:`TranslationQueryset.language` on that queryset.
+    
     .. method:: untranslated(self)
     
-    .. attribute:: translations_model
+        Returns an instance of :class:`FallbackQueryset` for this manager.
         
     .. method:: get_query_set(self)
     
+        Returns an instance of :class:`TranslationQueryset` for this manager.
+        The queryset returned will have the *master* relation to the
+        :term:`Shared Model` marked to be selected when querying, using 
+        :meth:`select_related`.
+    
     .. method:: contribute_to_class(self, model, name)
+    
+        Contributes this manager, the real manager and the fallback manager onto
+        the class using :meth:`contribute_real_manager` and
+        :meth:`contribute_fallback_manager`.
         
     .. method:: contribute_real_manager(self)
     
+        Creates a real manager and contributes it to the model after prefixing
+        the name with an underscore.
+    
     .. method:: contribute_fallback_manager(self)
+    
+        Creates a fallback manager and contributes it to the model after
+        prefixing the name with an underscore and suffixing it with
+        ``'_fallback'``.
 
+
+****************
+FallbackQueryset
+****************
 
 .. class:: FallbackQueryset
 
-    .. method:: __init__(self, *args, **kwargs)
+    A queryset that can optionally use fallbacks and by default only fetches the
+    :term:`Shared Model`.
+
+    .. attribute:: _translation_fallbacks
+    
+        List of fallbacks to use (or ``None``).
     
     .. method:: iterator(self)
     
+        If :attr:`_translation_fallbacks` is set, it iterates using the
+        superclass and tries to get the translation using the order of
+        language codes defined in :attr:`_translation_fallbacks`. As soon as it
+        finds a translation for an object, it yields a combined object using
+        that translation. Otherwise yields an uncombined object. Due to the way
+        this works, it can cause **a lot** of queries and this should be
+        improved if possible.
+        
+        If no fallbacks are given, it just iterates using the superclass. 
+    
     .. method:: use_fallbacks(self, *fallbacks)
+    
+        If this method gets called, :meth:`iterator` will use the fallbacks
+        defined here. If not fallbacks are given, :data:`FALLBACK_LANGUAGES`
+        will be used.
 
     .. method:: _clone(self, klass=None, setup=False, **kwargs)
+    
+        Injects *translation_fallbacks* into *kwargs* and calls the superclass.
 
+
+**************************
+TranslationFallbackManager
+**************************
 
 .. class:: TranslationFallbackManager
 
     .. method:: use_fallbacks(self, *fallbacks)
+    
+        Proxies to :meth:`FallbackQueryset.use_fallbacks` by calling
+        :meth:`get_query_set` first.
 
     .. method:: get_query_set(self)
+    
+        Returns an instance of :class:`FallbackQueryset` for this manager.
 
+
+************************
+TranslationAwareQueryset
+************************
 
 .. class:: TranslationAwareQueryset
 
-    .. method:: __init__(self, *args, **kwargs)
-        
+    .. attribute:: _language_code
+    
+        The language code of this queryset.
+
     .. method:: _translate_args_kwargs(self, *args, **kwargs)
+    
+        Calls :meth:`language` using :attr:`_language_code`
+        as an argument.
+    
+        Translates *args* and **kwargs* into translation aware *args* and
+        *kwargs* using :func:`nani.fieldtranslator.translate` by iterating over
+        the *kwargs* dictionary and translating it's keys and recursing over the
+        :class:`django.db.models.expressions.Q` objects in *args* using 
+        :meth:`_recurse_q`. 
+        
+        Returns a triple of *newargs*, *newkwargs* and *extra_filters* where
+        *newargs* and *newkwargs* are the translated versions of *args* and
+        *kwargs* and *extra_filters* is a
+        :class:`django.db.models.expressions.Q` object to use to filter for the
+        current language. 
 
     .. method:: _recurse_q(self, q)
     
+        Recursively translate the keys in the
+        :class:`django.db.models.expressions.Q` object given using 
+        :func:`nani.fieldtranslator.translate`. For more information about
+        :class:`django.db.models.expressions.Q`, see
+        :meth:`TranslationQueryset._recurse_q`.
+        
+        Returns a tuple of *q* and *language_joins* where *q* is the translated
+        :class:`django.db.models.expressions.Q` object and *language_joins* is
+        a list of extra language join filters to be applied using the current
+        language.
+    
     .. method:: _translate_fieldnames(self, fields)
+    
+        Calls :meth:`language` using :attr:`_language_code`
+        as an argument.
+        
+        Translates the fieldnames given using
+        :func:`nani.fieldtranslator.translate`
+        
+        Returns a tuple of *newfields* and *extra_filters* where *newfields* is
+        a list of translated fieldnames and *extra_filters* is a
+        :class:`django.db.models.expressions.Q` object to be used to filter for
+        language joins. 
 
     .. method:: language(self, language_code=None)
     
+        Sets the :attr:`_language_code` attribute either to the language given
+        with *language_code* or by getting the current language from
+        :func:`django.utils.translations.get_language`. Unlike
+        :meth:`TranslationQueryset.language`, this does not actually filter by
+        the language yet as this happens in :meth:`_filter_extra`.
+    
     .. method:: get(self, *args, **kwargs)
+    
+        Gets a single object from this queryset by filtering by *args* and
+        *kwargs*, which are first translated using
+        :meth:`_translate_args_kwargs`. Calls :meth:`_filter_extra` with the
+        *extra_filters* returned by :meth:`_translate_args_kwargs` to get a
+        queryset from the superclass and to call that queryset.
+        
+        Returns an instance of the model of this queryset or raises an
+        appropriate exception when none or multiple objects were found. 
 
     .. method:: filter(self, *args, **kwargs)
     
+        Filters the queryset by *args* and *kwargs* by translating them using
+        :meth:`_translate_args_kwargs` and calling :meth:`_filter_extra` with
+        the *extra_filters* returned by :meth:`_translate_args_kwargs`. 
+    
     .. method:: aggregate(self, *args, **kwargs)
+    
+        Not implemented yet.
 
     .. method:: latest(self, field_name=None)
+    
+        If a fieldname is given, uses :func:`nani.fieldtranslator.translate` to
+        translate that fieldname. Calls :meth:`_filter_extra` with the
+        *extra_filters* returned by :func:`nani.fieldtranslator.translate` if it
+        was used, otherwise with an empty
+        :class:`django.db.models.expressions.Q` object.
 
     .. method:: in_bulk(self, id_list)
+    
+        Not implemented yet
 
     .. method:: values(self, *fields)
+    
+        Calls :meth:`_translated_fieldnames` to translated the fields. Then
+        calls :meth:`_filter_extra` with the *extra_filters* returned by
+        :meth:`_translated_fieldnames`.
 
     .. method:: values_list(self, *fields, **kwargs)
+    
+        Calls :meth:`_translated_fieldnames` to translated the fields. Then
+        calls :meth:`_filter_extra` with the *extra_filters* returned by
+        :meth:`_translated_fieldnames`.
 
     .. method:: dates(self, field_name, kind, order='ASC')
+    
+        Not implemented yet.
 
     .. method:: exclude(self, *args, **kwargs)
+        
+        Not implemented yet.
 
     .. method:: complex_filter(self, filter_obj)
+    
+        Not really implemented yet, but if *filter_obj* is an empty dictionary
+        it just returns this queryset, to make admin work.
 
     .. method:: annotate(self, *args, **kwargs)
+    
+        Not implemented yet.
 
     .. method:: order_by(self, *field_names)
     
+        Calls :meth:`_translated_fieldnames` to translated the fields. Then
+        calls :meth:`_filter_extra` with the *extra_filters* returned by
+        :meth:`_translated_fieldnames`.
+    
     .. method:: reverse(self)
+    
+        Not implemented yet.
 
     .. method:: defer(self, *fields)
+    
+        Not implemented yet.
 
     .. method:: only(self, *fields)
+        
+        Not implemented yet.
     
     .. method:: _clone(self, klass=None, setup=False, **kwargs)
     
+        Injects *_language_code* into *kwargs* and calls the superclass.
+    
     .. method:: _filter_extra(self, extra_filters)
     
+        Filters this queryset by the :class:`django.db.models.expressions.Q`
+        object provided in *extra_filters* and returns a queryset from the
+        superclass, so that the methods that call this method can directely
+        access methods on the superclass to reduce boilerplate code.
+    
+    
+***********************
+TranslationAwareManager
+***********************
 
 .. class:: TranslationAwareManager
 
     .. method:: get_query_set(self)
+
+        Returns an instance of :class:`TranslationAwareQueryset`.

@@ -6,6 +6,14 @@
 
 .. class:: NULL
 
+    A pseudo type used internally to distinguish between ``None`` and no value
+    given. 
+
+
+**************
+BaseDescriptor
+**************
+
 .. class:: BaseDescriptor
 
     Base class for the descriptors, should not be used directly.
@@ -19,6 +27,10 @@
         Get the cached translation object on an instance, or get it from the
         database and cache it on the instance.
 
+
+*******************
+TranslatedAttribute
+*******************
 
 .. class:: TranslatedAttribute
 
@@ -51,6 +63,10 @@
         :meth:`BaseDescriptor.translation` if an instance is given, if no 
         instance is given, raises an :exc:`AttributeError`.
 
+
+*********************
+LanguageCodeAttribute
+*********************
 
 .. class:: LanguageCodeAttribute
 

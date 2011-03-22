@@ -69,6 +69,7 @@ class BaseTranslationModel(models.Model):
     """
     def __init__(self, *args, **kwargs):
         super(BaseTranslationModel, self).__init__(*args, **kwargs)
+        
     class Meta:
         abstract = True
         
@@ -85,7 +86,11 @@ class TranslateableModelBase(ModelBase):
             return super_new(cls, name, bases, attrs)
         new_model = super_new(cls, name, bases, attrs)
         if not isinstance(new_model.objects, TranslationManager):
-            raise ImproperlyConfigured("wrong manager")
+            raise ImproperlyConfigured(
+                "The default manager on a TranslateableModel must be a "
+                "TranslationManager instance or an instance of a subclass of "
+                "TranslationManager, the default manager of %r is not." %
+                new_model)
         
         opts = new_model._meta
         found = False
@@ -99,13 +104,19 @@ class TranslateableModelBase(ModelBase):
                 continue
             if issubclass(obj.related.model, BaseTranslationModel):
                 if found:
-                    raise ImproperlyConfigured("more than one")
+                    raise ImproperlyConfigured(
+                        "A TranslateableModel can only define one set of "
+                        "TranslatedFields, %r defines more than one" %
+                        new_model)
                 else:
                     new_model.contribute_translations(obj.related)
                     found = True
 
         if not found:
-            raise ImproperlyConfigured("not found)")
+            raise ImproperlyConfigured(
+                "No TranslatedFields found on %r, subclasses of "
+                "TranslateableModel must define TranslatedFields." % new_model
+            )
         
         post_save.connect(new_model.save_translations, sender=new_model, weak=False)
         

@@ -21,11 +21,11 @@ This part of the documentation is grouped by file, not by topic.
 
 .. toctree::
     :maxdepth: 2
-
+    
+    general
     admin
     descriptors
     exceptions
-    fields
     fieldtranslator
     forms
     manager

@@ -9,6 +9,11 @@
     The same as :func:`django.forms.models.modelform_factory` but uses ``type``
     instead of :class:`django.forms.models.ModelFormMetaclass` to create the
     form.
+    
+
+******************
+TranslateableAdmin
+******************
 
 .. class:: TranslateableAdmin
 
