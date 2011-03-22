@@ -64,19 +64,20 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             # Override default model fields with any custom declared ones
             # (plus, include all the other declared fields).
             fields.update(declared_fields)
+            
+            if new_class._meta.exclude:
+                new_class._meta.exclude = list(new_class._meta.exclude)
+            else:
+                new_class._meta.exclude = []
+                
+            for field in (mopts.translations_accessor, 'master'):
+                if not field in new_class._meta.exclude:
+                    new_class._meta.exclude.append(field)
         else:
             fields = declared_fields
         new_class.declared_fields = declared_fields
         new_class.base_fields = fields
-        
-        if new_class._meta.exclude:
-            new_class._meta.exclude = list(new_class._meta.exclude)
-        else:
-            new_class._meta.exclude = []
         # always exclude the FKs
-        for field in (mopts.translations_accessor, 'master'):
-            if not field in new_class._meta.exclude:
-                new_class._meta.exclude.append(field)
         return new_class
 
 

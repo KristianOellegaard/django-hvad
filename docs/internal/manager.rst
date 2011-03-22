@@ -61,7 +61,7 @@ This module is where the mist of the functionality is implemented.
     
     .. attribute:: _language_code
     
-        The language code of this queryset
+        The language code of this queryset.
     
     .. attribute:: translations_manager
     
@@ -72,12 +72,28 @@ This module is where the mist of the functionality is implemented.
         The :term:`Shared Model`.
         
     .. attribute:: field_translator
+    
+        The field translator for this manager, sets :attr:`_field_translator` if
+        it's ``None``.
 
     .. attribute:: shared_local_field_names
     
+        Returns a list of field names on the :term:`Shared Model`, sets
+        :attr:`_local_field_names` if it's ``None``.
+    
     .. method:: _translate_args_kwargs(self, *args, **kwargs)
     
+        Translates args (:class:`django.db.models.expressions.Q` objects) and
+        kwargs (dictionary of query lookups and values) to be language aware, by
+        prefixing fields on the :term:`Shared Model` with ``'master__'``. Uses
+        :attr:`field_translator` for the kwargs and :meth:`_recurse_q` for the
+        args. Returns a tuple of translated args and translated kwargs.
+    
     .. method:: _translate_fieldnames(self, fieldnames)
+    
+        Translate a list of fieldnames by prefixing fields on the
+        :term:`Shared Model` with ``'master__'`` using :attr`field_translator`.
+        Returns a list of translated fieldnames.
 
     .. method:: _recurse_q(self, q)
     
@@ -85,7 +101,7 @@ This module is where the mist of the functionality is implemented.
     
     .. method:: _split_kwargs(self, **kwargs)
     
-    .. method:: _get_.. class::(self, klass)
+    .. method:: _get_class(self, klass)
     
     .. method:: _get_shared_query_set(self)
     
