@@ -7,12 +7,15 @@ from nani.test_utils.request_factory import RequestFactory
 from testproject.app.models import Normal
 import sys
 try:
-    from django.utils.unittest import expectedFailure
+    from unittest2 import expectedFailure
 except:
-    def expectedFailure(meth):
-        def _decorated(self, *args, **kwargs):
-            self.fail("%s is expected to fail" % meth.__name__)
-        return _decorated
+    try:
+        from django.utils.unittest import expectedFailure
+    except:
+        def expectedFailure(meth):
+            def _decorated(self, *args, **kwargs):
+                self.fail("%s is expected to fail" % meth.__name__)
+            return _decorated
 
 
 class _AssertNumQueriesContext(object):
