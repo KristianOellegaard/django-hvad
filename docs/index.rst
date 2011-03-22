@@ -13,6 +13,10 @@ Before you dive into this
 Please note that this documentation assumes that you are very familiar with 
 Django and Python, if you are not, please familiarize yourself with those first.
 
+While project-nani tries to be as simple to use as possible, it's still
+recommended that you only use it if you consider yourself to be very strong in
+Python and Django.
+
 ***************
 Contents
 ***************

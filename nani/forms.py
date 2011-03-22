@@ -1,4 +1,3 @@
-from django import forms
 from django.core.exceptions import FieldError
 from django.forms.forms import get_declared_fields
 from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 
@@ -8,6 +7,7 @@ from django.forms.widgets import media_property
 from django.utils.translation import get_language
 from nani.models import TranslateableModel
 from nani.utils import get_cached_translation, get_translation, combine
+
 
 class TranslateableModelFormMetaclass(ModelFormMetaclass):
     def __new__(cls, name, bases, attrs):
@@ -64,14 +64,19 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             fields = declared_fields
         new_class.declared_fields = declared_fields
         new_class.base_fields = fields
+        if new_class._meta.exclude:
+            new_class._meta.exclude = list(new_class._meta.exclude)
+        else:
+            new_class._meta.exclude = []
+        # always exclude the FKs
+        for field in ('translations', 'master'):
+            if not field in new_class._meta.exclude:
+                new_class._meta.exclude.append(field)
         return new_class
 
 
 class TranslateableModelForm(ModelForm):
     __metaclass__ = TranslateableModelFormMetaclass
-    
-    class Meta:
-        exclude = ('translations', 'master',)
 
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',

@@ -21,7 +21,6 @@ This part of the documentation is grouped by file, not by topic.
 
 .. toctree::
     :maxdepth: 2
-    :numbered:
 
     admin
     descriptors

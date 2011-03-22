@@ -41,6 +41,7 @@ def translateable_modelform_factory(model, form=TranslateableModelForm,
     }
     return type(class_name, (form,), form_class_attrs)
 
+
 class TranslateableAdmin(ModelAdmin):
     
     query_language_key = 'language'
