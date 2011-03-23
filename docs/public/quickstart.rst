@@ -40,7 +40,7 @@ Using multilingual models
 *************************
 
 Now that we have defined our model, let's play around with it a bit. The
-following code examples are taken from a python shell.
+following code examples are taken from a Python shell.
 
 .. highlight:: pycon
 

@@ -4,7 +4,7 @@
 Forms
 #####
 
-If you want to use your :class:`nani.models.TranslateableModel` in forms, you
+If you want to use your :term:`Translated Model` in forms, you
 have to subclass :class:`nani.forms.TranslateableModelForm` instead of
 :class:`django.forms.ModelForm`.
 

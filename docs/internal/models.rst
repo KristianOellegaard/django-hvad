@@ -113,3 +113,41 @@ TranslateableModel
     .. method:: get_available_languages(self)
     
         Returns a list of language codes in which this instance is available.
+
+
+Extra information on _meta of Shared Models
+===========================================
+
+The options (meta) on :class:`TranslateableModel` subclasses have a few extra
+attributes holding information about the translations.
+
+
+translations_accessor
+---------------------
+
+The name of the attribute that holds the :class:`TranslatedFields` instance.
+
+
+translations_model
+------------------
+
+The model class that holds the translations (:term:`Translations Model`).
+
+
+translations_cache
+------------------
+
+The name of the cache attribute on this model.
+
+
+Extra information on _meta of Translations Models
+=================================================
+
+The options (meta) on :class:`BaseTranslationModel` subclasses have a few extra
+attributes holding information about the translations.
+
+
+shared_model
+------------
+
+The model class that holds the shared fields (:term:`Shared Model`).

@@ -2,7 +2,7 @@
 Admin
 #####
 
-When you want to use a :class:`nani.models.TranslateableModel` in the Django
+When you want to use a :term:`Translated Model` in the Django
 admin, you have to subclass :class:`nani.admin.TranslateableAdmin` instead of
 :class:`django.contrib.admin.ModelAdmin`.
 
