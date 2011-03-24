@@ -4,18 +4,28 @@
 
 .. module:: nani.manager
 
-This module is where the mist of the functionality is implemented.
+This module is where most of the functionality is implemented.
 
 .. data:: FALLBACK_LANGUAGES
 
-    The default sequence for fallback languages
+    The default sequence for fallback languages, populates itself from
+    ``settings.LANGUAGES``, could possibly become a setting on it's own at some
+    point.
 
 
 ***************
 FieldTranslator
 ***************
 
-.. class:: FieldTranslator(dict)
+.. class:: FieldTranslator
+
+    The cache mentioned in this class is the instance of the class itself, since
+    it inherits dict.
+    
+    Possibly this class is not feature complete since it does not care about
+    multi-relation queries. It should probably use
+    :func:`nani.fieldtranslator.translate` after the first level if it hits
+    the :term:`Shared Model`.てz
         
     .. method:: get(self, key)
     
