@@ -6,6 +6,14 @@ Welcome to Project 何's documentation!
              experimental stage and not all APIs are implemented or finalized
              yet.
 
+
+******************
+About this project
+******************
+
+project-nani provides a high level API to maintain multilingual content in your
+database using the Django ORM.
+
 *************************
 Before you dive into this
 *************************
