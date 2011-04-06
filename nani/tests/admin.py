@@ -11,10 +11,34 @@ class BaseAdminTests(object):
     def _get_admin(self, model):
         return admin.site._registry[model]
 
-
 class NormalAdminTests(NaniTestCase, BaseAdminTests):
     fixtures = ['superuser.json']
     
+    def test_all_translations(self):
+        # Create an unstranslated model and get the translations
+        myadmin = self._get_admin(Normal)
+        obj = Normal.objects.untranslated().create(
+            shared_field="shared",
+        )
+        self.assertEqual(myadmin.all_translations(obj), "")
+        
+        # Create a english translated model and make sure the active language
+        # is highlighted in admin with <strong></strong>
+        obj = Normal.objects.language("en").create(
+            shared_field="shared",
+        )
+        with LanguageOverride('en'):
+            self.assertEqual(myadmin.all_translations(obj), "<strong>en</strong>")
+        
+        with LanguageOverride('ja'):
+            self.assertEqual(myadmin.all_translations(obj), "en")
+            
+        # An unsaved object, shouldnt have any translations
+        
+        obj = Normal()
+        self.assertEqual(myadmin.all_translations(obj), "")
+            
+            
     def test_admin_simple(self):
         SHARED = 'shared'
         TRANS = 'trans'
