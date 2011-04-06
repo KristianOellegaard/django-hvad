@@ -23,7 +23,7 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
         if opts.model:
             # bail out if a wrong model uses this form class
             if not issubclass(opts.model, TranslateableModel):
-                raise Exception(
+                raise TypeError(
                     "Only TranslateableModel subclasses may use TranslateableModelForm"
                 )
             mopts = opts.model._meta
