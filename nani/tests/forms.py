@@ -8,6 +8,15 @@ from django.db import models
 class NormalForm(TranslateableModelForm):
     class Meta:
         model = Normal
+        fields = ['shared_field', 'translated_field']
+
+class NormalMediaForm(TranslateableModelForm):
+    class Meta:
+        model = Normal
+    class Media:
+        css = {
+            'all': ('layout.css',)
+        }
 
 class FormTests(NaniTestCase):
     
@@ -30,6 +39,10 @@ class FormTests(NaniTestCase):
     def test_normal_model_form_instantiation(self):
         form = NormalForm()
         self.assertFalse(form.is_valid())
+        # Check if it works with media argument too
+        form = NormalMediaForm()
+        self.assertFalse(form.is_valid())
+        self.assertTrue("layout.css" in str(form.media))
         
     def test_normal_model_form_valid(self):
         SHARED = 'Shared'

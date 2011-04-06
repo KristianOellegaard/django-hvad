@@ -17,7 +17,7 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
         declared_fields = get_declared_fields(bases, attrs, False)
         new_class = super_new(cls, name, bases, attrs)
 
-        if 'media' not in attrs:
+        if 'Media' not in attrs:
             new_class.media = media_property(new_class)
         opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
         if opts.model:
