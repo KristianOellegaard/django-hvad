@@ -38,8 +38,6 @@ class TranslatedAttribute(BaseDescriptor):
         setattr(self.translation(instance), self.name, value)
     
     def __delete__(self, instance):
-        if not instance:
-            raise AttributeError()
         delattr(self.translation(instance), self.name)
 
 
@@ -53,12 +51,8 @@ class LanguageCodeAttribute(TranslatedAttribute):
         super(LanguageCodeAttribute, self).__init__(opts, 'language_code')
     
     def __set__(self, instance, value):
-        if not instance:
-            raise AttributeError()
         raise AttributeError("The 'language_code' attribute cannot be " +\
                     "changed directly! Use the translate() method instead.")
     
     def __delete__(self, instance):
-        if not instance:
-            raise AttributeError()
         raise AttributeError("The 'language_code' attribute cannot be deleted!")
