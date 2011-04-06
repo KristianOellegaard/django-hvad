@@ -35,8 +35,6 @@ class TranslatedAttribute(BaseDescriptor):
         return getattr(self.translation(instance), self.name)
     
     def __set__(self, instance, value):
-        if not instance:
-            raise AttributeError()
         setattr(self.translation(instance), self.name, value)
     
     def __delete__(self, instance):
