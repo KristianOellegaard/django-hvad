@@ -48,6 +48,9 @@ class IterTests(NaniTestCase):
                     index += 1
                     self.assertEqual(obj.shared_field, DOUBLE_NORMAL[index]['shared_field'])
                     self.assertEqual(obj.translated_field, DOUBLE_NORMAL[index]['translated_field_ja'])
+    def test_iter_unique_reply(self):
+        # Make sure .all() only returns unique rows
+        self.assertEqual(len(Normal.objects.all()), len(Normal.objects.untranslated()))
 
 class UpdateTests(NaniTestCase):
     fixtures = ['double_normal.json']
