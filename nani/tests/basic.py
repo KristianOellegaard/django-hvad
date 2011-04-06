@@ -204,7 +204,8 @@ class FallbackTest(NaniTestCase):
                               getattr, obj, 'translated_field')
                               
 class DescriptorTests(NaniTestCase):
-    def test_translated_attribute_no_instance(self):
+    def test_translated_attribute_set(self):
+        # 'MyModel' should return the default field value, in case there is no translation
         from nani.models import TranslateableModel, TranslatedFields
         from django.db import models
         
@@ -214,3 +215,16 @@ class DescriptorTests(NaniTestCase):
                 hello = models.CharField(default=DEFAULT, max_length=128)
             )
         self.assertEqual(MyModel.hello, DEFAULT)
+    
+    def test_translated_attribute_delete(self):    
+        # Its not possible to delete the charfield, which should result in an AttributeError
+        obj = Normal.objects.language("en").create(shared_field="test", translated_field="en")
+        obj.save()
+        self.assertEqual(obj.translated_field, "en")
+        delattr(obj, 'translated_field')
+        self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+    
+    def test_languagecodeattribute(self):
+        # Its not possible to set/delete a language code
+        self.assertRaises(AttributeError, setattr, Normal(), 'language_code', "en")
+        self.assertRaises(AttributeError, delattr, Normal(), 'language_code')
