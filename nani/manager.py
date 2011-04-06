@@ -322,6 +322,8 @@ class TranslationQueryset(QuerySet):
 
     def defer(self, *fields):
         raise NotImplementedError()
+        fields = self._translate_fieldnames(fields)
+        return super(TranslationQueryset, self).defer(*fields)
 
     def only(self, *fields):
         raise NotImplementedError()
