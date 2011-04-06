@@ -135,7 +135,7 @@ class AdminEditTests(NaniTestCase, BaseAdminTests):
 
 class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
     def test_language_tabs(self):
-        obj = Normal()
+        obj = Normal.objects.language("en").create(shared_field="shared", translated_field="english")
         url = reverse('admin:app_normal_change', args=(1,))
         request = self.request_factory.get(url)
         normaladmin = self._get_admin(Normal)
@@ -146,7 +146,13 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
             _, tab_name, status = tab
             _, lang_name = lang
             self.assertEqual(tab_name, lang_name)
-            self.assertEqual(status, 'empty')
+            if lang == "en":
+                self.assertEqual(status, 'current')
+            elif lang == "ja":
+                self.assertEqual(status, 'available')
+                
+        with self.assertNumQueries(0) and LanguageOverride('en'):
+            normaladmin.get_language_tabs(request, None)
     
     def test_get_change_form_base_template(self):
         normaladmin = self._get_admin(Normal)
