@@ -202,3 +202,15 @@ class FallbackTest(NaniTestCase):
             self.assertEqual(obj.shared_field, 'Shared1')
             self.assertRaises(Normal._meta.translations_model.DoesNotExist,
                               getattr, obj, 'translated_field')
+                              
+class DescriptorTests(NaniTestCase):
+    def test_translated_attribute_no_instance(self):
+        from nani.models import TranslateableModel, TranslatedFields
+        from django.db import models
+        
+        DEFAULT = 'world'
+        class MyModel(TranslateableModel):
+            translations = TranslatedFields(
+                hello = models.CharField(default=DEFAULT, max_length=128)
+            )
+        self.assertEqual(MyModel.hello, DEFAULT)
