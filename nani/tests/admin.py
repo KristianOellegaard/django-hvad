@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.core.urlresolvers import reverse
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
+from nani.test_utils.request_factory import RequestFactory
 from testproject.app.models import Normal
 
 
@@ -38,6 +39,38 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests):
         obj = Normal()
         self.assertEqual(myadmin.all_translations(obj), "")
             
+    def test_get_object(self):
+        # Check if it returns a model, if there is at least one translation
+        myadmin = self._get_admin(Normal)
+        rf = RequestFactory()
+        get_request = rf.get('/admin/app/normal/')
+        
+        obj = Normal.objects.language("en").create(
+            shared_field="shared",
+        )
+        with LanguageOverride('en'):
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
+            
+        with LanguageOverride('ja'):
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
+            
+        # Check what happens if there is no translations at all
+        obj = Normal.objects.untranslated().create(
+            shared_field="shared",
+        )
+        self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
+        self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
+        
+            
+    def test_get_object_nonexisting(self):
+        # In case the object doesnt exist, it should return None
+        myadmin = self._get_admin(Normal)
+        rf = RequestFactory()
+        get_request = rf.get('/admin/app/normal/')
+        
+        self.assertEqual(myadmin.get_object(get_request, 1231), None)
             
     def test_admin_simple(self):
         SHARED = 'shared'
