@@ -90,8 +90,9 @@ class TranslateableAdmin(ModelAdmin):
         """
         if obj and obj.pk:
             languages = []
+            current_language = get_language()
             for language in obj.get_available_languages():
-                if language == get_language():
+                if language == current_language:
                     languages.append(u'<strong>%s</strong>' % language)
                 else:
                     languages.append(language)
