@@ -1,5 +1,4 @@
 from django.db import models
-from nani.fields import TranslatedForeignKey
 from nani.models import TranslateableModel, TranslatedFields
 
 class Normal(TranslateableModel):
