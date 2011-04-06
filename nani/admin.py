@@ -115,7 +115,7 @@ class TranslateableAdmin(ModelAdmin):
         obj = super(TranslateableAdmin, self).get_object(request, object_id)
         if obj:
             return obj
-        queryset = self.model.objects.all()
+        queryset = self.model.objects.untranslated()
         model = self.model
         try:
             object_id = model._meta.pk.to_python(object_id)
