@@ -298,7 +298,8 @@ class TranslationQueryset(QuerySet):
         raise NotImplementedError()
 
     def exclude(self, *args, **kwargs):
-        raise NotImplementedError()
+        newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
+        return super(TranslationQueryset, self).exclude(*newargs, **newkwargs)
 
     def complex_filter(self, filter_obj):
         # admin calls this with an empy filter_obj sometimes
