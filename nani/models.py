@@ -4,7 +4,7 @@ from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
 from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
-from nani.manager import TranslationManager
+from nani.manager import TranslationManager, TranslationsModelManager
 from nani.utils import SmartGetFieldByName
 from types import MethodType
 
@@ -37,6 +37,7 @@ def create_translations_model(model, related_name, meta, **fields):
     attrs.update(fields)
     attrs['Meta'] = Meta
     attrs['__module__'] = model.__module__
+    attrs['objects'] = TranslationsModelManager()
     attrs['language_code'] = models.CharField(max_length=15, db_index=True)
     # null=True is so we can prevent cascade deletion
     attrs['master'] = models.ForeignKey(model, related_name=related_name,

@@ -205,3 +205,36 @@ class DeleteTests(NaniTestCase):
         self.assertEqual(Normal.objects.count(), 2)
         self.assertEqual(Normal.objects._real_manager.count(), 2)
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
+
+
+class GetTranslationFromInstanceTests(NaniTestCase):
+    def test_simple(self):
+        # Create the instances
+        SHARED = 'shared'
+        TRANS_EN = 'English'
+        TRANS_JA = u'日本語'
+        en = Normal.objects.language('en').create(
+            shared_field=SHARED,
+            translated_field=TRANS_EN,
+        )
+        ja = en
+        ja.translate('ja')
+        ja.translated_field = TRANS_JA
+        ja.save()
+        
+        # get the english instance
+        en = Normal.objects.language('en').get()
+        
+        # get the japanese *translations*
+        ja_trans = en.translations.get_language('ja')
+        
+        # get the japanese *combined*
+        
+        ja = Normal.objects.language('ja').get(pk=en.pk)
+        
+        self.assertEqual(en.shared_field, SHARED)
+        self.assertEqual(en.translated_field, TRANS_EN)
+        self.assertRaises(AttributeError, getattr, ja_trans, 'shared_field')
+        self.assertEqual(ja_trans.translated_field, TRANS_JA)
+        self.assertEqual(ja.shared_field, SHARED)
+        self.assertEqual(ja.translated_field, TRANS_JA)
