@@ -86,7 +86,7 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(Normal.objects.count(), 1)
-        obj = Normal.objects.all()[0]
+        obj = Normal.objects.language('en')[0]
         self.assertEqual(obj.shared_field, SHARED)
         self.assertEqual(obj.translated_field, TRANS)
     

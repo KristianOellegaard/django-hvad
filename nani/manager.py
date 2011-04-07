@@ -196,6 +196,16 @@ class TranslationQueryset(QuerySet):
             language_code = get_language()
         self._language_code = language_code
         return self.filter(language_code=language_code)
+    
+    def __getitem__(self, k):
+        """
+        Handle getitem special since self.iterator is called *after* the
+        slicing happens, when it's no longer possible to filter a queryest.
+        Therefore the check for _language_code must be done here.
+        """
+        if not self._language_code:
+            return self.language().__getitem__(k)
+        return super(TranslationQueryset, self).__getitem__(k)
         
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
@@ -342,12 +352,23 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self)._clone(klass, setup, **kwargs)
     
     def iterator(self):
-        for obj in super(TranslationQueryset, self).iterator():
-            # non-cascade-deletion hack:
-            if not obj.master:
+        """
+        If this queryset is not filtered by a language code yet, it should be
+        filtered first by calling self.language.
+        
+        If someone doesn't want a queryset filtered by language, they should use
+        Model.objects.untranslated()
+        """
+        if not self._language_code:
+            for obj in self.language().iterator():
                 yield obj
-            else:
-                yield combine(obj)
+        else:
+            for obj in super(TranslationQueryset, self).iterator():
+                # non-cascade-deletion hack:
+                if not obj.master:
+                    yield obj
+                else:
+                    yield combine(obj)
 
 
 class TranslationManager(models.Manager):

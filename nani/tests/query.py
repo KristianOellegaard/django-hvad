@@ -21,7 +21,7 @@ class FilterTests(NaniTestCase):
         self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
         
     def test_translated_filter(self):
-        qs = Normal.objects.filter(translated_field__contains='English')
+        qs = Normal.objects.language('en').filter(translated_field__contains='English')
         self.assertEqual(qs.count(), 2)
         obj1, obj2 = qs
         self.assertEqual(obj1.shared_field, DOUBLE_NORMAL[1]['shared_field'])
@@ -50,7 +50,8 @@ class IterTests(NaniTestCase):
                     self.assertEqual(obj.translated_field, DOUBLE_NORMAL[index]['translated_field_ja'])
     def test_iter_unique_reply(self):
         # Make sure .all() only returns unique rows
-        self.assertEqual(len(Normal.objects.all()), len(Normal.objects.untranslated()))
+        with LanguageOverride('en'):
+            self.assertEqual(len(Normal.objects.all()), len(Normal.objects.untranslated()))
 
 class UpdateTests(NaniTestCase):
     fixtures = ['double_normal.json']
