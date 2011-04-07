@@ -11,12 +11,36 @@ from nani.utils import get_cached_translation, get_translation, combine
 
 class TranslateableModelFormMetaclass(ModelFormMetaclass):
     def __new__(cls, name, bases, attrs):
+        
+        """
+        Django 1.3 fix, that removes all Meta.fields and Meta.exclude
+        fieldnames that are in the translateable model. This ensures
+        that the superclass' init method doesnt throw a validation
+        error
+        """
+        fields = []
+        exclude = []
+        if "Meta" in attrs:
+            meta = attrs["Meta"]
+            if getattr(meta, "fields", False):
+                fields = meta.fields
+                meta.fields = []
+            if getattr(meta, "exclude", False):
+                exclude = meta.exclude
+                meta.exclude = []
+        # End 1.3 fix
+        
         super_new = super(TranslateableModelFormMetaclass, cls).__new__
         
         formfield_callback = attrs.pop('formfield_callback', None)
         declared_fields = get_declared_fields(bases, attrs, False)
         new_class = super_new(cls, name, bases, attrs)
-
+        
+        # Start 1.3 fix
+        if fields:
+            new_class.Meta.fields = fields
+            new_class.Meta.exclude = exclude
+        # End 1.3 fix
         if 'Media' not in attrs:
             new_class.media = media_property(new_class)
         opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
