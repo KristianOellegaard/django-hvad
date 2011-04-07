@@ -604,3 +604,13 @@ class TranslationAwareManager(models.Manager):
     def get_query_set(self):
         qs = TranslationAwareQueryset(self.model, using=self.db)
         return qs
+
+
+#===============================================================================
+# Translations Model Manager
+#===============================================================================
+
+
+class TranslationsModelManager(models.Manager):
+    def get_language(self, language):
+        return self.get(language_code=language)
