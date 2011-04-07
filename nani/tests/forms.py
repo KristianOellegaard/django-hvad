@@ -37,12 +37,20 @@ class FormTests(NaniTestCase):
         )
     
     def test_normal_model_form_instantiation(self):
+        # Basic example
         form = NormalForm()
         self.assertFalse(form.is_valid())
         # Check if it works with media argument too
         form = NormalMediaForm()
         self.assertFalse(form.is_valid())
         self.assertTrue("layout.css" in str(form.media))
+        # Check if it works with an instance of Normal
+        form = NormalForm(instance=Normal())
+        self.assertFalse(form.is_valid())
+        # Check if it works with an existing instance of Normal
+        n = Normal.objects.language("en").create(shared_field="test", translated_field="testen")
+        form = NormalForm(instance=n)
+        self.assertFalse(form.is_valid())
         
     def test_normal_model_form_valid(self):
         SHARED = 'Shared'
