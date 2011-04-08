@@ -206,9 +206,9 @@ class DeleteTests(NaniTestCase):
         
     def test_delete_translation(self):
         Normal.objects.language('en').delete_translations()
-        self.assertEqual(Normal.objects.count(), 2)
+        self.assertEqual(Normal.objects.untranslated().count(), 2)
         self.assertEqual(Normal.objects._real_manager.count(), 2)
-        self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 0)
 
 
 class GetTranslationFromInstanceTests(NaniTestCase):

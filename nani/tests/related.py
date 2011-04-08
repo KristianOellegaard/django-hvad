@@ -155,3 +155,9 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(translated_fields, expected_fields)
             for obj in by_translated_field:
                 self.assertTrue(obj in en.standards.all())
+                
+    def test_reverse_relation_query(self):
+        with LanguageOverride('en'):
+            s = Standard.objects.get(pk=1)
+            n = Normal.objects.language('en').get(standards__pk=s.pk)
+            self.assertEqual(s.normal, n)
