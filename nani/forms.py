@@ -56,7 +56,6 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
             shared_fields = mopts.get_all_field_names()
             
             # split exclude and include fieldnames into shared and translated
-            
             sfieldnames = [field for field in opts.fields or [] if field in shared_fields]
             tfieldnames = [field for field in opts.fields or [] if field not in shared_fields]
             sexclude = [field for field in opts.exclude or [] if field in shared_fields]
@@ -140,8 +139,8 @@ class TranslateableModelForm(ModelForm):
             fail_message = 'changed'
             new = False
         super(TranslateableModelForm, self).save(True)
-        trans_model = self.instance._meta.translations_model
         language_code = self.cleaned_data.get('language_code', get_language())
+        trans_model = self.instance._meta.translations_model
         if not new:
             trans = get_cached_translation(self.instance)
             if not trans:
@@ -156,3 +155,18 @@ class TranslateableModelForm(ModelForm):
         trans.language_code = language_code
         trans.master = self.instance
         return combine(trans)
+        
+    def _post_clean(self):
+        if self.instance.pk:
+            try:
+                trans = trans = get_translation(self.instance, self.instance.language_code)
+                trans.master = self.instance
+                self.instance = combine(trans)
+            except self.instance._meta.translations_model.DoesNotExist:
+                language_code = self.cleaned_data.get('language_code', get_language())
+                self.instance = self.instance.translate(language_code)
+        else:
+            language_code = self.cleaned_data.get('language_code', get_language())
+            self.instance = self.instance.translate(language_code)
+            self.instance.save(False)
+        return super(TranslateableModelForm, self)._post_clean()
