@@ -39,6 +39,7 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
         # Start 1.3 fix
         if fields:
             new_class.Meta.fields = fields
+        if exclude:
             new_class.Meta.exclude = exclude
         # End 1.3 fix
         if 'Media' not in attrs:
