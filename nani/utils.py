@@ -1,6 +1,8 @@
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
 from nani.exceptions import WrongManager
+from django.db.models.loading import get_models
+from django.db.models.fields.related import RelatedObject
 
 def combine(trans):
     """
@@ -47,8 +49,20 @@ class SmartGetFieldByName(object):
                                    "an untranslated model, you must use a "
                                    "translation aware manager, you can get one "
                                    "using "
-                                   "nani.utils.get_translation_aware_manager.")
+                                   "nani.utils.get_translation_aware_manager." %
+                                   name)
             raise
+            
+class SmartFillRelatedObjectsCache(object):
+    def __init__(self, real):
+        self.real = real
+
+    def __call__(self, meta):
+        self.real()        
+        for klass in get_models(include_auto_created=True):
+            for f in klass._meta.local_fields:
+                if f.rel and not isinstance(f.rel.to, str) and meta.shared_model._meta == f.rel.to._meta:
+                    meta._related_objects_cache[RelatedObject(f.rel.to, klass, f)] = None
 
 def permissive_field_by_name(self, name):
     """

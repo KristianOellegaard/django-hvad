@@ -5,7 +5,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager, TranslationsModelManager
-from nani.utils import SmartGetFieldByName
+from nani.utils import SmartGetFieldByName, SmartFillRelatedObjectsCache
 from types import MethodType
 
 
@@ -44,7 +44,12 @@ def create_translations_model(model, related_name, meta, **fields):
                                         editable=False, null=True)
     # Create and return the new model
     translations_model = ModelBase(name, (BaseTranslationModel,), attrs)
-    translations_model._meta.shared_model = model
+    opts = translations_model._meta
+    opts.shared_model = model
+    _smart_fill_related_objects_cache = SmartFillRelatedObjectsCache(opts._fill_related_objects_cache)
+    translations_model._meta._fill_related_objects_cache = MethodType(_smart_fill_related_objects_cache 
+                                                                    ,translations_model._meta,
+                                        translations_model._meta.__class__)
     return translations_model
 
 
