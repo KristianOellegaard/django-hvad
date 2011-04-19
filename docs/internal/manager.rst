@@ -436,7 +436,7 @@ TranslationAwareQueryset
         Calls :meth:`language` using :attr:`_language_code`
         as an argument.
     
-        Translates *args* and **kwargs* into translation aware *args* and
+        Translates *args* and *kwargs* into translation aware *args* and
         *kwargs* using :func:`nani.fieldtranslator.translate` by iterating over
         the *kwargs* dictionary and translating it's keys and recursing over the
         :class:`django.db.models.expressions.Q` objects in *args* using 
