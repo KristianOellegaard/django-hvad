@@ -6,8 +6,8 @@ from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
 from nani.test_utils.request_factory import RequestFactory
 from testproject.app.models import Normal
-from nani.admin import translateable_modelform_factory
-from nani.forms import TranslateableModelForm 
+from nani.admin import translatable_modelform_factory
+from nani.forms import TranslatableModelForm 
 
 class BaseAdminTests(object):
     def _get_admin(self, model):
@@ -159,21 +159,21 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
         template = normaladmin.get_change_form_base_template()
         self.assertEqual(template, 'admin/change_form.html')
         
-    def test_translateable_modelform_factory(self):
-        t = translateable_modelform_factory(Normal, fields=['shared_field'], exclude=['id'])
+    def test_translatable_modelform_factory(self):
+        t = translatable_modelform_factory(Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         
-        t = translateable_modelform_factory(Normal, fields=['shared_field'], exclude=['id'])
+        t = translatable_modelform_factory(Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         
-        class TestForm(TranslateableModelForm):
+        class TestForm(TranslatableModelForm):
             class Meta:
                fields = ['shared_field'] 
                exclude = ['id']
                
-        t = translateable_modelform_factory(Normal, form=TestForm)
+        t = translatable_modelform_factory(Normal, form=TestForm)
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         

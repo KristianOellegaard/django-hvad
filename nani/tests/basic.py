@@ -206,11 +206,11 @@ class FallbackTest(NaniTestCase):
 class DescriptorTests(NaniTestCase):
     def test_translated_attribute_set(self):
         # 'MyModel' should return the default field value, in case there is no translation
-        from nani.models import TranslateableModel, TranslatedFields
+        from nani.models import TranslatableModel, TranslatedFields
         from django.db import models
         
         DEFAULT = 'world'
-        class MyModel(TranslateableModel):
+        class MyModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(default=DEFAULT, max_length=128)
             )

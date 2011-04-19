@@ -1,7 +1,7 @@
 from django.db import models
-from nani.models import TranslateableModel, TranslatedFields
+from nani.models import TranslatableModel, TranslatedFields
 
-class Normal(TranslateableModel):
+class Normal(TranslatableModel):
     shared_field = models.CharField(max_length=255)
     translations = TranslatedFields(
         translated_field = models.CharField(max_length=255)
@@ -11,7 +11,7 @@ class Normal(TranslateableModel):
         return self.safe_translation_getter('translated_field', self.shared_field)
 
     
-class Related(TranslateableModel):
+class Related(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='rel1', null=True)
     
     translated_fields = TranslatedFields(
@@ -24,7 +24,7 @@ class Standard(models.Model):
     normal = models.ForeignKey(Normal, related_name='standards')
     
 
-class Date(TranslateableModel):
+class Date(TranslatableModel):
     shared_date = models.DateTimeField()
     
     translated_fields = TranslatedFields(

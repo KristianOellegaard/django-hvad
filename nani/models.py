@@ -75,20 +75,20 @@ class BaseTranslationModel(models.Model):
         abstract = True
         
 
-class TranslateableModelBase(ModelBase):
+class TranslatableModelBase(ModelBase):
     """
     Metaclass for models with translated fields (TranslatableModel)
     """
     def __new__(cls, name, bases, attrs):
-        super_new = super(TranslateableModelBase, cls).__new__
-        parents = [b for b in bases if isinstance(b, TranslateableModelBase)]
+        super_new = super(TranslatableModelBase, cls).__new__
+        parents = [b for b in bases if isinstance(b, TranslatableModelBase)]
         if not parents:
-            # If this isn't a subclass of TranslateableModel, don't do anything special.
+            # If this isn't a subclass of TranslatableModel, don't do anything special.
             return super_new(cls, name, bases, attrs)
         new_model = super_new(cls, name, bases, attrs)
         if not isinstance(new_model.objects, TranslationManager):
             raise ImproperlyConfigured(
-                "The default manager on a TranslateableModel must be a "
+                "The default manager on a TranslatableModel must be a "
                 "TranslationManager instance or an instance of a subclass of "
                 "TranslationManager, the default manager of %r is not." %
                 new_model)
@@ -106,7 +106,7 @@ class TranslateableModelBase(ModelBase):
             if issubclass(obj.related.model, BaseTranslationModel):
                 if found:
                     raise ImproperlyConfigured(
-                        "A TranslateableModel can only define one set of "
+                        "A TranslatableModel can only define one set of "
                         "TranslatedFields, %r defines more than one" %
                         new_model)
                 else:
@@ -116,7 +116,7 @@ class TranslateableModelBase(ModelBase):
         if not found:
             raise ImproperlyConfigured(
                 "No TranslatedFields found on %r, subclasses of "
-                "TranslateableModel must define TranslatedFields." % new_model
+                "TranslatableModel must define TranslatedFields." % new_model
             )
         
         post_save.connect(new_model.save_translations, sender=new_model, weak=False)
@@ -129,11 +129,11 @@ class TranslateableModelBase(ModelBase):
         return new_model
     
 
-class TranslateableModel(models.Model):
+class TranslatableModel(models.Model):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
     """
-    __metaclass__ = TranslateableModelBase
+    __metaclass__ = TranslatableModelBase
     
     # change the default manager to the translation manager
     objects = TranslationManager()
@@ -161,7 +161,7 @@ class TranslateableModel(models.Model):
         if not tkwargs.keys():
             # if there where no translated options, then we assume this is a
             # regular init and don't want to do any funky stuff
-            super(TranslateableModel, self).__init__(*args, **kwargs)
+            super(TranslatableModel, self).__init__(*args, **kwargs)
             return
         
         # there was at least one of the translated fields (or a language_code) 
@@ -171,7 +171,7 @@ class TranslateableModel(models.Model):
             if key in self._shared_field_names:
                 skwargs[key] = kwargs.pop(key)
         # do the regular init minus the translated fields
-        super(TranslateableModel, self).__init__(*args, **skwargs)
+        super(TranslatableModel, self).__init__(*args, **skwargs)
         # prepopulate the translations model cache with an translation model
         tkwargs['language_code'] = tkwargs.get('language_code', get_language())
         tkwargs['master'] = self
@@ -184,7 +184,7 @@ class TranslateableModel(models.Model):
         Contribute translations options to the inner Meta class and set the
         descriptors.
         
-        This get's called from TranslateableModelBase.__new__
+        This get's called from TranslatableModelBase.__new__
         """
         opts = cls._meta
         opts.translations_accessor = rel.get_accessor_name()

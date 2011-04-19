@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-from nani.forms import TranslateableModelForm, TranslateableModelFormMetaclass
+from nani.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
 from django.db import models
 
-class NormalForm(TranslateableModelForm):
+class NormalForm(TranslatableModelForm):
     class Meta:
         model = Normal
         fields = ['shared_field', 'translated_field']
 
-class NormalMediaForm(TranslateableModelForm):
+class NormalMediaForm(TranslatableModelForm):
     class Meta:
         model = Normal
     class Media:
@@ -21,9 +21,9 @@ class NormalMediaForm(TranslateableModelForm):
 class FormTests(NaniTestCase):
     
     def test_nontranslatablemodelform(self):
-        # Make sure that TranslateableModelForm won't accept a regular model
+        # Make sure that TranslatableModelForm won't accept a regular model
         
-        # "Fake" model to use for the TranslateableModelForm
+        # "Fake" model to use for the TranslatableModelForm
         class NonTranslatableModel(models.Model):
             field = models.CharField(max_length=128)
         # Meta class for use below
@@ -31,8 +31,8 @@ class FormTests(NaniTestCase):
             model = NonTranslatableModel
         # Make sure we do indeed get an exception, if we try to initialise it
         self.assertRaises(TypeError,
-            TranslateableModelFormMetaclass,
-            'NonTranslateableModelForm', (TranslateableModelForm,),
+            TranslatableModelFormMetaclass,
+            'NonTranslatableModelForm', (TranslatableModelForm,),
             {'Meta': Meta}
         )
     
