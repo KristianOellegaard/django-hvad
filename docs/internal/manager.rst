@@ -329,7 +329,7 @@ TranslationManager
 
 .. class:: TranslationManager
 
-    Manager to be used on :class:`nani.models.TranslateableModel`.
+    Manager to be used on :class:`nani.models.TranslatableModel`.
     
     .. attribute:: translations_model
     

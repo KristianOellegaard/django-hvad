@@ -8,18 +8,18 @@ Define a multilingual model
 
 Defining a multilingual model is very similar to defining a normal Django model,
 with the difference that instead of subclassing :class:`django.db.models.Model`
-you have to subclass :class:`nani.models.TranslateableModel` and that all fields
-which should be translateable have to be wrapped inside a 
+you have to subclass :class:`nani.models.TranslatableModel` and that all fields
+which should be translatable have to be wrapped inside a 
 :class:`nani.models.TranslatedFields`.
 
-Let's write an easy model which describes Django applications with translateable
+Let's write an easy model which describes Django applications with translatable
 descriptions and information about who wrote the description::
 
     from django.db import models
-    from nani.models import TranslateableModel, TranslatedFields
+    from nani.models import TranslatableModel, TranslatedFields
     
     
-    class DjangoApplication(TranslateableModel):
+    class DjangoApplication(TranslatableModel):
         name = models.CharField(max_length=255, unique=True)
         author = models.CharField(max_length=255)
         

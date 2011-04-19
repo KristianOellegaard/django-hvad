@@ -23,7 +23,7 @@ TranslatedFields
 .. class:: TranslatedFields
 
     A wrapper for the translated fields which is set onto
-    :class:`TranslateableModel` subclasses to define what fields are translated.
+    :class:`TranslatableModel` subclasses to define what fields are translated.
     
     Internally this is just used because Django calls the
     :meth:`contribute_to_class` method on all attributes of a model, if such a
@@ -46,21 +46,21 @@ BaseTranslationModel
 
 
 **********************
-TranslateableModelBase        
+TranslatableModelBase        
 **********************
 
-.. class:: TranslateableModelBase
+.. class:: TranslatableModelBase
 
-    Metaclass of :class:`TranslateableModel`.
+    Metaclass of :class:`TranslatableModel`.
 
     .. method:: __new__(cls, name, bases, attrs)
 
 
 ******************
-TranslateableModel        
+TranslatableModel        
 ******************
 
-.. class:: TranslateableModel
+.. class:: TranslatableModel
 
     A model which has translated fields on it. Must define one and exactly one
     attribute which is an instance of :class:`TranslatedFields`. This model is
@@ -72,7 +72,7 @@ TranslateableModel
     :func:`django.utils.translations.get_language` is used to get the language
     for the :term:`Translations Model` instance that gets initialized.
     
-    .. note:: When initializing a :class:`TranslateableModel`, positional
+    .. note:: When initializing a :class:`TranslatableModel`, positional
               arguments are only supported for the shared fields.
 
     .. attribute:: objects
@@ -89,14 +89,14 @@ TranslateableModel
     
     .. classmethod:: contribute_translations(cls, rel)
     
-        Gets called from the :class:`TranslateableModelBase` to set the
+        Gets called from the :class:`TranslatableModelBase` to set the
         descriptors of the fields on the :term:`Translations Model` onto the
         model.
 
     .. classmethod:: save_translations(cls, instance, **kwargs)
     
         This classmethod is connected to the model's post save signal from the
-        :class:`TranslateableModelBase` and saves the cached translation if it's
+        :class:`TranslatableModelBase` and saves the cached translation if it's
         available.
     
     .. method:: translate(self, language_code)
@@ -118,7 +118,7 @@ TranslateableModel
 Extra information on _meta of Shared Models
 ===========================================
 
-The options (meta) on :class:`TranslateableModel` subclasses have a few extra
+The options (meta) on :class:`TranslatableModel` subclasses have a few extra
 attributes holding information about the translations.
 
 
