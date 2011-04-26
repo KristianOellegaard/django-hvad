@@ -95,9 +95,7 @@ class TranslatableModelBase(ModelBase):
         
         opts = new_model._meta
         found = False
-        local_field_names = [ff.name for ff in opts.fields]
-        field_names = opts.get_all_field_names()
-        for relation in [f for f in field_names if not f in local_field_names]:
+        for relation in new_model.__dict__.keys():
             obj = getattr(new_model, relation)
             if not hasattr(obj, 'related'):
                 continue
