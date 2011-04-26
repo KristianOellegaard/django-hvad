@@ -1,6 +1,6 @@
 from django.contrib import admin
 from models import Normal
-from nani.admin import TranslateableAdmin
+from nani.admin import TranslatableAdmin
 
 
-admin.site.register(Normal, TranslateableAdmin)
+admin.site.register(Normal, TranslatableAdmin)

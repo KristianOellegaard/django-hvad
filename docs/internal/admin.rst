@@ -4,7 +4,7 @@
 
 .. module:: nani.admin
 
-.. function:: translateable_modelform_factory(model, form=TranslateableModelForm, fields=None, exclude=None, formfield_callback=None)
+.. function:: translatable_modelform_factory(model, form=TranslatableModelForm, fields=None, exclude=None, formfield_callback=None)
     
     The same as :func:`django.forms.models.modelform_factory` but uses ``type``
     instead of :class:`django.forms.models.ModelFormMetaclass` to create the
@@ -12,13 +12,13 @@
     
 
 ******************
-TranslateableAdmin
+TranslatableAdmin
 ******************
 
-.. class:: TranslateableAdmin
+.. class:: TranslatableAdmin
 
     A subclass of :class:`django.contrib.admin.ModelAdmin` to be used for
-    :class:`nani.models.TranslateableModel` subclasses.
+    :class:`nani.models.TranslatableModel` subclasses.
     
     .. attribute:: query_language_key
         
@@ -28,7 +28,7 @@ TranslateableAdmin
     .. attribute:: form
     
         The form to be used for this admin class, defaults to
-        :class:`nani.forms.TranslateableModelForm` and if overwritten should
+        :class:`nani.forms.TranslatableModelForm` and if overwritten should
         always be a subclass of that class.
     
     .. attribute:: change_form_template
@@ -40,7 +40,7 @@ TranslateableAdmin
     
     .. method:: get_form(self, request, obj=None, **kwargs)
     
-        Returns a form created by :func:`translateable_modelform_factory`.
+        Returns a form created by :func:`translatable_modelform_factory`.
     
     .. method:: all_translations(self, obj)
     

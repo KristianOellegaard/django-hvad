@@ -6,12 +6,12 @@
 
 
 *******************************
-TranslateableModelFormMetaclass
+TranslatableModelFormMetaclass
 *******************************
 
-.. class:: TranslateableModelFormMetaclass
+.. class:: TranslatableModelFormMetaclass
 
-    Metaclass of :class:`TranslateableModelForm`.
+    Metaclass of :class:`TranslatableModelForm`.
 
     .. method:: __new__(cls, name, bases, attrs)
     
@@ -24,14 +24,14 @@ TranslateableModelFormMetaclass
 
 
 **********************
-TranslateableModelForm
+TranslatableModelForm
 **********************
 
-.. class:: TranslateableModelForm(ModelForm)
+.. class:: TranslatableModelForm(ModelForm)
 
     .. attribute:: __metaclass__
     
-        :class:`TranslateableMOdelFormMetaclass`
+        :class:`TranslatableMOdelFormMetaclass`
 
     .. method:: __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList, label_suffix=':', empty_permitted=False, instance=None)
     

@@ -3,7 +3,7 @@ Admin
 #####
 
 When you want to use a :term:`Translated Model` in the Django
-admin, you have to subclass :class:`nani.admin.TranslateableAdmin` instead of
+admin, you have to subclass :class:`nani.admin.TranslatableAdmin` instead of
 :class:`django.contrib.admin.ModelAdmin`.
 
 
@@ -21,7 +21,7 @@ all_translations
 
 
 ***********************************************************
-ModelAdmin APIs you should not change on TranslateableAdmin
+ModelAdmin APIs you should not change on TranslatableAdmin
 ***********************************************************
 
 Some public APIs on :class:`django.contrib.admin.ModelAdmin` are crucial for
@@ -43,7 +43,7 @@ automatically extend that template if it's available.
 get_form
 ========
 
-Use :attr:`nani.admin.TranslateableAdmin.form` instead, but please see the notes
+Use :attr:`nani.admin.TranslatableAdmin.form` instead, but please see the notes
 regarding :ref:`admin-forms-public`.
 
 render_change_form
@@ -77,17 +77,17 @@ Forms in admin
 **************
 
 If you want to alter the form to be used on your
-:class:`nani.admin.TranslateableAdmin` subclass, it must inherit from
-:class:`nani.forms.TranslateableModelForm`. For more informations, see
+:class:`nani.admin.TranslatableAdmin` subclass, it must inherit from
+:class:`nani.forms.TranslatableModelForm`. For more informations, see
 :ref:`forms-public`.
 
 
 ***************************************************
-ModelAdmin APIs not available on TranslateableAdmin
+ModelAdmin APIs not available on TranslatableAdmin
 ***************************************************
 
 A list of public APIs on :class:`django.contrib.admin.ModelAdmin` which are not
-implemented on :class:`nani.admin.TranslateableAdmin`. 
+implemented on :class:`nani.admin.TranslatableAdmin`. 
 
 * :attr:`list_display` [#f1]_
 * :attr:`list_display_links` [#f1]_

@@ -5,16 +5,16 @@ from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions
 from django.forms.util import ErrorList
 from django.forms.widgets import media_property
 from django.utils.translation import get_language
-from nani.models import TranslateableModel
+from nani.models import TranslatableModel
 from nani.utils import get_cached_translation, get_translation, combine
 
 
-class TranslateableModelFormMetaclass(ModelFormMetaclass):
+class TranslatableModelFormMetaclass(ModelFormMetaclass):
     def __new__(cls, name, bases, attrs):
         
         """
         Django 1.3 fix, that removes all Meta.fields and Meta.exclude
-        fieldnames that are in the translateable model. This ensures
+        fieldnames that are in the translatable model. This ensures
         that the superclass' init method doesnt throw a validation
         error
         """
@@ -30,7 +30,7 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
                 meta.exclude = []
         # End 1.3 fix
         
-        super_new = super(TranslateableModelFormMetaclass, cls).__new__
+        super_new = super(TranslatableModelFormMetaclass, cls).__new__
         
         formfield_callback = attrs.pop('formfield_callback', None)
         declared_fields = get_declared_fields(bases, attrs, False)
@@ -47,9 +47,9 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
         opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
         if opts.model:
             # bail out if a wrong model uses this form class
-            if not issubclass(opts.model, TranslateableModel):
+            if not issubclass(opts.model, TranslatableModel):
                 raise TypeError(
-                    "Only TranslateableModel subclasses may use TranslateableModelForm"
+                    "Only TranslatableModel subclasses may use TranslatableModelForm"
                 )
             mopts = opts.model._meta
             
@@ -105,8 +105,8 @@ class TranslateableModelFormMetaclass(ModelFormMetaclass):
         return new_class
 
 
-class TranslateableModelForm(ModelForm):
-    __metaclass__ = TranslateableModelFormMetaclass
+class TranslatableModelForm(ModelForm):
+    __metaclass__ = TranslatableModelFormMetaclass
 
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
@@ -126,7 +126,7 @@ class TranslateableModelForm(ModelForm):
         if initial is not None:
             object_data.update(initial)
         initial = object_data
-        super(TranslateableModelForm, self).__init__(data, files, auto_id,
+        super(TranslatableModelForm, self).__init__(data, files, auto_id,
                                                      prefix, object_data,
                                                      error_class, label_suffix,
                                                      empty_permitted, instance)
@@ -138,9 +138,9 @@ class TranslateableModelForm(ModelForm):
         else:
             fail_message = 'changed'
             new = False
-        super(TranslateableModelForm, self).save(True)
-        language_code = self.cleaned_data.get('language_code', get_language())
+        super(TranslatableModelForm, self).save(True)
         trans_model = self.instance._meta.translations_model
+        language_code = self.cleaned_data.get('language_code', get_language())
         if not new:
             trans = get_cached_translation(self.instance)
             if not trans:

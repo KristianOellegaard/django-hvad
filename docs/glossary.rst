@@ -21,10 +21,10 @@ Glossary
         A field which is not translated, thus *shared* between the languages.
         
     Translated Fields
-        A field which is translateable on a model.
+        A field which is translatable on a model.
         
     Normal Model
         A Django model that does not have :term:`Translated Fields`.
         
     Translated Model
-        A Django model that subclasses :class:`nani.models.TranslateableModel`.
+        A Django model that subclasses :class:`nani.models.TranslatableModel`.

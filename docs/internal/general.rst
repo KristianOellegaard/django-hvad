@@ -11,7 +11,7 @@ How it works
 Model Definition
 ================
 
-The :class:`nani.models.TranslateableModelBase` metaclass scans all attributes
+The :class:`nani.models.TranslatableModelBase` metaclass scans all attributes
 on the model defined for instances of :class:`nani.models.TranslatedFields`, and
 if it finds one, sets the respective options onto meta.
 

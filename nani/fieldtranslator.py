@@ -12,13 +12,13 @@ def _build_model_info(model):
     """
     Builds the model information dictinary for get_model_info
     """
-    from nani.models import BaseTranslationModel, TranslateableModel
+    from nani.models import BaseTranslationModel, TranslatableModel
     info = {}
     if issubclass(model, BaseTranslationModel):
         info['type'] = TRANSLATIONS
         info['shared'] = model._meta.shared_model._meta.get_all_field_names() + ['pk']
         info['translated'] = model._meta.get_all_field_names()
-    elif issubclass(model, TranslateableModel):
+    elif issubclass(model, TranslatableModel):
         info['type'] = TRANSLATED
         info['shared'] = model._meta.get_all_field_names() + ['pk']
         info['translated'] = model._meta.translations_model._meta.get_all_field_names()

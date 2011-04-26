@@ -6,11 +6,11 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import find_template
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
-from nani.forms import TranslateableModelForm
+from nani.forms import TranslatableModelForm
 import urllib
 
 
-def translateable_modelform_factory(model, form=TranslateableModelForm,
+def translatable_modelform_factory(model, form=TranslatableModelForm,
                                     fields=None, exclude=None,
                                     formfield_callback=None):
     # Create the inner Meta class. FIXME: ideally, we should be able to
@@ -42,11 +42,11 @@ def translateable_modelform_factory(model, form=TranslateableModelForm,
     return type(class_name, (form,), form_class_attrs)
 
 
-class TranslateableAdmin(ModelAdmin):
+class TranslatableAdmin(ModelAdmin):
     
     query_language_key = 'language'
     
-    form = TranslateableModelForm
+    form = TranslatableModelForm
     
     change_form_template = 'admin/nani/change_form.html'
     
@@ -77,7 +77,7 @@ class TranslateableAdmin(ModelAdmin):
             "formfield_callback": old_formfield_callback,
         }
         defaults.update(kwargs)
-        return translateable_modelform_factory(self.model, **defaults)
+        return translatable_modelform_factory(self.model, **defaults)
     
     def all_translations(self, obj):
         """
@@ -107,13 +107,13 @@ class TranslateableAdmin(ModelAdmin):
         context['title'] = '%s (%s)' % (context['title'], self._language(request))
         context['language_tabs'] = self.get_language_tabs(request, obj)
         context['base_template'] = self.get_change_form_base_template()
-        return super(TranslateableAdmin, self).render_change_form(request,
+        return super(TranslatableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,
                                                                   form_url, obj)
         
     def get_object(self, request, object_id):
-        obj = super(TranslateableAdmin, self).get_object(request, object_id)
+        obj = super(TranslatableAdmin, self).get_object(request, object_id)
         if obj:
             return obj
         queryset = self.model.objects.untranslated()
@@ -131,7 +131,7 @@ class TranslateableAdmin(ModelAdmin):
     
     def queryset(self, request):
         language = self._language(request)
-        qs = super(TranslateableAdmin, self).queryset(request)
+        qs = super(TranslatableAdmin, self).queryset(request)
         return qs.language(language)
     
     def _language(self, request):
