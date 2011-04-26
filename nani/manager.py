@@ -265,7 +265,9 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
 
     def aggregate(self, *args, **kwargs):
-        raise NotImplementedError()
+        for kwarg in kwargs:
+            kwargs[kwarg] = kwargs[kwarg].__class__(self._translate_fieldnames([kwargs[kwarg].lookup])[0])
+        return super(TranslationQueryset, self).aggregate(*args, **kwargs)
 
     def latest(self, field_name=None):
         if field_name:
@@ -304,8 +306,10 @@ class TranslationQueryset(QuerySet):
         fields = self._translate_fieldnames(fields)
         return super(TranslationQueryset, self).values_list(*fields, **kwargs)
 
-    def dates(self, field_name, kind, order='ASC'):
-        raise NotImplementedError()
+    def dates(self, field_name, kind=None, order='ASC'):
+        if type(field_name) != list:
+            field_name = [field_name]
+        return super(TranslationQueryset, self).dates(*self._translate_fieldnames(field_name), kind=kind, order=order)
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
