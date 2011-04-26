@@ -1,6 +1,7 @@
 from django.db import models
 from nani.models import TranslatableModel, TranslatedFields
 
+
 class Normal(TranslatableModel):
     shared_field = models.CharField(max_length=255)
     translations = TranslatedFields(
@@ -22,6 +23,9 @@ class Related(TranslatableModel):
 class Standard(models.Model):
     normal_field = models.CharField(max_length=255)
     normal = models.ForeignKey(Normal, related_name='standards')
+
+class Other(models.Model):
+    normal = models.ForeignKey(Normal, related_name='others')
     
 
 class Date(TranslatableModel):

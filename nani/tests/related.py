@@ -4,7 +4,7 @@ from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import SingleNormalTestCase, NaniTestCase
 from nani.utils import get_translation_aware_manager
-from testproject.app.models import Normal, Related, Standard
+from testproject.app.models import Normal, Related, Standard, Other
 
 
 class NormalToNormalFKTest(SingleNormalTestCase):
@@ -155,9 +155,19 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(translated_fields, expected_fields)
             for obj in by_translated_field:
                 self.assertTrue(obj in en.standards.all())
-                
-    def test_reverse_relation_query(self):
-        with LanguageOverride('en'):
-            s = Standard.objects.get(pk=1)
-            n = Normal.objects.language('en').get(standards__pk=s.pk)
-            self.assertEqual(s.normal, n)
+
+
+class TripleRelationTests(NaniTestCase):
+    def test_triple(self):
+        normal = Normal.objects.language('en').create(shared_field='SHARED', translated_field='English')
+        other = Other.objects.create(normal=normal)
+        standard = Standard.objects.create(normal=normal, normal_field='NORMAL FIELD')
+        
+        obj = Normal.objects.language('en').get(standards__pk=standard.pk)
+        self.assertEqual(obj.pk, normal.pk)
+        
+        obj = Normal.objects.language('en').get(others__pk=other.pk)
+        self.assertEqual(obj.pk, normal.pk)
+        
+        obj = get_translation_aware_manager(Standard).get(normal__others__pk=other.pk)
+        self.assertEqual(obj.pk, standard.pk)

@@ -114,7 +114,7 @@ class TranslationQueryset(QuerySet):
         for key, value in kwargs.items():
             newkwargs[self.field_translator.get(key)] = value
         # Translate args (Q objects) from '<shared_field>' to
-        # 'master_<shared_field>' where necessary.
+        # 'master__<shared_field>' where necessary.
         newargs = []
         for q in args:
             newargs.append(self._recurse_q(q))
