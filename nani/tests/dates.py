@@ -14,3 +14,10 @@ class LatestTests(NaniTestCase):
         self.assertEqual(latest.pk, DATES_REVERSED[D3]['translated_date_en'])
         latest = Date.objects.language('ja').latest('translated_date')
         self.assertEqual(latest.pk, DATES_REVERSED[D3]['translated_date_ja'])
+
+class DatesTests(NaniTestCase):
+    fixtures = ['dates.json']
+    def test_objects_dates(self):
+        self.assertEqual(len(Date.objects.language('en').dates("shared_date", "year")), 2)
+        self.assertEqual(len(Date.objects.language('en').dates("shared_date", "month")), 3)
+        self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day")), 3)
