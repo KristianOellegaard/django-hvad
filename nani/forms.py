@@ -169,4 +169,4 @@ class TranslatableModelForm(ModelForm):
             language_code = self.cleaned_data.get('language_code', get_language())
             self.instance = self.instance.translate(language_code)
             self.instance.save(False)
-        return super(TranslateableModelForm, self)._post_clean()
+        return super(TranslatableModelForm, self)._post_clean()
