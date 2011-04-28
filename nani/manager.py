@@ -265,9 +265,17 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
 
     def aggregate(self, *args, **kwargs):
-        for kwarg in kwargs:
-            kwargs[kwarg] = kwargs[kwarg].__class__(self._translate_fieldnames([kwargs[kwarg].lookup])[0])
-        return super(TranslationQueryset, self).aggregate(*args, **kwargs)
+        """
+        Loops over all the passed aggregates and translates the fieldnames
+        """
+        newargs, newkwargs = [], {}
+        for arg in args:
+            arg.lookup = self._translate_fieldnames(arg.lookup)
+            newargs.append(arg)
+        for key, value in kwargs:
+            kwargs[key].lookup = self._translate_fieldnames(value)
+            newkwargs[key] = kwargs[key]
+        return super(TranslationQueryset, self).aggregate(*newargs, **newkwargs)
 
     def latest(self, field_name=None):
         if field_name:
