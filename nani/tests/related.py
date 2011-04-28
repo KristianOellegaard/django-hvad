@@ -12,7 +12,7 @@ class NormalToNormalFKTest(SingleNormalTestCase):
         """
         'normal' (aka 'shared') relations are relations from the shared (or
         normal) model to another shared (or normal) model.
-        
+
         They should behave like normal foreign keys in Django
         """
         normal = self.get_obj()
@@ -25,7 +25,7 @@ class NormalToNormalFKTest(SingleNormalTestCase):
 
 class StandardToTransFKTest(NaniTestCase):
     fixtures = ['standard.json']
-    
+
     def test_relation(self):
         en = Normal.objects.language('en').get(pk=1)
         ja = Normal.objects.language('ja').get(pk=1)
@@ -42,7 +42,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(related.normal.shared_field, ja.shared_field)
             self.assertEqual(related.normal.translated_field, ja.translated_field)
             self.assertTrue(related in ja.standards.all())
-    
+
     def test_num_queries(self):
         with LanguageOverride('en'):
             en = Normal.objects.language('en').get(pk=1)
@@ -62,7 +62,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(by_pk.normal.shared_field, en.shared_field)
             self.assertEqual(by_pk.normal.translated_field, en.translated_field)
             self.assertTrue(by_pk in en.standards.all())
-            
+
     def test_lookup_by_shared_field(self):
         en = Normal.objects.language('en').get(pk=1)
         by_shared_field = Standard.objects.get(normal__shared_field=en.shared_field)
@@ -71,7 +71,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(by_shared_field.normal.shared_field, en.shared_field)
             self.assertEqual(by_shared_field.normal.translated_field, en.translated_field)
             self.assertTrue(by_shared_field in en.standards.all())
-    
+
     def test_lookup_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=1)
         translation_aware_manager = get_translation_aware_manager(Standard)
@@ -81,13 +81,13 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
             self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
             self.assertTrue(by_translated_field in en.standards.all())
-            
+
     def test_lookup_by_translated_field_requires_translation_aware_manager(self):
         en = Normal.objects.language('en').get(pk=1)
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.get,
                               normal__translated_field=en.translated_field)
-    
+
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=1)
         translation_aware_manager = get_translation_aware_manager(Standard)
@@ -98,7 +98,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
             self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
             self.assertTrue(by_translated_field in en.standards.all())
-            
+
     def test_filter_by_shared_field(self):
         en = Normal.objects.language('en').get(pk=1)
         with LanguageOverride('en'):
@@ -114,7 +114,7 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(translated_fields, expected_fields)
             for obj in by_shared_field:
                 self.assertTrue(obj in en.standards.all())
-    
+
     def test_filter_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=1)
         translation_aware_manager = get_translation_aware_manager(Standard)
@@ -131,13 +131,13 @@ class StandardToTransFKTest(NaniTestCase):
             self.assertEqual(translated_fields, expected_fields)
             for obj in by_translated_field:
                 self.assertTrue(obj in en.standards.all())
-            
+
     def test_filter_by_translated_field_requires_translation_aware_manager(self):
         en = Normal.objects.language('en').get(pk=1)
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.filter,
                               normal__translated_field=en.translated_field)
-    
+
     def test_filter_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=1)
         translation_aware_manager = get_translation_aware_manager(Standard)
@@ -162,12 +162,26 @@ class TripleRelationTests(NaniTestCase):
         normal = Normal.objects.language('en').create(shared_field='SHARED', translated_field='English')
         other = Other.objects.create(normal=normal)
         standard = Standard.objects.create(normal=normal, normal_field='NORMAL FIELD')
-        
+
         obj = Normal.objects.language('en').get(standards__pk=standard.pk)
         self.assertEqual(obj.pk, normal.pk)
-        
+
         obj = Normal.objects.language('en').get(others__pk=other.pk)
         self.assertEqual(obj.pk, normal.pk)
-        
-        obj = get_translation_aware_manager(Standard).get(normal__others__pk=other.pk)
-        self.assertEqual(obj.pk, standard.pk)
+
+        # We created an english Normal object, so we want to make sure that we use 'en'
+        with LanguageOverride('en'):
+            obj = get_translation_aware_manager(Standard).get(normal__others__pk=other.pk)
+            self.assertEqual(obj.pk, standard.pk)
+
+        # If we don't use language 'en', it should give DoesNotExist, when using the
+        # translation aware manager
+        with LanguageOverride('ja'):
+            self.assertRaises(Standard.DoesNotExist, get_translation_aware_manager(Standard).get, normal__others__pk=other.pk)
+
+        # However, if we don't use the translation aware manager, we can query any
+        # the shared fields in any language, and it should return the object,
+        # even though there is no translated Normal objects
+        with LanguageOverride('ja'):
+            obj = Standard.objects.get(normal__others__pk=other.pk)
+            self.assertEqual(obj.pk, standard.pk)
