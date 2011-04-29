@@ -126,6 +126,23 @@ class TranslationQueryset(QuerySet):
             newnames.append(self.field_translator.get(name))
         return newnames
 
+    def _reverse_translate_fieldnames_dict(self, fieldname_dict):
+        """
+        Helper function to make sure the user doesnt get "bothered"
+        with the construction of shared/translated model
+
+        Translates e.g.
+        {'master__number_avg': 10} to {'number__avg': 10}
+
+        """
+        newdict = {}
+        for key in fieldname_dict:
+            value = fieldname_dict[key]
+            if key.startswith("master__"):
+                key = key.replace("master__", "")
+            newdict[key] = value
+        return newdict
+
     def _recurse_q(self, q):
         """
         Recursively translate fieldnames in a Q object.
@@ -270,12 +287,13 @@ class TranslationQueryset(QuerySet):
         """
         newargs, newkwargs = [], {}
         for arg in args:
-            arg.lookup = self._translate_fieldnames(arg.lookup)[0]
+            arg.lookup = self._translate_fieldnames([arg.lookup])[0]
             newargs.append(arg)
         for key, value in kwargs:
-            kwargs[key].lookup = self._translate_fieldnames(value)[0]
+            kwargs[key].lookup = self._translate_fieldnames([value])[0]
             newkwargs[key] = kwargs[key]
-        return super(TranslationQueryset, self).aggregate(*newargs, **newkwargs)
+        response = super(TranslationQueryset, self).aggregate(*newargs, **newkwargs)
+        return self._reverse_translate_fieldnames_dict(response)
 
     def latest(self, field_name=None):
         if field_name:
