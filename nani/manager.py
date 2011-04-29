@@ -289,9 +289,10 @@ class TranslationQueryset(QuerySet):
         for arg in args:
             arg.lookup = self._translate_fieldnames([arg.lookup])[0]
             newargs.append(arg)
-        for key, value in kwargs:
-            kwargs[key].lookup = self._translate_fieldnames([value])[0]
-            newkwargs[key] = kwargs[key]
+        for key in kwargs:
+            value = kwargs[key]
+            value.lookup = self._translate_fieldnames([value.lookup])[0]
+            newkwargs[key] = value
         response = super(TranslationQueryset, self).aggregate(*newargs, **newkwargs)
         return self._reverse_translate_fieldnames_dict(response)
 
