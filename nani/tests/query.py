@@ -2,7 +2,7 @@
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal
+from testproject.app.models import Normal, AggregateModel
 
 
 class FilterTests(NaniTestCase):
@@ -242,3 +242,20 @@ class GetTranslationFromInstanceTests(NaniTestCase):
         self.assertEqual(ja_trans.translated_field, TRANS_JA)
         self.assertEqual(ja.shared_field, SHARED)
         self.assertEqual(ja.translated_field, TRANS_JA)
+
+
+class AggregateTests(NaniTestCase):
+    def test_aggregate(self):
+        from django.db.models import Avg
+
+        # Initial data
+        AggregateModel.objects.language("en").create(number=10, translated_number=20)
+        AggregateModel.objects.language("en").create(number=0, translated_number=0)
+
+        # Check both the translated and the shared aggregates as arguments
+        self.assertEqual(AggregateModel.objects.language("en").aggregate(Avg("number")), {'number__avg': 5})
+        self.assertEqual(AggregateModel.objects.language("en").aggregate(Avg("translated_number")), {'translated_number__avg': 10})
+
+        # Check the same calculation, but with keyword arguments
+        self.assertEqual(AggregateModel.objects.language("en").aggregate(num=Avg("number")), {'num': 5})
+        self.assertEqual(AggregateModel.objects.language("en").aggregate(tnum=Avg("translated_number")), {'tnum': 10})

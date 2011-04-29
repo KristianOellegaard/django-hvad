@@ -34,3 +34,9 @@ class Date(TranslatableModel):
     translated_fields = TranslatedFields(
         translated_date = models.DateTimeField()
     )
+
+class AggregateModel(TranslatableModel):
+    number = models.IntegerField()
+    translated_fields = TranslatedFields(
+        translated_number = models.IntegerField(),
+    )
