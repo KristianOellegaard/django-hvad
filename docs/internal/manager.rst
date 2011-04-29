@@ -226,7 +226,8 @@ TranslationQueryset
 
     .. method:: aggregate(self, *args, **kwargs)
     
-        Not implemented yet.
+        Loops through the passed aggregates and translates the fieldnames using
+        :meth:`_translate_fieldnames` and calls the superclass
 
     .. method:: latest(self, field_name=None)
     
@@ -268,16 +269,17 @@ TranslationQueryset
 
     .. method:: values_list(self, *fields, **kwargs)
     
-        Translates fields using :meth:`_translated_fieldnames` and calls the
+        Translates fields using :meth:`_translate_fieldnames` and calls the
         superclass.
 
     .. method:: dates(self, field_name, kind, order='ASC')
     
-        Not implemented yet.
+        Translates fields using :meth:`_translate_fieldnames` and calls the
+        superclass.
 
     .. method:: exclude(self, *args, **kwargs)
     
-        Not implemented yet.
+        Works like :meth:`filter`.
 
     .. method:: complex_filter(self, filter_obj)
     
