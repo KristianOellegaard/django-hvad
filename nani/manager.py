@@ -270,7 +270,7 @@ class TranslationQueryset(QuerySet):
         """
         newargs, newkwargs = [], {}
         for arg in args:
-            arg.lookup = self._translate_fieldnames(arg.lookup)
+            arg.lookup = self._translate_fieldnames(arg.lookup)[0]
             newargs.append(arg)
         for key, value in kwargs:
             kwargs[key].lookup = self._translate_fieldnames(value)
