@@ -26,8 +26,22 @@ class FieldTranslator(dict):
         return self[key]
     
     def build(self, key):
+        """
+        Checks if the selected field is a shared field
+        and in that case, prefixes it with master___
+        It also handles - and ? in case its called by
+        order_by()
+        """
+        if key.startswith("-"):
+            prefix = "-"
+            key = key.replace("-", "")
+        elif key.startswith("?"):
+            prefix = "?"
+            key = key.replace("?", "")
+        else:
+            prefix = ""
         if key.startswith(self.shared_fields):
-            return 'master__%s' % key
+            return '%smaster__%s' % (prefix, key)
         else:
             return key
 

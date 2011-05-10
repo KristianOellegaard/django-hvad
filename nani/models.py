@@ -44,6 +44,9 @@ def create_translations_model(model, related_name, meta, **fields):
                                         editable=False, null=True)
     # Create and return the new model
     translations_model = ModelBase(name, (BaseTranslationModel,), attrs)
+    bases = (model.DoesNotExist, translations_model.DoesNotExist,)
+    DNE = type('DoesNotExist', bases, {})
+    translations_model.DoesNotExist = DNE
     opts = translations_model._meta
     opts.shared_model = model
     _smart_fill_related_objects_cache = SmartFillRelatedObjectsCache(opts._fill_related_objects_cache)

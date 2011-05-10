@@ -10,3 +10,4 @@ from nani.tests.query import (FilterTests, IterTests, UpdateTests,
     AggregateTests)
 from nani.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
     TripleRelationTests)
+from nani.tests.ordering import OrderingTest
