@@ -5,6 +5,7 @@ from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from nani.fieldtranslator import translate
 from nani.utils import combine, get_translation
+import django
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -346,10 +347,12 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind=None, order='ASC'):
-        if type(field_name) != list:
-            field_name = [field_name]
-        fieldnames = self._translate_fieldnames(field_name)
-        return super(TranslationQueryset, self).dates(*fieldnames, kind=kind, order=order)
+        field_name = self.field_translator.get(field_name)
+        if int(django.get_version().split('.')[1][0]) <= 2:
+            from nani.compat.date import DateQuerySet
+            return self._clone(klass=DateQuerySet, setup=True,
+                _field_name=field_name, _kind=kind, _order=order)
+        return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
