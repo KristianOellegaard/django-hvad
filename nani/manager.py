@@ -32,18 +32,17 @@ class FieldTranslator(dict):
         It also handles - and ? in case its called by
         order_by()
         """
+        if key == "?":
+            return key
         if key.startswith("-"):
             prefix = "-"
-            key = key.replace("-", "")
-        elif key.startswith("?"):
-            prefix = "?"
-            key = key.replace("?", "")
+            key = key[1:]
         else:
             prefix = ""
         if key.startswith(self.shared_fields):
             return '%smaster__%s' % (prefix, key)
         else:
-            return key
+            return '%s%s' % (prefix, key)
 
 
 class ValuesMixin(object):
@@ -150,8 +149,7 @@ class TranslationQueryset(QuerySet):
 
         """
         newdict = {}
-        for key in fieldname_dict:
-            value = fieldname_dict[key]
+        for key, value in fieldname_dict.items():
             if key.startswith("master__"):
                 key = key.replace("master__", "")
             newdict[key] = value
@@ -350,7 +348,8 @@ class TranslationQueryset(QuerySet):
     def dates(self, field_name, kind=None, order='ASC'):
         if type(field_name) != list:
             field_name = [field_name]
-        return super(TranslationQueryset, self).dates(*self._translate_fieldnames(field_name), kind=kind, order=order)
+        fieldnames = self._translate_fieldnames(field_name)
+        return super(TranslationQueryset, self).dates(*fieldnames, kind=kind, order=order)
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
