@@ -72,6 +72,8 @@ def translate(querykey, starting_model):
                 language_joins.append('%s__language_code' % path)
                 translated_bits.append(bit)
             else:
+                path = '__'.join(translated_bits + [model._meta.translations_accessor])
+                language_joins.append('%s__language_code' % path)
                 translated_bits.append(bit)
         else:
             if bit in model_info['translated']:
