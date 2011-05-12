@@ -1,9 +1,9 @@
 ============
-project-nani
+django-nani
 ============
 
-.. warning:: DO NOT USE THIS PROJECT YET! IT HIS *HIGHLY* EXPERIMENTAL,
-             INCOMPLETE AND SUBJECT TO CHANGE WITHOUT PRIOR NOTICE!
+.. warning:: django-nani is still in early alpha status, please use it with
+             caution. 
 
 ******************
 About this project
@@ -12,17 +12,16 @@ About this project
 This project is yet another attempt at making model translations suck less in
 Django.
 
-Planned Features
-----------------
+Features
+--------
 
-* Painless API for translated content in models
-* Painless admin/form integration
-* Predictable (in contrast to my previous attempt, django-multilingual-ng)
+* Tested (on Django 1.2 through Django trunk and Python 2.5, 2.6 and 2.7)
+* Documented (check out http://django-nani.readthedocs.org)
+* Simple API 
+* Predictable
+* Reliable
+* Fast (few and simple queries)
 * High level (no custom SQL Compiler or other scary things)
-* Few and simple queries
 
-Again, DO NOT USE THIS! I'm serious, DON'T! I will *NOT* support this in any way
-yet.
-
-You are however very welcome to contribute to the project. (I'm especially
-looking for a good name!)
+Please refer to the documentation at http://django-nani.readthedocs.org for more
+information.
