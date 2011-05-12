@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from django.db.models.query import QuerySet, ValuesQuerySet
+from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from nani.fieldtranslator import translate
@@ -59,6 +59,11 @@ class ValuesMixin(object):
             else:
                 yield row
 
+
+class DatesMixin(object):
+    pass
+
+
 #===============================================================================
 # Default 
 #===============================================================================
@@ -78,6 +83,7 @@ class TranslationQueryset(QuerySet):
     """
     override_classes = {
         ValuesQuerySet: ValuesMixin,
+        DateQuerySet: DatesMixin,
     }
     
     def __init__(self, model=None, query=None, using=None, real=None):
