@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.core.exceptions import FieldError
 from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
@@ -87,6 +88,13 @@ class StandardToTransFKTest(NaniTestCase):
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.get,
                               normal__translated_field=en.translated_field)
+    
+    def test_lookup_by_non_existing_field(self):
+        en = Normal.objects.language('en').get(pk=1)
+        with LanguageOverride('en'):
+            self.assertRaises(FieldError, Standard.objects.get,
+                              normal__non_existing_field=1)
+        
 
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=1)

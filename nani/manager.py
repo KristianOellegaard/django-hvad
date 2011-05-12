@@ -378,8 +378,7 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).reverse()
 
     def defer(self, *fields):
-        fields = self._translate_fieldnames(fields)
-        return super(TranslationQueryset, self).defer(*fields)
+        raise NotImplementedError()
 
     def only(self, *fields):
         raise NotImplementedError()
