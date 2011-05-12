@@ -54,5 +54,7 @@ FIXTURE_DIRS = (
 
 ROOT_URLCONF = 'testproject.urls'
 
+SITE_ID = 1
+
 DEBUG = True
 TEMPLATE_DEBUG = True
