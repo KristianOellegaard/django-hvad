@@ -64,7 +64,7 @@ language ``'en'`` (English)::
 
 Set some translated fields and save the instance::
 
-    >>> nani.description = 'A project do do multilingual models in Django'
+    >>> nani.description = 'A project to do multilingual models in Django'
     >>> nani.description_author = 'Jonas Obrist'
     >>> nani.save()
 
@@ -77,12 +77,12 @@ usage of :meth:`nani.manager.TranslationManager.language` here::
     >>> obj.author
     u'Jonas Obrist'
     >>> obj.description
-    u'A project do do multilingual models in Django'
+    u'A project to do multilingual models in Django'
     >>> obj.description_author
     u'Jonas Obrist'
 
 Let's get all Django applications which have a description written by
 ``'Jonas Obrist'``::
 
-    >>> DjangoApplication.objects.filter(description_author='Jonas Obrist')
+    >>> DjangoApplication.objects.language('en').filter(description_author='Jonas Obrist')
     [<DjangoApplication: django-nani>]
