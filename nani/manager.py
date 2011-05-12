@@ -5,6 +5,7 @@ from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from nani.fieldtranslator import translate
 from nani.utils import combine, get_translation
+import django
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -32,18 +33,17 @@ class FieldTranslator(dict):
         It also handles - and ? in case its called by
         order_by()
         """
+        if key == "?":
+            return key
         if key.startswith("-"):
             prefix = "-"
-            key = key.replace("-", "")
-        elif key.startswith("?"):
-            prefix = "?"
-            key = key.replace("?", "")
+            key = key[1:]
         else:
             prefix = ""
         if key.startswith(self.shared_fields):
             return '%smaster__%s' % (prefix, key)
         else:
-            return key
+            return '%s%s' % (prefix, key)
 
 
 class ValuesMixin(object):
@@ -150,8 +150,7 @@ class TranslationQueryset(QuerySet):
 
         """
         newdict = {}
-        for key in fieldname_dict:
-            value = fieldname_dict[key]
+        for key, value in fieldname_dict.items():
             if key.startswith("master__"):
                 key = key.replace("master__", "")
             newdict[key] = value
@@ -348,9 +347,12 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind=None, order='ASC'):
-        if type(field_name) != list:
-            field_name = [field_name]
-        return super(TranslationQueryset, self).dates(*self._translate_fieldnames(field_name), kind=kind, order=order)
+        field_name = self.field_translator.get(field_name)
+        if int(django.get_version().split('.')[1][0]) <= 2:
+            from nani.compat.date import DateQuerySet
+            return self._clone(klass=DateQuerySet, setup=True,
+                _field_name=field_name, _kind=kind, _order=order)
+        return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
@@ -667,6 +669,9 @@ class TranslationAwareQueryset(QuerySet):
     
 
 class TranslationAwareManager(models.Manager):
+    def language(self, language_code=None):
+        return self.get_query_set().language(language_code)
+        
     def get_query_set(self):
         qs = TranslationAwareQueryset(self.model, using=self.db)
         return qs

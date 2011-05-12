@@ -49,10 +49,10 @@ def create_translations_model(model, related_name, meta, **fields):
     translations_model.DoesNotExist = DNE
     opts = translations_model._meta
     opts.shared_model = model
-    _smart_fill_related_objects_cache = SmartFillRelatedObjectsCache(opts._fill_related_objects_cache)
-    translations_model._meta._fill_related_objects_cache = MethodType(_smart_fill_related_objects_cache,
-                                                                    translations_model._meta,
-                                        translations_model._meta.__class__)
+#    _smart_fill_related_objects_cache = SmartFillRelatedObjectsCache(opts._fill_related_objects_cache)
+#    translations_model._meta._fill_related_objects_cache = MethodType(_smart_fill_related_objects_cache,
+#                                                                    translations_model._meta,
+#                                        translations_model._meta.__class__)
     return translations_model
 
 

@@ -177,7 +177,8 @@ class TripleRelationTests(NaniTestCase):
         # If we don't use language 'en', it should give DoesNotExist, when using the
         # translation aware manager
         with LanguageOverride('ja'):
-            self.assertRaises(Standard.DoesNotExist, get_translation_aware_manager(Standard).get, normal__others__pk=other.pk)
+            manager = get_translation_aware_manager(Standard)
+            self.assertRaises(Standard.DoesNotExist, manager.get, normal__others__pk=other.pk)
 
         # However, if we don't use the translation aware manager, we can query any
         # the shared fields in any language, and it should return the object,

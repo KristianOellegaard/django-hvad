@@ -86,11 +86,6 @@ class FormTests(NaniTestCase):
         # Check if it works with an existing instance of Normal
         SHARED = 'Shared'
         TRANSLATED = 'English'
-        data = {
-            'shared_field': SHARED,
-            'translated_field': TRANSLATED,
-            'language_code': 'en'
-        }
         instance = Normal.objects.language("en").create(shared_field=SHARED, translated_field=TRANSLATED)
         form = NormalForm(instance=instance)
         self.assertFalse(form.is_valid())
@@ -108,7 +103,8 @@ class FormTests(NaniTestCase):
                 'language_code': 'en'
             }
             form = NormalForm(data)
-            with self.assertNumQueries(2):
+            # tested a non-translated ModelForm, and that takes 7 queries.
+            with self.assertNumQueries(7):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.shared_field, SHARED)
