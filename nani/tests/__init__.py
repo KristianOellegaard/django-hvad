@@ -11,3 +11,4 @@ from nani.tests.query import (FilterTests, IterTests, UpdateTests,
 from nani.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
     TripleRelationTests)
 from nani.tests.ordering import OrderingTest
+from nani.tests.docs import DocumentationTests
