@@ -37,7 +37,7 @@ change_form_template
 If you wish to alter the template to be used to render your admin, use the
 implicit template fallback in the Django admin by creating a template named
 ``admin/<appname>/<modelname>/change_form.html`` or
-``admin/<appname>/change_form.html``. The template used in project-nani will
+``admin/<appname>/change_form.html``. The template used in django-nani will
 automatically extend that template if it's available.
 
 get_form

@@ -12,7 +12,7 @@
 
 .. function:: get_cached_translation(instance)
 
-    Returns the cached translation from an instance or ``None`.
+    Returns the cached translation from an instance or ``None``.
 
 .. function:: get_translation_aware_manager(model)
 

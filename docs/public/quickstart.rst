@@ -50,9 +50,9 @@ Import our model::
 
 Create an **untranslated** instance::
 
-    >>> nani = DjangoApplication.objects.create(name='project-nani', author='Jonas Obrist')
+    >>> nani = DjangoApplication.objects.create(name='django-nani', author='Jonas Obrist')
     >>> nani.name
-    'project-nani'
+    'django-nani'
     >>> nani.author
     'Jonas Obrist'
 
@@ -60,7 +60,7 @@ Turn the **untranslated** instance into a **translated** instance with the
 language ``'en'`` (English)::
 
     >>> nani.translate('en')
-    <DjangoApplication: project-nani>
+    <DjangoApplication: django-nani>
 
 Set some translated fields and save the instance::
 
@@ -71,9 +71,9 @@ Set some translated fields and save the instance::
 Get the instance again and check that the fields are correct. Please note the
 usage of :meth:`nani.manager.TranslationManager.language` here::
 
-    >>> obj = DjangoApplication.objects.language('en').get(name='project-nani')
+    >>> obj = DjangoApplication.objects.language('en').get(name='django-nani')
     >>> obj.name
-    u'project-nani'
+    u'django-nani'
     >>> obj.author
     u'Jonas Obrist'
     >>> obj.description
@@ -85,4 +85,4 @@ Let's get all Django applications which have a description written by
 ``'Jonas Obrist'``::
 
     >>> DjangoApplication.objects.filter(description_author='Jonas Obrist')
-    [<DjangoApplication: project-nani>]
+    [<DjangoApplication: django-nani>]
