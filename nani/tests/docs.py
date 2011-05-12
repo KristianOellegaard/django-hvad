@@ -59,5 +59,5 @@ class DocumentationTests(TestCase):
             )
             try:
                 app.build()
-            except:
-                self.fail(nullout.getvalue())
+            except Exception, e:
+                self.fail('%s\n%s' % (e, nullout.getvalue()))
