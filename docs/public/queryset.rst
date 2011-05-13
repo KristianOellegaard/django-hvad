@@ -27,7 +27,7 @@ The following methods run two queries where standard querysets would run one:
 New methods
 ===========
 
-Methods described here are unique to project-nani and cannot be used on normal
+Methods described here are unique to django-nani and cannot be used on normal
 querysets.
 
 
@@ -73,7 +73,7 @@ Not implemented public queryset methods
 =======================================
 
 The following are methods on a queryset which are public APIs in Django, but are
-not implemented (yet) in project-nani:
+not implemented (yet) in django-nani:
 
 * :meth:`nani.manager.TranslationQueryset.in_bulk`
 * :meth:`nani.manager.TranslationQueryset.complex_filter`
@@ -84,16 +84,8 @@ not implemented (yet) in project-nani:
 
 Using any of these methods will raise a :exc:`NotImplementedError`.
 
-Implemented public queryset methods
-===================================
 
-The following public manager functions are implemented:
-
-* :meth:`nani.manager.TranslationQueryset.aggregate`
-* :meth:`nani.manager.TranslationQueryset.dates`
-* :meth:`nani.manager.TranslationQueryset.exclude`
-
-.. _FallbackQueryset-public
+.. FallbackQueryset-public
 
 ****************
 FallbackQueryset

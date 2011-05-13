@@ -1,5 +1,5 @@
 #############################################
-General information on project-nani internals
+General information on django-nani internals
 #############################################
 
 
@@ -33,7 +33,7 @@ In the database, two tables are created:
 Queries
 =======
 
-The main idea of project-nani is that when you query the :term:`Shared Model`
+The main idea of django-nani is that when you query the :term:`Shared Model`
 using the Django ORM, what actually happens behind the scenes (in the queryset)
 is that it queries the :term:`Translations Model` and selects the relation to
 the :term:`Shared Model`. This means that model instances can only be queried if

@@ -2,8 +2,7 @@
 Installation
 ############
 
-project-nani can be installed like any Django application. Since the admin uses
-a custom template, you must put it into ``INSTALLED_APPS``.
+Install django-nani using `pip`_ by running ``pip install django-nani``. Then
+add ``'nani'`` to your ``INSTALLED_APPS`` to make the admin templates work.
 
-No offense, but if you don't know how to install a Django application, you
-probably won't have a lot of luck with this application.
+.. _pip: http://pypi.python.org/pypi/pip

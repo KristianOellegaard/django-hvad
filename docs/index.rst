@@ -1,17 +1,16 @@
-######################################
-Welcome to Project 何's documentation!
-######################################
+#########################################
+Welcome to the Django Nani documentation!
+#########################################
 
-.. warning:: Please **do NOT** use this project yet! It's in a very early and
-             experimental stage and not all APIs are implemented or finalized
-             yet.
+.. warning:: Please note that django-nani is still in alpha status and should be
+             used with caution.
 
 
 ******************
 About this project
 ******************
 
-project-nani provides a high level API to maintain multilingual content in your
+django-nani provides a high level API to maintain multilingual content in your
 database using the Django ORM.
 
 *************************
@@ -21,7 +20,7 @@ Before you dive into this
 Please note that this documentation assumes that you are very familiar with 
 Django and Python, if you are not, please familiarize yourself with those first.
 
-While project-nani tries to be as simple to use as possible, it's still
+While django-nani tries to be as simple to use as possible, it's still
 recommended that you only use it if you consider yourself to be very strong in
 Python and Django.
 

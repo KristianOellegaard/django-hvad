@@ -172,3 +172,5 @@ class TranslatableAdmin(ModelAdmin):
                 return template
             except TemplateDoesNotExist:
                 pass
+        else: # pragma: no cover
+            pass

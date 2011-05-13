@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.db.models.query_utils import Q
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.testcase import NaniTestCase
@@ -264,3 +265,58 @@ class AggregateTests(NaniTestCase):
         # Check the same calculation, but with keyword arguments
         self.assertEqual(AggregateModel.objects.language("en").aggregate(num=Avg("number")), {'num': 5})
         self.assertEqual(AggregateModel.objects.language("en").aggregate(tnum=Avg("translated_number")), {'tnum': 10})
+
+
+class NotImplementedTests(NaniTestCase):
+    def test_defer(self):
+        SHARED = 'shared'
+        TRANS_EN = 'English'
+        en = Normal.objects.language('en').create(
+            shared_field=SHARED,
+            translated_field=TRANS_EN,
+        )
+        
+        baseqs = Normal.objects.language('en')
+        
+        self.assertRaises(NotImplementedError, baseqs.defer, 'shared_field')
+        self.assertRaises(NotImplementedError, baseqs.in_bulk, [1,2,3,4])
+        self.assertRaises(NotImplementedError, baseqs.annotate)
+        self.assertRaises(NotImplementedError, baseqs.only)
+
+
+class ExcludeTests(NaniTestCase):
+    def test_defer(self):
+        SHARED = 'shared'
+        TRANS_EN = 'English'
+        TRANS_JA = u'日本語'
+        en = Normal.objects.language('en').create(
+            shared_field=SHARED,
+            translated_field=TRANS_EN,
+        )
+        ja = en
+        ja.translate('ja')
+        ja.translated_field = TRANS_JA
+        ja.save()
+
+        qs = Normal.objects.language('en').exclude(translated_field=TRANS_EN)
+        self.assertEqual(qs.count(), 0)
+
+
+class ComplexFilterTests(NaniTestCase):
+    def test_defer(self):
+        SHARED = 'shared'
+        TRANS_EN = 'English'
+        TRANS_JA = u'日本語'
+        en = Normal.objects.language('en').create(
+            shared_field=SHARED,
+            translated_field=TRANS_EN,
+        )
+        ja = en
+        ja.translate('ja')
+        ja.translated_field = TRANS_JA
+        ja.save()
+
+        qs = Normal.objects.language('en').complex_filter({})
+        self.assertEqual(qs.count(), 1)
+        self.assertRaises(NotImplementedError, Normal.objects.language('en').complex_filter, Q(shared_field=SHARED))
+    

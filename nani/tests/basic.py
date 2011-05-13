@@ -1,10 +1,35 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+from django.core.exceptions import ImproperlyConfigured
+from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
+from nani.manager import TranslationManager
+from nani.models import TranslatableModelBase, TranslatableModel 
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.testcase import NaniTestCase, SingleNormalTestCase
 from testproject.app.models import Normal
+
+
+class InvalidModel2(object):
+    objects = TranslationManager()
+
+
+class DefinitionTests(NaniTestCase):
+    def test_invalid_manager(self):
+        attrs = {
+            'objects': Manager(),
+            '__module__': 'testproject.app',
+        }
+        self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
+                          'InvalidModel', (TranslatableModel,), attrs)
+    
+    def test_no_translated_fields(self):
+        attrs = dict(InvalidModel2.__dict__)
+        del attrs['__dict__']
+        bases = (TranslatableModel,InvalidModel2,)
+        self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
+                          'InvalidModel2', bases, attrs)
 
 
 class OptionsTest(NaniTestCase):
@@ -26,6 +51,9 @@ class CreateTest(NaniTestCase):
         self.assertEqual(en.shared_field, "shared")
         self.assertEqual(en.translated_field, "English")
         self.assertEqual(en.language_code, "en")
+    
+    def test_invalid_instantiation(self):
+        self.assertRaises(RuntimeError, Normal, master=None)
     
     def test_create_nolang(self):
         with self.assertNumQueries(2):
@@ -108,6 +136,7 @@ class CreateTest(NaniTestCase):
             self.assertEqual(en.translated_field, "English")
             self.assertEqual(en.language_code, "en")
 
+
 class TranslatedTest(SingleNormalTestCase):
     def test_translate(self):
         SHARED_EN = 'shared'
@@ -148,6 +177,18 @@ class GetTest(SingleNormalTestCase):
             self.assertEqual(got.shared_field, "shared")
             self.assertEqual(got.translated_field, "English")
             self.assertEqual(got.language_code, "en")
+    
+    def test_safe_translation_getter(self):
+        untranslated = Normal.objects.untranslated().get(pk=1)
+        with LanguageOverride('en'):
+            self.assertEqual(untranslated.safe_translation_getter('translated_field', None), None)
+            en = Normal.objects.untranslated().get(pk=1)
+            self.assertEqual(untranslated.safe_translation_getter('translated_field', "English"), "English")
+        with LanguageOverride('ja'):
+            self.assertEqual(untranslated.safe_translation_getter('translated_field', None), None)
+            self.assertEqual(untranslated.safe_translation_getter('translated_field', "Test"), "Test")
+        
+
 
 class GetByLanguageTest(NaniTestCase):
     fixtures = ['double_normal.json']
@@ -172,6 +213,7 @@ class GetByLanguageTest(NaniTestCase):
             self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
             self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
 
+
 class BasicQueryTest(SingleNormalTestCase):
     def test_basic(self):
         en = self.get_obj()
@@ -186,6 +228,7 @@ class DeleteLanguageCodeTest(SingleNormalTestCase):
     def test_delete_language_code(self):
         en = self.get_obj()
         self.assertRaises(AttributeError, delattr, en, 'language_code')
+
 
 class FallbackTest(NaniTestCase):
     fixtures = ['double_normal.json']
@@ -206,7 +249,7 @@ class FallbackTest(NaniTestCase):
 class DescriptorTests(NaniTestCase):
     def test_translated_attribute_set(self):
         # 'MyModel' should return the default field value, in case there is no translation
-        from nani.models import TranslatableModel, TranslatedFields
+        from nani.models import TranslatedFields
         from django.db import models
         
         DEFAULT = 'world'

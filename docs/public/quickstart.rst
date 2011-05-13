@@ -50,9 +50,9 @@ Import our model::
 
 Create an **untranslated** instance::
 
-    >>> nani = DjangoApplication.objects.create(name='project-nani', author='Jonas Obrist')
+    >>> nani = DjangoApplication.objects.create(name='django-nani', author='Jonas Obrist')
     >>> nani.name
-    'project-nani'
+    'django-nani'
     >>> nani.author
     'Jonas Obrist'
 
@@ -60,29 +60,34 @@ Turn the **untranslated** instance into a **translated** instance with the
 language ``'en'`` (English)::
 
     >>> nani.translate('en')
-    <DjangoApplication: project-nani>
+    <DjangoApplication: django-nani>
 
 Set some translated fields and save the instance::
 
-    >>> nani.description = 'A project do do multilingual models in Django'
+    >>> nani.description = 'A project to do multilingual models in Django'
     >>> nani.description_author = 'Jonas Obrist'
     >>> nani.save()
 
-Get the instance again and check that the fields are correct. Please note the
-usage of :meth:`nani.manager.TranslationManager.language` here::
+Get the instance again and check that the fields are correct::
 
-    >>> obj = DjangoApplication.objects.language('en').get(name='project-nani')
+    >>> obj = DjangoApplication.objects.language('en').get(name='django-nani')
     >>> obj.name
-    u'project-nani'
+    u'django-nani'
     >>> obj.author
     u'Jonas Obrist'
     >>> obj.description
-    u'A project do do multilingual models in Django'
+    u'A project to do multilingual models in Django'
     >>> obj.description_author
     u'Jonas Obrist'
 
-Let's get all Django applications which have a description written by
-``'Jonas Obrist'``::
+.. note:: I use :meth:`nani.manager.TranslationQueryset.language` here because
+          I'm in an interactive shell, which is not necessarily in English, in
+          your normal views, you can usually omit the call to that method, since
+          the environment should already be in a valid language when in a
+          request/response cycle.
 
-    >>> DjangoApplication.objects.filter(description_author='Jonas Obrist')
-    [<DjangoApplication: project-nani>]
+Let's get all Django applications which have a description written by
+``'Jonas Obrist'`` (in English)::
+
+    >>> DjangoApplication.objects.language('en').filter(description_author='Jonas Obrist')
+    [<DjangoApplication: django-nani>]

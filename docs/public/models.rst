@@ -29,13 +29,14 @@ A full example of a model with translations::
     from nani.models import TranslatableModel, TranslatedFields
     
     
-    class Book(TranslatableModel):
-        isbn = models.CharField(max_length=13, unique=True)
+    class TVSeries(TranslatableModel):
+        distributor = models.CharField(max_length=255)
         
         translations = TranslatedFields(
-            title = models.CharField(max_length=255),
+            title = models.CharField(max_length=100),
+            subtitle = models.CharField(max_length=255),
             released = models.DateTimeField(),
-            meta={'ordering': ['-released']},
+            meta={'unique_together': [('title', 'subtitle')]},
         )
 
 

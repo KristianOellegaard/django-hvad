@@ -52,28 +52,3 @@ class SmartGetFieldByName(object):
                                    "nani.utils.get_translation_aware_manager." %
                                    name)
             raise
-            
-class SmartFillRelatedObjectsCache(object):
-    def __init__(self, real):
-        self.real = real
-
-    def __call__(self, meta):
-        self.real()        
-        for klass in get_models(include_auto_created=True):
-            for f in klass._meta.local_fields:
-                if f.rel and not isinstance(f.rel.to, str) and meta.shared_model._meta == f.rel.to._meta:
-                    meta._related_objects_cache[RelatedObject(f.rel.to, klass, f)] = None
-
-def permissive_field_by_name(self, name):
-    """
-    Gets a field by name either from the shared or translated model.
-    """
-    
-    try:
-        return self._get_field_by_name(name)
-    except FieldDoesNotExist:
-        try:
-            return self.translations_model._meta.get_field_by_name(name)
-        except FieldDoesNotExist:
-            pass
-        raise
