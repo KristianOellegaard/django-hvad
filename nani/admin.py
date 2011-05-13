@@ -1,18 +1,30 @@
+from django import forms
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.util import flatten_fieldsets
 from django.core.exceptions import ValidationError
 from django.template import TemplateDoesNotExist
 from django.template.loader import find_template
+from django.utils.encoding import iri_to_uri
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from nani.forms import TranslatableModelForm
 import urllib
 
+class CleanMixin(object):
+    def clean(self):
+        data = super(CleanMixin, self).clean()
+        data['language_code'] = self.language
+        return data
 
-def translatable_modelform_factory(model, form=TranslatableModelForm,
-                                    fields=None, exclude=None,
-                                    formfield_callback=None):
+
+def LanguageAwareCleanMixin(language):
+    return type('BoundCleanMixin', (CleanMixin,), {'language': language})
+
+
+def translatable_modelform_factory(language, model, form=TranslatableModelForm,
+                                   fields=None, exclude=None,
+                                   formfield_callback=None):
     # Create the inner Meta class. FIXME: ideally, we should be able to
     # construct a ModelForm without creating and passing in a temporary
     # inner class.
@@ -39,7 +51,8 @@ def translatable_modelform_factory(model, form=TranslatableModelForm,
         'Meta': Meta,
         'formfield_callback': formfield_callback
     }
-    return type(class_name, (form,), form_class_attrs)
+    clean_mixin = LanguageAwareCleanMixin(language)
+    return type(class_name, (clean_mixin, form,), form_class_attrs)
 
 
 class TranslatableAdmin(ModelAdmin):
@@ -65,9 +78,9 @@ class TranslatableAdmin(ModelAdmin):
             exclude = list(self.exclude)
         exclude.extend(kwargs.get("exclude", []))
         exclude.extend(self.get_readonly_fields(request, obj))
+        exclude.append('language_code')
         # if exclude is an empty list we pass None to be consistant with the
         # default on modelform_factory
-        exclude = exclude or None
         old_formfield_callback = curry(self.formfield_for_dbfield, 
                                        request=request)
         defaults = {
@@ -77,7 +90,8 @@ class TranslatableAdmin(ModelAdmin):
             "formfield_callback": old_formfield_callback,
         }
         defaults.update(kwargs)
-        return translatable_modelform_factory(self.model, **defaults)
+        language = self._language(request)
+        return translatable_modelform_factory(language, self.model, **defaults)
     
     def all_translations(self, obj):
         """
@@ -112,6 +126,15 @@ class TranslatableAdmin(ModelAdmin):
                                                                   add, change,
                                                                   form_url, obj)
         
+    def response_change(self, request, obj):
+        redirect = super(TranslatableAdmin, self).response_change(request, obj)
+        uri = iri_to_uri(request.path)
+        if redirect['Location'] in (uri, "../add/"):
+            if self.query_language_key in request.GET:
+                redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
+                    self.query_language_key, request.GET[self.query_language_key])
+        return redirect
+    
     def get_object(self, request, object_id):
         obj = super(TranslatableAdmin, self).get_object(request, object_id)
         if obj:

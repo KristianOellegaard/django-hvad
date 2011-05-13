@@ -160,20 +160,20 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
         self.assertEqual(template, 'admin/change_form.html')
         
     def test_translatable_modelform_factory(self):
-        t = translatable_modelform_factory(Normal, fields=['shared_field'], exclude=['id'])
+        t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         
-        t = translatable_modelform_factory(Normal, fields=['shared_field'], exclude=['id'])
+        t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         
         class TestForm(TranslatableModelForm):
             class Meta:
-               fields = ['shared_field'] 
-               exclude = ['id']
+                fields = ['shared_field'] 
+                exclude = ['id']
                
-        t = translatable_modelform_factory(Normal, form=TestForm)
+        t = translatable_modelform_factory('en', Normal, form=TestForm)
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         
