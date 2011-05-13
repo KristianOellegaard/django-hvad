@@ -37,6 +37,7 @@ Contents
     public/queryset
     public/forms
     public/admin
+    public/release_notes
     internal/index
     
     glossary
