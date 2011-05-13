@@ -2,12 +2,12 @@
 from django.conf import settings
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.testcase import NaniTestCase
-from nani.test_utils.request_factory import RequestFactory
-from testproject.app.models import Normal
 from nani.admin import translatable_modelform_factory
-from nani.forms import TranslatableModelForm 
+from nani.forms import TranslatableModelForm
+from nani.test_utils.context_managers import LanguageOverride
+from nani.test_utils.request_factory import RequestFactory
+from nani.test_utils.testcase import NaniTestCase
+from testproject.app.models import Normal
 
 class BaseAdminTests(object):
     def _get_admin(self, model):
@@ -74,21 +74,107 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests):
         self.assertEqual(myadmin.get_object(get_request, 1231), None)
             
     def test_admin_simple(self):
-        SHARED = 'shared'
-        TRANS = 'trans'
-        self.client.login(username='admin', password='admin')
-        url = reverse('admin:app_normal_add')
-        data = {
-            'shared_field': SHARED,
-            'translated_field': TRANS,
-            'language_code': 'en',
-        }
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(Normal.objects.count(), 1)
-        obj = Normal.objects.language('en')[0]
-        self.assertEqual(obj.shared_field, SHARED)
-        self.assertEqual(obj.translated_field, TRANS)
+        with LanguageOverride('en'):
+            SHARED = 'shared'
+            TRANS = 'trans'
+            self.client.login(username='admin', password='admin')
+            url = reverse('admin:app_normal_add')
+            data = {
+                'shared_field': SHARED,
+                'translated_field': TRANS,
+            }
+            response = self.client.post(url, data)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(Normal.objects.count(), 1)
+            obj = Normal.objects.language('en')[0]
+            self.assertEqual(obj.shared_field, SHARED)
+            self.assertEqual(obj.translated_field, TRANS)
+    
+    def test_admin_change_form_title(self):
+        with LanguageOverride('en'):
+            obj = Normal.objects.language('en').create(
+                shared_field="shared",
+                translated_field='English',
+            )
+            self.client.login(username='admin', password='admin')
+            url = reverse('admin:app_normal_change', args=(obj.pk,))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue('en' in response.content)
+    
+    def test_admin_change_form_redirect_add_another(self):
+        lang = 'en'
+        with LanguageOverride('ja'):
+            obj = Normal.objects.language(lang).create(
+                shared_field="shared",
+                translated_field='English',
+            )
+            self.client.login(username='admin', password='admin')
+            url = '%s?language=%s' % (reverse('admin:app_normal_change', args=(obj.pk,)), lang)
+            data = {
+                'translated_field': 'English NEW',
+                'shared_field': obj.shared_field,
+                '_addanother': '1',
+            }
+            response = self.client.post(url, data)
+            self.assertEqual(response.status_code, 302, response.content)
+            expected_url = '%s?language=%s' % (reverse('admin:app_normal_add'), lang)
+            self.assertTrue(response['Location'].endswith(expected_url))
+            obj = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(obj.translated_field, "English NEW")
+    
+    def test_admin_change_form_redirect_continue_edit(self):
+        lang = 'en'
+        with LanguageOverride('ja'):
+            obj = Normal.objects.language(lang).create(
+                shared_field="shared",
+                translated_field='English',
+            )
+            self.client.login(username='admin', password='admin')
+            url = '%s?language=%s' % (reverse('admin:app_normal_change', args=(obj.pk,)), lang)
+            data = {
+                'translated_field': 'English NEW',
+                'shared_field': obj.shared_field,
+                '_continue': '1',
+            }
+            response = self.client.post(url, data)
+            self.assertEqual(response.status_code, 302, response.content)
+            self.assertTrue(response['Location'].endswith(url))
+            obj = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(obj.translated_field, "English NEW")
+            url2 = reverse('admin:app_normal_change', args=(obj.pk,))
+            data = {
+                'translated_field': 'Japanese',
+                'shared_field': obj.shared_field,
+                '_continue': '1',
+            }
+            response = self.client.post(url2, data)
+            self.assertEqual(response.status_code, 302, response.content)
+            self.assertTrue(response['Location'].endswith(url2))
+            obj = Normal.objects.language('ja').get(pk=obj.pk)
+            self.assertEqual(obj.translated_field, "Japanese")
+            obj = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(obj.translated_field, "English NEW")
+    
+    def test_admin_change_form(self):
+        lang = 'en'
+        with LanguageOverride(lang):
+            obj = Normal.objects.language(lang).create(
+                shared_field="shared",
+                translated_field='English',
+            )
+            self.client.login(username='admin', password='admin')
+            url = reverse('admin:app_normal_change', args=(obj.pk,))
+            data = {
+                'translated_field': 'English NEW',
+                'shared_field': obj.shared_field,
+            }
+            response = self.client.post(url, data)
+            expected_url = reverse('admin:app_normal_changelist')
+            self.assertEqual(response.status_code, 302, response.content)
+            self.assertTrue(response['Location'].endswith(expected_url))
+            obj = Normal.objects.language('en').get(pk=obj.pk)
+            self.assertEqual(obj.translated_field, "English NEW")
     
     def test_admin_dual(self):
         SHARED = 'shared'
@@ -99,12 +185,10 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests):
         data_en = {
             'shared_field': SHARED,
             'translated_field': TRANS_EN,
-            'language_code': 'en',
         }
         data_ja = {
             'shared_field': SHARED,
             'translated_field': TRANS_JA,
-            'language_code': 'ja',
         }
         with LanguageOverride('en'):
             response = self.client.post(url, data_en)
@@ -120,7 +204,24 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests):
         ja = Normal.objects.get(language_code='ja')
         self.assertEqual(ja.shared_field, SHARED)
         self.assertEqual(ja.translated_field, TRANS_JA)
-
+    
+    def test_admin_with_param(self):
+        with LanguageOverride('ja'):
+            SHARED = 'shared'
+            TRANS = 'trans'
+            self.client.login(username='admin', password='admin')
+            url = reverse('admin:app_normal_add')
+            data = {
+                'shared_field': SHARED,
+                'translated_field': TRANS,
+            }
+            response = self.client.post("%s?language=en" % url, data)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(Normal.objects.count(), 1)
+            obj = Normal.objects.language('en')[0]
+            self.assertEqual(obj.shared_field, SHARED)
+            self.assertEqual(obj.translated_field, TRANS)
+    
 
 class AdminEditTests(NaniTestCase, BaseAdminTests):
     fixtures = ['double_normal.json', 'superuser.json']

@@ -22,6 +22,13 @@ class NormalToNormalFKTest(SingleNormalTestCase):
         self.assertEqual(related.normal.shared_field, normal.shared_field)
         self.assertEqual(related.normal.translated_field, normal.translated_field)
         self.assertTrue(related in normal.rel1.all())
+    
+    def test_failed_relation(self):
+        related = Related.objects.create()
+        related.normal_id = 999
+        related.save()
+        self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
+        
 
 
 class StandardToTransFKTest(NaniTestCase):
