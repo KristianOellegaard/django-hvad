@@ -1,16 +1,28 @@
 from setuptools import setup, find_packages
-
-version = 'EXPERIMENTAL'
+from nani import __version__ as version
 
 setup(
-    name = 'project-nani',
+    name = 'django-nani',
     version = version,
-    description = 'EXPERIMENTAL new multilingual database content app',
+    description = 'Multilingual database contents for Django',
     author = 'Jonas Obrist',
     author_email = 'jonas.obrist@divio.ch',
-    packages = find_packages(),
+    packages = find_packages(exclude=['testproject', 'testproject.app']),
     zip_safe=False,
+    include_package_data = True,
     install_requires=[
         'Django>=1.2',
     ],
+    classifiers = [
+        "Development Status :: 3 - Alpha"
+        "Framework :: Django",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 2.5",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
+        "Topic :: Database",
+        "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    ]
 )
