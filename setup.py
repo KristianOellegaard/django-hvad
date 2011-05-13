@@ -15,7 +15,7 @@ setup(
         'Django>=1.2',
     ],
     classifiers = [
-        "Development Status :: 3 - Alpha"
+        "Development Status :: 3 - Alpha",
         "Framework :: Django",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
