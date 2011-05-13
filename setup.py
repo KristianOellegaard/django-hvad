@@ -7,6 +7,7 @@ setup(
     description = 'Multilingual database contents for Django',
     author = 'Jonas Obrist',
     author_email = 'jonas.obrist@divio.ch',
+    url = 'http://django-nani.readthedocs.org',
     packages = find_packages(exclude=['testproject', 'testproject.app']),
     zip_safe=False,
     include_package_data = True,
