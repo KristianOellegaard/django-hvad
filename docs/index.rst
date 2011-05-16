@@ -38,6 +38,8 @@ Contents
     public/forms
     public/admin
     public/release_notes
+    public/contact
+    public/contributing
     internal/index
     
     glossary
