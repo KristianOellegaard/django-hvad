@@ -78,9 +78,9 @@ class TranslatableAdmin(ModelAdmin):
             exclude = list(self.exclude)
         exclude.extend(kwargs.get("exclude", []))
         exclude.extend(self.get_readonly_fields(request, obj))
+        # Exclude language_code, adding it again to the instance is done by
+        # the LanguageAwareCleanMixin (see translatable_modelform_factory)
         exclude.append('language_code')
-        # if exclude is an empty list we pass None to be consistant with the
-        # default on modelform_factory
         old_formfield_callback = curry(self.formfield_for_dbfield, 
                                        request=request)
         defaults = {

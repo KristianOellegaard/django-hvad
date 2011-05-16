@@ -59,28 +59,46 @@ def translate(querykey, starting_model):
     model = starting_model
     language_joins = []
     max_index = len(bits) - 1
+    # iterate over the bits
     for index, bit in enumerate(bits):
         model_info = get_model_info(model)
+        # if the bit is a QUERY_TERM, just append it to the translated_bits
         if bit in QUERY_TERMS:
             translated_bits.append(bit)
+        # same goes for 'normal model' bits
         elif model_info['type'] == NORMAL:
             translated_bits.append(bit)
+        # if the bit is on a translated model, check if it's in translated
+        # translated or untranslated fields. If it's in translated, inject a
+        # lookup via the translations accessor. Also add a language join on this
+        # table.
         elif model_info['type'] == TRANSLATED:
             if bit in model_info['translated']:
                 translated_bits.append(model._meta.translations_accessor)
                 path = '__'.join(translated_bits)
-                language_joins.append('%s__language_code' % path)
+                # ignore the first model, since it should already enforce a
+                # language
+                if index != 0:
+                    language_joins.append('%s__language_code' % path)
                 translated_bits.append(bit)
             else:
                 path = '__'.join(translated_bits + [model._meta.translations_accessor])
-                language_joins.append('%s__language_code' % path)
+                # ignore the first model, since it should already enforce a
+                # language
+                if index != 0:
+                    language_joins.append('%s__language_code' % path)
                 translated_bits.append(bit)
+        # else (if it's a translations table), inject a 'master' if the field is
+        # untranslated and add language joins.
         else:
             if bit in model_info['translated']:
                 translated_bits.append(bit)
             else:
                 path = '__'.join(translated_bits)
-                language_joins.append('%s__language_code' % path)
+                # ignore the first model, since it should already enforce a
+                # language
+                if index != 0:
+                    language_joins.append('%s__language_code' % path)
                 translated_bits.append('master')
                 translated_bits.append(bit)
         # do we really want to get the next model? Is there a next model?

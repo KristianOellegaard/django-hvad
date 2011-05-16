@@ -95,16 +95,9 @@ class TranslationQueryset(QuerySet):
         super(TranslationQueryset, self).__init__(model=model, query=query, using=using)
 
     #===========================================================================
-    # Helpers and properties (ITNERNAL!)
+    # Helpers and properties (INTERNAL!)
     #===========================================================================
 
-    @property
-    def translations_manager(self):
-        """
-        Get the (real) manager of translations model
-        """
-        return self.model.objects
-    
     @property
     def shared_model(self):
         """
