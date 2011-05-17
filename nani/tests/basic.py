@@ -4,10 +4,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from nani.manager import TranslationManager
-from nani.models import TranslatableModelBase, TranslatableModel 
+from nani.models import TranslatableModelBase, TranslatableModel
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.data import DOUBLE_NORMAL
-from nani.test_utils.testcase import NaniTestCase, SingleNormalTestCase
+from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
+    TwoTranslatedNormalMixin)
+from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
 
 
@@ -137,13 +139,13 @@ class CreateTest(NaniTestCase):
             self.assertEqual(en.language_code, "en")
 
 
-class TranslatedTest(SingleNormalTestCase):
+class TranslatedTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_translate(self):
         SHARED_EN = 'shared'
         TRANS_EN = 'English'
         SHARED_JA = 'shared'
         TRANS_JA = u'日本語'
-        en = self.get_obj()
+        en = Normal.objects.language('en').get(pk=1)
         self.assertEqual(Normal._meta.translations_model.objects.count(), 1)
         self.assertEqual(en.shared_field, SHARED_EN)
         self.assertEqual(en.translated_field, TRANS_EN)
@@ -168,9 +170,9 @@ class TranslatedTest(SingleNormalTestCase):
             self.assertEqual(obj.translated_field, TRANS_JA)
         
 
-class GetTest(SingleNormalTestCase):
+class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_get(self):
-        en = self.get_obj()
+        en = Normal.objects.language('en').get(pk=1)
         with self.assertNumQueries(1):
             got = Normal.objects.get(pk=en.pk, language_code='en')
         with self.assertNumQueries(0):
@@ -190,8 +192,7 @@ class GetTest(SingleNormalTestCase):
         
 
 
-class GetByLanguageTest(NaniTestCase):
-    fixtures = ['double_normal.json']
+class GetByLanguageTest(NaniTestCase, TwoTranslatedNormalMixin):
     
     def test_args(self):
         with LanguageOverride('en'):
@@ -214,9 +215,9 @@ class GetByLanguageTest(NaniTestCase):
             self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
 
 
-class BasicQueryTest(SingleNormalTestCase):
+class BasicQueryTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_basic(self):
-        en = self.get_obj()
+        en = Normal.objects.language('en').get(pk=1)
         with self.assertNumQueries(1):
             queried = Normal.objects.language('en').get(pk=en.pk)
             self.assertEqual(queried.shared_field, en.shared_field)
@@ -224,27 +225,11 @@ class BasicQueryTest(SingleNormalTestCase):
             self.assertEqual(queried.language_code, en.language_code)
 
 
-class DeleteLanguageCodeTest(SingleNormalTestCase):
+class DeleteLanguageCodeTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_delete_language_code(self):
-        en = self.get_obj()
+        en = Normal.objects.language('en').get(pk=1)
         self.assertRaises(AttributeError, delattr, en, 'language_code')
 
-
-class FallbackTest(NaniTestCase):
-    fixtures = ['double_normal.json']
-    def test_single_instance_fallback(self):
-        # fetch an object in a language that does not exist
-        with LanguageOverride('de'):
-            obj = Normal.objects.untranslated().use_fallbacks('en', 'ja').get(pk=1)
-            self.assertEqual(obj.language_code, 'en')
-            self.assertEqual(obj.translated_field, 'English1')
-    
-    def test_shared_only(self):
-        with LanguageOverride('de'):
-            obj = Normal.objects.untranslated().get(pk=1)
-            self.assertEqual(obj.shared_field, 'Shared1')
-            self.assertRaises(Normal._meta.translations_model.DoesNotExist,
-                              getattr, obj, 'translated_field')
                               
 class DescriptorTests(NaniTestCase):
     def test_translated_attribute_set(self):

@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 from nani.admin import translatable_modelform_factory
 from nani.forms import TranslatableModelForm
 from nani.test_utils.context_managers import LanguageOverride
+from nani.test_utils.fixtures import TwoTranslatedNormalMixin, SuperuserMixin
 from nani.test_utils.request_factory import RequestFactory
 from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
@@ -13,9 +14,7 @@ class BaseAdminTests(object):
     def _get_admin(self, model):
         return admin.site._registry[model]
 
-class NormalAdminTests(NaniTestCase, BaseAdminTests):
-    fixtures = ['superuser.json']
-    
+class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
         myadmin = self._get_admin(Normal)
@@ -223,9 +222,8 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests):
             self.assertEqual(obj.translated_field, TRANS)
     
 
-class AdminEditTests(NaniTestCase, BaseAdminTests):
-    fixtures = ['double_normal.json', 'superuser.json']
-        
+class AdminEditTests(NaniTestCase, BaseAdminTests, TwoTranslatedNormalMixin,
+                     SuperuserMixin):
     def test_changelist(self):
         url = reverse('admin:app_normal_changelist')
         request = self.request_factory.get(url)

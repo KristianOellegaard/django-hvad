@@ -9,7 +9,11 @@ Release Notes
 0.0.3 (Alpha, in development)
 *****************************
 
-In development
+* Replaced our ghetto fallback querying code with a simplified version of the
+  logic used in Bert Constantins django-polymorphic, all credit for our now
+  better FallbackQueryset code goes to him.
+* Replaced all JSON fixtures for testing with Python fixtures, to keep tests
+  maintainable.
 
 
 .. release-0.0.2

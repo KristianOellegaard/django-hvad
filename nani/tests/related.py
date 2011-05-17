@@ -3,12 +3,14 @@ from django.core.exceptions import FieldError
 from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.testcase import SingleNormalTestCase, NaniTestCase
+from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
+    TwoNormalOneStandardMixin)
+from nani.test_utils.testcase import NaniTestCase
 from nani.utils import get_translation_aware_manager
 from testproject.app.models import Normal, Related, Standard, Other
 
 
-class NormalToNormalFKTest(SingleNormalTestCase):
+class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_relation(self):
         """
         'normal' (aka 'shared') relations are relations from the shared (or
@@ -16,7 +18,7 @@ class NormalToNormalFKTest(SingleNormalTestCase):
 
         They should behave like normal foreign keys in Django
         """
-        normal = self.get_obj()
+        normal = Normal.objects.language('en').get(pk=1)
         related = Related.objects.create(normal=normal)
         self.assertEqual(related.normal.pk, normal.pk)
         self.assertEqual(related.normal.shared_field, normal.shared_field)
@@ -31,9 +33,7 @@ class NormalToNormalFKTest(SingleNormalTestCase):
         
 
 
-class StandardToTransFKTest(NaniTestCase):
-    fixtures = ['standard.json']
-
+class StandardToTransFKTest(NaniTestCase, TwoNormalOneStandardMixin):
     def test_relation(self):
         en = Normal.objects.language('en').get(pk=1)
         ja = Normal.objects.language('ja').get(pk=1)

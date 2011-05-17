@@ -4,11 +4,10 @@ from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal, AggregateModel
+from nani.test_utils.fixtures import TwoTranslatedNormalMixin
 
 
-class FilterTests(NaniTestCase):
-    fixtures = ['double_normal.json']
-    
+class FilterTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_simple_filter(self):
         qs = Normal.objects.language('en').filter(shared_field__contains='2')
         self.assertEqual(qs.count(), 1)
@@ -31,9 +30,7 @@ class FilterTests(NaniTestCase):
         self.assertEqual(obj2.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
 
 
-class IterTests(NaniTestCase):
-    fixtures = ['double_normal.json']
-    
+class IterTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_simple_iter(self):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
@@ -54,9 +51,7 @@ class IterTests(NaniTestCase):
         with LanguageOverride('en'):
             self.assertEqual(len(Normal.objects.all()), len(Normal.objects.untranslated()))
 
-class UpdateTests(NaniTestCase):
-    fixtures = ['double_normal.json']
-    
+class UpdateTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_update_shared(self):
         NEW_SHARED = 'new shared'
         n1 = Normal.objects.language('en').get(pk=1)
@@ -122,9 +117,7 @@ class UpdateTests(NaniTestCase):
         self.assertEqual(newja2.translated_field, ja2.translated_field)
         
 
-class ValuesListTests(NaniTestCase):
-    fixtures = ['double_normal.json']
-    
+class ValuesListTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_values_list_translated(self):
         values = Normal.objects.language('en').values_list('translated_field', flat=True)
         values_list = list(values)
@@ -145,9 +138,7 @@ class ValuesListTests(NaniTestCase):
         self.assertEqual(values_list, check)
         
 
-class ValuesTests(NaniTestCase):
-    fixtures = ['double_normal.json']
-    
+class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_values_shared(self):
         values = Normal.objects.language('en').values('shared_field')
         values_list = list(values)
@@ -196,9 +187,7 @@ class ValuesTests(NaniTestCase):
         self.assertEqual(values_list, check)
         
 
-class DeleteTests(NaniTestCase):
-    fixtures = ['double_normal.json']
-    
+class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_delete_all(self):
         Normal.objects.all().delete()
         self.assertEqual(Normal.objects.count(), 0)

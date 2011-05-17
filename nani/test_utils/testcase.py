@@ -69,6 +69,10 @@ else:
                 context.__exit__(*sys.exc_info())
 
 class NaniTestCase(TestCase):
+    def setUp(self):
+        if callable(getattr(self, 'create_fixtures', None)):
+            self.create_fixtures()
+        
     @property
     def request_factory(self):
         if not hasattr(self, '_request_factory'):
@@ -81,10 +85,3 @@ class NaniTestCase(TestCase):
         if callable(getattr(qs, 'language', None)):
             qs = qs.language()
         return qs.get(**{obj._meta.pk.name: obj.pk})
-    
-
-class SingleNormalTestCase(NaniTestCase):
-    fixtures = ['single_normal.json']
-    
-    def get_obj(self):
-        return Normal.objects.language('en').get(pk=1)

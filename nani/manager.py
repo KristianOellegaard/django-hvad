@@ -1,10 +1,12 @@
 from django.conf import settings
+from collections import defaultdict
 from django.db import models
-from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
+from django.db.models.query import (QuerySet, ValuesQuerySet, DateQuerySet, 
+    CHUNK_SIZE)
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from nani.fieldtranslator import translate
-from nani.utils import combine, get_translation
+from nani.utils import combine
 import django
 
 # maybe there should be an extra settings for this
@@ -478,21 +480,80 @@ class FallbackQueryset(QuerySet):
         self._translation_fallbacks = None
         super(FallbackQueryset, self).__init__(*args, **kwargs)
     
-    def iterator(self):
-        if self._translation_fallbacks:
-            opts = self.model._meta
-            fallbacks = list(self._translation_fallbacks)
-            for instance in super(FallbackQueryset, self).iterator():
-                for fallback in fallbacks:
-                    try:
-                        cached = get_translation(instance, fallback)
-                    except opts.translations_model.DoesNotExist:
-                        continue
-                    setattr(instance, opts.translations_cache, cached)
+    def _get_real_instances(self, base_results):
+        """
+        The logic for this method was taken from django-polymorphic by Bert
+        Constantin (https://github.com/bconstantin/django_polymorphic) and was
+        slightly altered to fit the needs of django-nani.
+        """
+        # get the primary keys of the shared model results
+        base_ids = [obj.pk for obj in base_results]
+        fallbacks = list(self._translation_fallbacks)
+        # get all translations for the fallbacks chosen for those shared models,
+        # note that this query is *BIG* and might return a lot of data, but it's
+        # arguably faster than running one query for each result or even worse
+        # one query per result per language until we find something
+        translations_manager = self.model._meta.translations_model.objects
+        baseqs = translations_manager.select_related('master')
+        translations = baseqs.filter(language_code__in=fallbacks,
+                                     master__pk__in=base_ids)
+        fallback_objects = defaultdict(dict)
+        # turn the results into a dict of dicts with shared model primary key as
+        # keys for the first dict and language codes for the second dict
+        for obj in translations:
+            fallback_objects[obj.master.pk][obj.language_code] = obj
+        # iterate over the share dmodel results
+        for instance in base_results:
+            translation = None
+            # find the translation
+            for fallback in fallbacks:
+                translation = fallback_objects[instance.pk].get(fallback, None)
+                if translation is not None:
                     break
+            # if we found a translation, yield the combined result
+            if translation:
+                yield combine(translation)
+            else:
+                # otherwise yield the shared instance only
                 yield instance
+        
+    def iterator(self):
+        """
+        The logic for this method was taken from django-polymorphic by Bert
+        Constantin (https://github.com/bconstantin/django_polymorphic) and was
+        slightly altered to fit the needs of django-nani.
+        """
+        base_iter = super(FallbackQueryset, self).iterator()
+
+        # only do special stuff when we actually want fallbacks
+        if self._translation_fallbacks:
+            while True:
+                base_result_objects = []
+                reached_end = False
+                
+                # get the next "chunk" of results
+                for i in range(CHUNK_SIZE):
+                    try:
+                        instance = base_iter.next()
+                        base_result_objects.append(instance)
+                    except StopIteration:
+                        reached_end = True
+                        break
+    
+                # "combine" the results with their fallbacks
+                real_results = self._get_real_instances(base_result_objects)
+                
+                # yield em!
+                for instance in real_results:
+                    yield instance
+    
+                # get out of the while loop if we're at the end, since this is
+                # an iterator, we need to raise StopIteration, not "return".
+                if reached_end:
+                    raise StopIteration
         else:
-            for instance in super(FallbackQueryset, self).iterator():
+            # just iterate over it
+            for instance in base_iter:
                 yield instance
     
     def use_fallbacks(self, *fallbacks):
