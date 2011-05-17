@@ -10,7 +10,7 @@ Release Notes
 *****************************
 
 * Replaced our ghetto fallback querying code with a simplified version of the
-  logic used in Bert Constantins django-polymorphic, all credit for our now
+  logic used in Bert Constantins `django-polymorphic`_, all credit for our now
   better FallbackQueryset code goes to him.
 * Replaced all JSON fixtures for testing with Python fixtures, to keep tests
   maintainable.
@@ -38,3 +38,6 @@ Released on May 16, 2011.
 Released on May 13, 2011.
 
 * First release, for testing purposes only.
+
+
+.. _django-polymorphic: https://github.com/bconstantin/django_polymorphic
