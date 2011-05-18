@@ -29,6 +29,7 @@ class DefinitionTests(NaniTestCase):
     def test_no_translated_fields(self):
         attrs = dict(InvalidModel2.__dict__)
         del attrs['__dict__']
+        del attrs['__weakref__']
         bases = (TranslatableModel,InvalidModel2,)
         self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
                           'InvalidModel2', bases, attrs)
