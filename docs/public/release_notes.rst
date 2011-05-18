@@ -14,6 +14,9 @@ Release Notes
   better FallbackQueryset code goes to him.
 * Replaced all JSON fixtures for testing with Python fixtures, to keep tests
   maintainable.
+* Nicer language tabs in admin thanks to the amazing help of Angelo Dini.
+* Ability to delete translations from the admin.
+* Changed nani.admin.TranslatableAdmin.get_language_tabs signature.
 
 
 .. release-0.0.2

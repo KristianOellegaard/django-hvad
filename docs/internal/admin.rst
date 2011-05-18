@@ -71,7 +71,7 @@ TranslatableAdmin
         if that's not available, use
         :func:`django.utils.translations.get_language`.
 
-    .. method:: get_language_tabs(self, request, obj)
+    .. method:: get_language_tabs(self, request, available_languages)
     
         Returns a list of triples. The triple contains the URL for the change
         view for that language, the verbose name of the language and whether
