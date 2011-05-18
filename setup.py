@@ -8,7 +8,8 @@ setup(
     author = 'Jonas Obrist',
     author_email = 'jonas.obrist@divio.ch',
     url = 'http://django-nani.readthedocs.org',
-    packages = find_packages(exclude=['testproject', 'testproject.app']),
+    packages = find_packages(exclude=['testproject', 'testproject.app',
+                                      'nani.tests']),
     zip_safe=False,
     include_package_data = True,
     install_requires=[
