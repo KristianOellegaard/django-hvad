@@ -238,11 +238,14 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
         url = reverse('admin:app_normal_change', args=(1,))
         request = self.request_factory.get(url)
         normaladmin = self._get_admin(Normal)
-        tabs = normaladmin.get_language_tabs(request, obj)
+        available_languages = []
+        if obj:
+            available_languages = obj.get_available_languages()
+        tabs = normaladmin.get_language_tabs(request, available_languages)
         languages = settings.LANGUAGES
         self.assertEqual(len(languages), len(tabs))
         for tab, lang in zip(tabs, languages):
-            _, tab_name, status = tab
+            _, tab_name, _, status = tab
             _, lang_name = lang
             self.assertEqual(tab_name, lang_name)
             if lang == "en":
@@ -251,7 +254,7 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
                 self.assertEqual(status, 'available')
                 
         with self.assertNumQueries(0) and LanguageOverride('en'):
-            normaladmin.get_language_tabs(request, None)
+            normaladmin.get_language_tabs(request, [])
     
     def test_get_change_form_base_template(self):
         normaladmin = self._get_admin(Normal)
