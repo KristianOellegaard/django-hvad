@@ -22,3 +22,21 @@ class FallbackTests(NaniTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(obj.shared_field, 'Shared1')
                 self.assertRaises(Normal._meta.translations_model.DoesNotExist,
                                   getattr, obj, 'translated_field')
+    
+    def test_mixed_fallback(self):
+        with LanguageOverride('de'):
+            pk = Normal.objects.language('ja').create(
+                shared_field='shared3',
+                translated_field=u'日本語三',
+            ).pk
+            with self.assertNumQueries(2):
+                objs = list(Normal.objects.untranslated().use_fallbacks('en', 'ja'))
+                self.assertEqual(len(objs), 3)
+                obj = dict([(obj.pk, obj) for obj in objs])[pk]
+                self.assertEqual(obj.language_code, 'ja')
+            with self.assertNumQueries(2):
+                objs = list(Normal.objects.untranslated().use_fallbacks('en'))
+                self.assertEqual(len(objs), 3)
+                obj = dict([(obj.pk, obj) for obj in objs])[pk]
+                cached = getattr(obj, obj._meta.translations_cache, None)
+                self.assertEqual(cached, None)
