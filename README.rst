@@ -15,7 +15,8 @@ Django.
 Features
 --------
 
-* Tested (on Django 1.2 through Django trunk and Python 2.5, 2.6 and 2.7)
+* Tested (on Django 1.2 through Django trunk and Python 2.5, 2.6 and 2.7 as well
+  as PyPy 1.5, check http://ci.django-cms.org/job/django-nani/)
 * Documented (check out http://django-nani.readthedocs.org)
 * Simple API 
 * Predictable

@@ -8,7 +8,9 @@ Requirements
 ************
 
 * `Django`_ 1.2 or higher
-* Python 2.5 or a higher release of Python 2.x, Python 3.x is not supported.
+* Python 2.5 or a higher release of Python 2.x or PyPy 1.5, Python 3.x is not
+  supported (yet). 
+  
 
 
 ************
