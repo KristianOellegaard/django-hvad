@@ -2,7 +2,6 @@
 from __future__ import with_statement
 from django.test.testcases import TestCase
 from shutil import rmtree
-from sphinx.application import Sphinx
 from tempfile import template, mkdtemp, _exists
 import os
 try:
@@ -46,6 +45,7 @@ class DocumentationTests(TestCase):
     builds properly.
     """
     def test_docs_build(self):
+        from sphinx.application import Sphinx
         nullout = StringIO()
         with TemporaryDirectory() as OUT_DIR:
             app = Sphinx(
