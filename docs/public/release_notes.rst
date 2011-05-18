@@ -17,6 +17,7 @@ Release Notes
 * Nicer language tabs in admin thanks to the amazing help of Angelo Dini.
 * Ability to delete translations from the admin.
 * Changed nani.admin.TranslatableAdmin.get_language_tabs signature.
+* Removed tests from egg.
 
 
 .. release-0.0.2
