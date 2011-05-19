@@ -54,7 +54,7 @@ untranslated
     any language.
 
     .. note:: No translated fields can be used in any method of the queryset
-              returned my this method. See :ref`FallbackQueryset-public`
+              returned my this method. See :ref:`FallbackQueryset-public`
 
     .. note:: This method is only available on the manager directly, not on a
               queryset.
@@ -85,7 +85,7 @@ not implemented (yet) in django-nani:
 Using any of these methods will raise a :exc:`NotImplementedError`.
 
 
-.. FallbackQueryset-public
+.. _FallbackQueryset-public:
 
 ****************
 FallbackQueryset

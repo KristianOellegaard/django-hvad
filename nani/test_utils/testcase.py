@@ -3,10 +3,9 @@ from django.core.signals import request_started
 from django.db import reset_queries, connections
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.test import testcases
+from nani.test_utils.context_managers import UserLoginContext
 from nani.test_utils.request_factory import RequestFactory
-from testproject.app.models import Normal
 import sys
-
 
 
 class _AssertNumQueriesContext(object):
@@ -36,6 +35,7 @@ class _AssertNumQueriesContext(object):
                 executed, self.num
             )
         )
+
 
 if hasattr(testcases.TestCase, 'assertNumQueries'):
     TestCase = testcases.TestCase
@@ -68,6 +68,7 @@ else:
             else:
                 context.__exit__(*sys.exc_info())
 
+
 class NaniTestCase(TestCase):
     def setUp(self):
         if callable(getattr(self, 'create_fixtures', None)):
@@ -85,3 +86,6 @@ class NaniTestCase(TestCase):
         if callable(getattr(qs, 'language', None)):
             qs = qs.language()
         return qs.get(**{obj._meta.pk.name: obj.pk})
+
+    def login_user_context(self, **kwargs):
+        return UserLoginContext(self, **kwargs)

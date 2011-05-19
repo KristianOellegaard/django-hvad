@@ -13,7 +13,6 @@ from django.template.context import RequestContext
 from django.template.loader import find_template
 from django.utils.encoding import iri_to_uri, force_unicode
 from django.utils.functional import curry
-from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from nani.forms import TranslatableModelForm
@@ -23,6 +22,9 @@ import urllib
 
 NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3')
 
+
+def get_language_name(language_code):
+    return dict(settings.LANGUAGES).get(language_code, language_code)
 
 class CleanMixin(object):
     def clean(self):
@@ -75,6 +77,8 @@ class TranslatableAdmin(ModelAdmin):
     form = TranslatableModelForm
     
     change_form_template = 'admin/nani/change_form.html'
+    
+    deletion_not_allowed_template = 'admin/nani/deletion_not_allowed.html'
     
     def get_urls(self):
         from django.conf.urls.defaults import patterns, url
@@ -151,12 +155,11 @@ class TranslatableAdmin(ModelAdmin):
     def render_change_form(self, request, context, add=False, change=False,
                            form_url='', obj=None):
         lang_code = self._language(request)
-        lang = dict(settings.LANGUAGES).get(lang_code, lang_code)
-        available_languages = []
-        if obj:
-            available_languages = obj.get_available_languages()
+        lang = get_language_name(lang_code)
+        available_languages = self.get_available_languages(obj)
         context['title'] = '%s (%s)' % (context['title'], lang)
         context['current_is_translated'] = lang_code in available_languages
+        context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
         return super(TranslatableAdmin, self).render_change_form(request,
@@ -172,6 +175,12 @@ class TranslatableAdmin(ModelAdmin):
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
                     self.query_language_key, request.GET[self.query_language_key])
         return redirect
+
+    def get_available_languages(self, obj):
+        if obj:
+            return obj.get_available_languages()
+        else:
+            return []
     
     @csrf_protect_m
     @transaction.commit_on_success
@@ -182,13 +191,17 @@ class TranslatableAdmin(ModelAdmin):
         translations_model = opts.translations_model
         
         try:
-            obj = translations_model.objects.get(master__pk=unquote(object_id),
-                                                 language_code=language_code)
+            obj = translations_model.objects.select_related('maser').get(
+                                                master__pk=unquote(object_id),
+                                                language_code=language_code)
         except translations_model.DoesNotExist:
             raise Http404
 
         if not self.has_delete_permission(request, obj):
             raise PermissionDenied
+        
+        if len(self.get_available_languages(obj.master)) <= 1:
+            return self.deletion_not_allowed(request, obj, language_code)
 
         using = router.db_for_write(translations_model)
 
@@ -199,12 +212,12 @@ class TranslatableAdmin(ModelAdmin):
         if NEW_GET_DELETE_OBJECTS:
             (deleted_objects, perms_needed, protected) = get_deleted_objects(
                 [obj], translations_model._meta, request.user, self.admin_site, using)
-        else:
+        else: # pragma: no cover
             (deleted_objects, perms_needed) = get_deleted_objects(
                 [obj], translations_model._meta, request.user, self.admin_site)
         
         
-        lang = dict(settings.LANGUAGES).get(language_code, language_code) 
+        lang = get_language_name(language_code) 
             
 
         if request.POST: # The user has already confirmed the deletion.
@@ -225,7 +238,7 @@ class TranslatableAdmin(ModelAdmin):
                 return HttpResponseRedirect(reverse('admin:index'))
             return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
 
-        object_name = '%s Translations' % force_unicode(opts.verbose_name)
+        object_name = '%s Translation' % force_unicode(opts.verbose_name)
 
         if perms_needed or protected:
             title = _("Cannot delete %(name)s") % {"name": object_name}
@@ -249,6 +262,20 @@ class TranslatableAdmin(ModelAdmin):
             "admin/%s/delete_confirmation.html" % app_label,
             "admin/delete_confirmation.html"
         ], context, RequestContext(request))
+    
+    def deletion_not_allowed(self, request, obj, language_code):
+        opts = self.model._meta
+        app_label = opts.app_label
+        object_name = force_unicode(opts.verbose_name)
+        
+        context = RequestContext(request)
+        context['object'] = obj.master
+        context['language_code'] = language_code
+        context['opts'] = opts
+        context['app_label'] = app_label
+        context['language_name'] = get_language_name(language_code)
+        context['object_name'] = object_name
+        return render_to_response(self.deletion_not_allowed_template, context)
         
     def delete_model_translation(self, request, obj):
         obj.delete()

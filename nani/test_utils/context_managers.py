@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+This code was mostly taken from the django-cms
+(https://github.com/divio/django-cms) with permission by it's lead developer.
+"""
 from django.conf import settings
 from django.utils.translation import get_language, activate
 from shutil import rmtree as _rmtree
@@ -99,15 +103,14 @@ class TemporaryDirectory:
 
 
 class UserLoginContext(object):
-    def __init__(self, testcase, user):
+    def __init__(self, testcase, **kwargs):
         self.testcase = testcase
-        self.user = user
+        self.kwargs = kwargs
         
     def __enter__(self):
-        self.testcase.login_user(self.user)
+        self.testcase.assertTrue(self.testcase.client.login(**self.kwargs))
         
     def __exit__(self, exc, value, tb):
-        self.testcase.user = None
         self.testcase.client.logout()
 
 

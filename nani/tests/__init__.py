@@ -1,5 +1,5 @@
 from nani.tests.admin import (NormalAdminTests, AdminEditTests, 
-    AdminNoFixturesTests)
+    AdminNoFixturesTests, AdminDeleteTranslationsTests)
 from nani.tests.basic import (OptionsTest, BasicQueryTest, CreateTest, GetTest, 
     TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests, 
     DefinitionTests)
