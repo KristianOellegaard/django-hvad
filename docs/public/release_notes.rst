@@ -18,6 +18,7 @@ Release Notes
 * Ability to delete translations from the admin.
 * Changed nani.admin.TranslatableAdmin.get_language_tabs signature.
 * Removed tests from egg.
+* Fixed some tests possibly leaking client state information.
 
 
 .. release-0.0.2
