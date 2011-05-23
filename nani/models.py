@@ -100,7 +100,10 @@ class TranslatableModelBase(ModelBase):
         opts = new_model._meta
         found = False
         for relation in new_model.__dict__.keys():
-            obj = getattr(new_model, relation)
+            try:
+                obj = getattr(new_model, relation)
+            except AttributeError:
+                continue
             if not hasattr(obj, 'related'):
                 continue
             if not hasattr(obj.related, 'model'):
