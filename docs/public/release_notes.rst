@@ -3,11 +3,22 @@ Release Notes
 #############
 
 
-.. release-0.0.3
+.. release-0.0.4
 
 *****************************
-0.0.3 (Alpha, in development)
+0.0.4 (Alpha, in development)
 *****************************
+
+In development
+
+
+.. release-0.0.3
+
+*************
+0.0.3 (Alpha)
+*************
+
+Released on May 26, 2011.
 
 * Replaced our ghetto fallback querying code with a simplified version of the
   logic used in Bert Constantins `django-polymorphic`_, all credit for our now
