@@ -33,6 +33,16 @@ class DefinitionTests(NaniTestCase):
         bases = (TranslatableModel,InvalidModel2,)
         self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
                           'InvalidModel2', bases, attrs)
+    
+    def test_abstract_base_model(self):
+        class Meta:
+            abstract = True
+        attrs = {
+            'Meta': Meta,
+            '__module__': 'testproject.app',
+        }
+        model = TranslatableModelBase('MyBaseModel', (TranslatableModel,), attrs)
+        self.assertTrue(model._meta.abstract)
 
 
 class OptionsTest(NaniTestCase):

@@ -98,6 +98,9 @@ class TranslatableModelBase(ModelBase):
                 new_model)
         
         opts = new_model._meta
+        if opts.abstract:
+            return new_model
+        
         found = False
         for relation in new_model.__dict__.keys():
             try:
