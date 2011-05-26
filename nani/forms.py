@@ -165,8 +165,4 @@ class TranslatableModelForm(ModelForm):
             except self.instance._meta.translations_model.DoesNotExist:
                 language_code = self.cleaned_data.get('language_code', get_language())
                 self.instance = self.instance.translate(language_code)
-        else:
-            language_code = self.cleaned_data.get('language_code', get_language())
-            self.instance = self.instance.translate(language_code)
-            self.instance.save(False)
         return super(TranslatableModelForm, self)._post_clean()

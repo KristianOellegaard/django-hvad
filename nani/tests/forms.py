@@ -104,11 +104,9 @@ class FormTests(NaniTestCase):
             }
             form = NormalForm(data)
             # tested a non-translated ModelForm, and that takes 7 queries.
-            with self.assertNumQueries(7):
+            with self.assertNumQueries(2):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.shared_field, SHARED)
-            with self.assertNumQueries(0):
                 self.assertEqual(obj.translated_field, TRANSLATED)
-            with self.assertNumQueries(0):
                 self.assertNotEqual(obj.pk, None)

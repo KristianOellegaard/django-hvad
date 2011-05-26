@@ -11,7 +11,7 @@ from nani.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin,
     OneSingleTranslatedNormalMixin)
 from nani.test_utils.request_factory import RequestFactory
 from nani.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal
+from testproject.app.models import Normal, SimpleRelated
 
 class BaseAdminTests(object):
     def _get_admin(self, model):
@@ -361,14 +361,19 @@ class AdminRelationTests(NaniTestCase, BaseAdminTests, SuperuserMixin,
                          OneSingleTranslatedNormalMixin):
     def test_adding_related_object(self):
         url = reverse('admin:app_simplerelated_add')
-        expected_url = reverse('admin:app_simplerelated_change', args=(1,)) 
+        expected_url = reverse('admin:app_simplerelated_change', args=(1,))
+        TRANS_FIELD = "English Content" 
         with LanguageOverride('en'):
             en = Normal.objects.all()[0]
             with self.login_user_context(username='admin', password='admin'):
                 data = {
                     'normal': en.pk,
-                    'translated_field': 'English Content',
+                    'translated_field': TRANS_FIELD,
+                    '_continue': '1',
                 }
                 response = self.client.post(url, data)
                 self.assertRedirects(response, expected_url)
-                
+            
+            simplerel = SimpleRelated.objects.all()[0]
+            self.assertEqual(simplerel.normal.pk, en.pk)
+            self.assertEqual(simplerel.translated_field, TRANS_FIELD)
