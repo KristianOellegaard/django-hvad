@@ -19,6 +19,12 @@ Release Notes
 * Changed nani.admin.TranslatableAdmin.get_language_tabs signature.
 * Removed tests from egg.
 * Fixed some tests possibly leaking client state information.
+* Fixed a critical bug in nani.forms.TranslatableModelForm where attempting to
+  save a translated model with a relation (FK) would cause IntegrityErrors when
+  it's a new instance.
+* Fixed a critical bug in nani.models.TranslatableModelBase where certain field
+  types on models would break the metaclass. (Many thanks to Kristian
+  Oellegaard for the fix) 
 
 
 .. release-0.0.2
