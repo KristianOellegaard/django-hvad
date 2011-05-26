@@ -24,7 +24,9 @@ Release Notes
   it's a new instance.
 * Fixed a critical bug in nani.models.TranslatableModelBase where certain field
   types on models would break the metaclass. (Many thanks to Kristian
-  Oellegaard for the fix) 
+  Oellegaard for the fix)
+* Fixed a bug that prevented abstract TranslatableModel subclasses with no
+  translated fields.
 
 
 .. release-0.0.2
