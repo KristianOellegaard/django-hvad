@@ -7,7 +7,8 @@ from django.http import HttpResponseForbidden, HttpResponseRedirect
 from nani.admin import translatable_modelform_factory
 from nani.forms import TranslatableModelForm
 from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.fixtures import TwoTranslatedNormalMixin, SuperuserMixin
+from nani.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin, 
+    OneSingleTranslatedNormalMixin)
 from nani.test_utils.request_factory import RequestFactory
 from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
@@ -355,3 +356,19 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id'])
         
+
+class AdminRelationTests(NaniTestCase, BaseAdminTests, SuperuserMixin,
+                         OneSingleTranslatedNormalMixin):
+    def test_adding_related_object(self):
+        url = reverse('admin:app_simplerelated_add')
+        expected_url = reverse('admin:app_simplerelated_change', args=(1,)) 
+        with LanguageOverride('en'):
+            en = Normal.objects.all()[0]
+            with self.login_user_context(username='admin', password='admin'):
+                data = {
+                    'normal': en.pk,
+                    'translated_field': 'English Content',
+                }
+                response = self.client.post(url, data)
+                self.assertRedirects(response, expected_url)
+                

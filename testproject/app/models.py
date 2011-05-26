@@ -20,6 +20,15 @@ class Related(TranslatableModel):
         translated_to_translated = models.ForeignKey(Normal, related_name='rel4', null=True),
     )
 
+
+class SimpleRelated(TranslatableModel):
+    normal = models.ForeignKey(Normal, related_name='simplerel')
+    
+    translated_fields = TranslatedFields(
+        translated_field = models.CharField(max_length=255),
+    )
+
+
 class Standard(models.Model):
     normal_field = models.CharField(max_length=255)
     normal = models.ForeignKey(Normal, related_name='standards')
