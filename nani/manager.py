@@ -426,30 +426,30 @@ class TranslationManager(models.Manager):
     # API 
     #===========================================================================
     def language(self, language_code=None):
-        return self.get_query_set().language(language_code)
-    
+        if not hasattr(self, '_real_manager'):
+            self.contribute_real_manager()
+        qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
+        return qs.select_related('master').language(language_code)
+
     def untranslated(self):
         return self._fallback_manager.get_query_set()
-    
+
     #===========================================================================
     # Internals
     #===========================================================================
-    
+
     @property
     def translations_model(self):
         """
         Get the translations model class
         """
         return self.model._meta.translations_model
-    
+
     def get_query_set(self):
         """
         Make sure that querysets inherit the methods on this manager (chaining)
         """
-        if not hasattr(self, '_real_manager'):
-            self.contribute_real_manager()
-        qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
-        return qs.select_related('master')
+        return self.untranslated()
     
     def contribute_to_class(self, model, name):
         super(TranslationManager, self).contribute_to_class(model, name)
@@ -689,7 +689,8 @@ class TranslationAwareQueryset(QuerySet):
         raise NotImplementedError()
 
     def exclude(self, *args, **kwargs):
-        raise NotImplementedError()
+        newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
+        return self._exclude_extra(extra_filters).exclude(*newargs, **newkwargs)
 
     def complex_filter(self, filter_obj):
         # admin calls this with an empy filter_obj sometimes
@@ -724,6 +725,10 @@ class TranslationAwareQueryset(QuerySet):
     
     def _filter_extra(self, extra_filters):
         qs = super(TranslationAwareQueryset, self).filter(extra_filters)
+        return super(TranslationAwareQueryset, qs)
+
+    def _exclude_extra(self, extra_filters):
+        qs = super(TranslationAwareQueryset, self).exclude(extra_filters)
         return super(TranslationAwareQueryset, qs)
     
 
