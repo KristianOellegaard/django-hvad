@@ -638,7 +638,7 @@ class TranslationAwareQueryset(QuerySet):
         extra_filters = Q()
         language_joins = []
         for field in fields:
-            newfield, langjoins = translate(self.model, field)
+            newfield, langjoins = translate(field, self.model)
             newfields.append(newfield)
             for langjoin in langjoins:
                 if langjoin not in language_joins:
