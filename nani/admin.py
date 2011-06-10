@@ -296,11 +296,15 @@ class TranslatableAdmin(ModelAdmin):
         new_translation.master = obj
         setattr(obj, model._meta.translations_cache, new_translation)
         return obj
-    
+
     def queryset(self, request):
         language = self._language(request)
-        qs = super(TranslatableAdmin, self).queryset(request)
-        return qs.language(language)
+        qs = self.model._default_manager.language(language)
+        # TODO: this should be handled by some parameter to the ChangeList.
+        ordering = self.ordering or () # otherwise we might try to *None, which is bad ;)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
     
     def _language(self, request):
         return request.GET.get(self.query_language_key, get_language())

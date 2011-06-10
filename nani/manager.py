@@ -445,11 +445,11 @@ class TranslationManager(models.Manager):
         """
         return self.model._meta.translations_model
 
-    def get_query_set(self):
-        """
-        Make sure that querysets inherit the methods on this manager (chaining)
-        """
-        return self.untranslated()
+    #def get_query_set(self):
+    #    """
+    #    Make sure that querysets inherit the methods on this manager (chaining)
+    #    """
+    #    return self.untranslated()
     
     def contribute_to_class(self, model, name):
         super(TranslationManager, self).contribute_to_class(model, name)
