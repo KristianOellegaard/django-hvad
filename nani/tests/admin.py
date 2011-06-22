@@ -208,10 +208,10 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 response = self.client.post(url, data_ja)
                 self.assertEqual(response.status_code, 302)
                 self.assertEqual(Normal.objects.count(), 2)
-            en = Normal.objects.get(language_code='en')
+            en = Normal.objects.using_translations().get(language_code='en')
             self.assertEqual(en.shared_field, SHARED)
             self.assertEqual(en.translated_field, TRANS_EN)
-            ja = Normal.objects.get(language_code='ja')
+            ja = Normal.objects.using_translations().get(language_code='ja')
             self.assertEqual(ja.shared_field, SHARED)
             self.assertEqual(ja.translated_field, TRANS_JA)
     

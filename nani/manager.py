@@ -425,11 +425,15 @@ class TranslationManager(models.Manager):
     #===========================================================================
     # API 
     #===========================================================================
-    def language(self, language_code=None):
+
+    def using_translations(self):
         if not hasattr(self, '_real_manager'):
             self.contribute_real_manager()
         qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
-        return qs.select_related('master').language(language_code)
+        return qs.select_related('master')
+
+    def language(self, language_code=None):
+        return self.using_translations().language(language_code)
 
     def untranslated(self):
         return self._fallback_manager.get_query_set()
