@@ -3,14 +3,23 @@ Release Notes
 #############
 
 
+.. release-0.0.5
+
+*****************************
+0.0.5 (Alpha, in development)
+*****************************
+
+In development.
+
 .. release-0.0.4
 
-*****************************
-0.0.4 (Alpha, in development)
-*****************************
+*************
+0.0.4 (Alpha)
+*************
 
-In development
+Released on July 29, 2011.
 
+* Support for InlineAdmin, all credits for this go to Kristian Oellegaard.
 
 .. release-0.0.3
 
