@@ -62,10 +62,10 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             texclude = [field for field in opts.exclude or [] if field not in shared_fields]
             
             # required by fields_for_model
-            if not sfieldnames:
-                sfieldnames = None
+            if not sfieldnames :
+                sfieldnames = None if not fields else []
             if not tfieldnames:
-                tfieldnames = None  
+                tfieldnames = None if not fields else []
             
             # If a model is defined, extract form fields from it.
             sfields = fields_for_model(opts.model, sfieldnames, sexclude,
@@ -150,10 +150,11 @@ class TranslatableModelForm(ModelForm):
                     trans = trans_model()
         else:
             trans = trans_model()
-        trans = save_instance(self, trans, self._meta.fields, fail_message,
-                              commit, construct=True)
+
         trans.language_code = language_code
         trans.master = self.instance
+        trans = save_instance(self, trans, self._meta.fields, fail_message,
+                              commit, construct=True)
         return combine(trans)
         
     def _post_clean(self):
