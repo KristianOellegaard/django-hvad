@@ -363,10 +363,13 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).exclude(*newargs, **newkwargs)
 
     def complex_filter(self, filter_obj):
-        # admin calls this with an empy filter_obj sometimes
-        if filter_obj == {}:
-            return self
-        raise NotImplementedError()
+        # Don't know how to handle Q object yet, but it is probably doable...
+        # An unknown type object that supports 'add_to_query' is a different story :)
+        if isinstance(filter_obj, models.Q) or hasattr(filter_obj, 'add_to_query'):
+            raise NotImplementedError()
+        
+        newargs, newkwargs = self._translate_args_kwargs(**filter_obj)
+        return super(TranslationQueryset, self)._filter_or_exclude(None, *newargs, **newkwargs)
 
     def annotate(self, *args, **kwargs):
         raise NotImplementedError()
