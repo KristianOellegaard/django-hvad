@@ -2,12 +2,12 @@ from setuptools import setup, find_packages
 from nani import __version__ as version
 
 setup(
-    name = 'django-nani',
+    name = 'django-hvad',
     version = version,
-    description = 'Multilingual database contents for Django',
-    author = 'Jonas Obrist',
-    author_email = 'jonas.obrist@divio.ch',
-    url = 'http://django-nani.readthedocs.org',
+    description = 'Fork of django-nani, where the default behavior of django ORM isnt changed. You activate nani with the manager function, using_translations()',
+    author = 'Kristian Ollegaard',
+    author_email = 'kristian.ollegaard@divio.ch',
+    url = 'https://github.com/KristianOellegaard/django-hvad',
     packages = find_packages(exclude=['testproject', 'testproject.app',
                                       'nani.tests']),
     zip_safe=False,
