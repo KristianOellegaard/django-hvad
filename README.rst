@@ -1,8 +1,10 @@
 ============
-django-nani
+django-hvad
 ============
 
-.. warning:: django-nani is still in early alpha status, please use it with
+( a fork of django-nani )
+
+.. warning:: django-hvad is still in early alpha status, please use it with
              caution. 
 
 ******************
@@ -15,14 +17,14 @@ Django.
 Features
 --------
 
-* Tested (on Django 1.2 through Django trunk and Python 2.5, 2.6 and 2.7 as well
-  as PyPy 1.5, check http://ci.django-cms.org/job/django-nani/)
-* Documented (check out http://django-nani.readthedocs.org)
 * Simple API 
 * Predictable
 * Reliable
 * Fast (few and simple queries)
 * High level (no custom SQL Compiler or other scary things)
 
-Please refer to the documentation at http://django-nani.readthedocs.org for more
-information.
+
+Important
+---------
+
+We keep the nani name internally in the code, as we want to be able to adapt and contribute to/from django-nani
