@@ -18,7 +18,7 @@ from django.utils.encoding import iri_to_uri, force_unicode
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
-from nani.forms import TranslatableModelForm
+from nani.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 import django
 import urllib
 from nani.utils import get_cached_translation, get_translation
@@ -30,64 +30,6 @@ NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3
 def get_language_name(language_code):
     return dict(settings.LANGUAGES).get(language_code, language_code)
 
-class CleanMixin(object):
-    def clean(self):
-        data = super(CleanMixin, self).clean()
-        data['language_code'] = self.language
-        return data
-
-
-def LanguageAwareCleanMixin(language):
-    return type('BoundCleanMixin', (CleanMixin,), {'language': language})
-
-
-def translatable_modelform_factory(language, model, form=TranslatableModelForm,
-                                   fields=None, exclude=None,
-                                   formfield_callback=None):
-    # Create the inner Meta class. FIXME: ideally, we should be able to
-    # construct a ModelForm without creating and passing in a temporary
-    # inner class.
-
-    # Build up a list of attributes that the Meta object will have.
-    attrs = {'model': model}
-    if fields is not None:
-        attrs['fields'] = fields
-    if exclude is not None:
-        attrs['exclude'] = exclude
-
-    # If parent form class already has an inner Meta, the Meta we're
-    # creating needs to inherit from the parent's inner meta.
-    parent = (object,)
-    if hasattr(form, 'Meta'):
-        parent = (form.Meta, object)
-    Meta = type('Meta', parent, attrs)
-
-    # Give this new form class a reasonable name.
-    class_name = model.__name__ + 'Form'
-
-    # Class attributes for the new form class.
-    form_class_attrs = {
-        'Meta': Meta,
-        'formfield_callback': formfield_callback
-    }
-    clean_mixin = LanguageAwareCleanMixin(language)
-    return type(class_name, (clean_mixin, form,), form_class_attrs)
-
-
-def translatable_modelformset_factory(language, model, form=ModelForm, formfield_callback=None,
-                         formset=BaseModelFormSet,
-                         extra=1, can_delete=False, can_order=False,
-                         max_num=None, fields=None, exclude=None):
-    """
-    Returns a FormSet class for the given Django model class.
-    """
-    form = translatable_modelform_factory(language, model, form=form, fields=fields, exclude=exclude,
-                             formfield_callback=formfield_callback)
-    FormSet = formset_factory(form, formset, extra=extra, max_num=max_num,
-                              can_order=can_order, can_delete=can_delete)
-    FormSet.model = model
-    return FormSet
-
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
@@ -98,11 +40,12 @@ class InlineModelForm(TranslatableModelForm):
         opts = self._meta
         model_opts = opts.model._meta
         object_data = {}
+        language = getattr(self, 'language', get_language())
         if instance is not None:
             trans = get_cached_translation(instance)
-            if not trans:
+            if not trans or trans.language_code != language:
                 try:
-                    trans = get_translation(instance, self.language)
+                    trans = get_translation(instance, language)
                 except model_opts.translations_model.DoesNotExist:
                     trans = None
             if trans:
@@ -115,36 +58,6 @@ class InlineModelForm(TranslatableModelForm):
                                                      error_class, label_suffix,
                                                      empty_permitted, instance)
 
-def translatable_inlineformset_factory(language, parent_model, model, form=ModelForm,
-                          formset=BaseInlineFormSet, fk_name=None,
-                          fields=None, exclude=None,
-                          extra=3, can_order=False, can_delete=True, max_num=None,
-                          formfield_callback=None):
-    """
-    Returns an ``InlineFormSet`` for the given kwargs.
-
-    You must provide ``fk_name`` if ``model`` has more than one ``ForeignKey``
-    to ``parent_model``.
-    """
-    from django.forms.models import _get_foreign_key
-    fk = _get_foreign_key(parent_model, model, fk_name=fk_name)
-    # enforce a max_num=1 when the foreign key to the parent model is unique.
-    if fk.unique:
-        max_num = 1
-    kwargs = {
-        'form': form,
-        'formfield_callback': formfield_callback,
-        'formset': formset,
-        'extra': extra,
-        'can_delete': can_delete,
-        'can_order': can_order,
-        'fields': fields,
-        'exclude': exclude,
-        'max_num': max_num,
-    }
-    FormSet = translatable_modelformset_factory(language, model, **kwargs)
-    FormSet.fk = fk
-    return FormSet
 
 class TranslatableModelAdminMixin(object):
     query_language_key = 'language'
@@ -231,6 +144,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
+        
         if self.declared_fieldsets:
             fields = flatten_fieldsets(self.declared_fieldsets)
         else:
