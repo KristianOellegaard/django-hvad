@@ -50,6 +50,9 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             new_class.Meta = Meta
         elif not getattr(new_class.Meta, 'exclude', None):
             new_class.Meta.exclude = ['language_code']
+        elif getattr(new_class.Meta, 'exclude', False):
+            if 'language_code' not in new_class.Meta.exclude:
+                new_class.Meta.exclude.append("language_code")
 
         if 'Media' not in attrs:
             new_class.media = media_property(new_class)

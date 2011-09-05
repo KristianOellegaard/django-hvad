@@ -341,11 +341,11 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
     def test_translatable_modelform_factory(self):
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id'])
+        self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id'])
+        self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
         class TestForm(TranslatableModelForm):
             class Meta:
@@ -354,7 +354,7 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
                
         t = translatable_modelform_factory('en', Normal, form=TestForm)
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id'])
+        self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
 
 class AdminRelationTests(NaniTestCase, BaseAdminTests, SuperuserMixin,

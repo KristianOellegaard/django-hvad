@@ -18,6 +18,11 @@ class NormalMediaForm(TranslatableModelForm):
             'all': ('layout.css',)
         }
 
+class NormalFormExclude(TranslatableModelForm):
+    class Meta:
+        model = Normal
+        exclude = ['shared_field']
+
 class FormTests(NaniTestCase):
     
     def test_nontranslatablemodelform(self):
@@ -110,3 +115,14 @@ class FormTests(NaniTestCase):
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANSLATED)
                 self.assertNotEqual(obj.pk, None)
+
+    def test_no_language_code_in_fields(self):
+        with LanguageOverride("en"):
+            form = NormalForm()
+            self.assertFalse(form.fields.has_key("language_code"))
+
+            form = NormalMediaForm()
+            self.assertFalse(form.fields.has_key("language_code"))
+
+            form = NormalFormExclude()
+            self.assertFalse(form.fields.has_key("language_code"))
