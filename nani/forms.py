@@ -43,6 +43,14 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
         if exclude:
             new_class.Meta.exclude = exclude
         # End 1.3 fix
+
+        if not getattr(new_class, "Meta", None):
+            class Meta:
+                exclude = ['language_code']
+            new_class.Meta = Meta
+        elif not getattr(new_class.Meta, 'exclude', None):
+            new_class.Meta.exclude = ['language_code']
+
         if 'Media' not in attrs:
             new_class.media = media_property(new_class)
         opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
