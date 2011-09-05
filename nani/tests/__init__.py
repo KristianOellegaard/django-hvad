@@ -14,3 +14,4 @@ from nani.tests.query import (FilterTests, IterTests, UpdateTests,
     AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
 from nani.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
     TripleRelationTests)
+from nani.tests.forms_inline import TestBasicInline
