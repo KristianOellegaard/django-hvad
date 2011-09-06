@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.core.exceptions import FieldError
 from nani.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
@@ -126,3 +127,13 @@ class FormTests(NaniTestCase):
 
             form = NormalFormExclude()
             self.assertFalse(form.fields.has_key("language_code"))
+
+    def test_form_wrong_field_in_class(self):
+        with LanguageOverride("en"):
+            with self.assertRaises(FieldError):
+                class WrongForm(TranslatableModelForm):
+                    class Meta:
+                        model = Normal
+                        fields = ['a_field_that_doesnt_exist']
+
+                form = WrongForm()
