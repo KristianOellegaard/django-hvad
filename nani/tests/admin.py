@@ -92,6 +92,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 data = {
                     'shared_field': SHARED,
                     'translated_field': TRANS,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302)
@@ -125,7 +128,12 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_field': 'English NEW',
                     'shared_field': obj.shared_field,
                     '_addanother': '1',
+                    
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
+
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302, response.content)
                 expected_url = '%s?language=%s' % (reverse('admin:app_normal_add'), lang)
@@ -146,6 +154,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_field': 'English NEW',
                     'shared_field': obj.shared_field,
                     '_continue': '1',
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302, response.content)
@@ -157,6 +168,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_field': 'Japanese',
                     'shared_field': obj.shared_field,
                     '_continue': '1',
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url2, data)
                 self.assertEqual(response.status_code, 302, response.content)
@@ -178,6 +192,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 data = {
                     'translated_field': 'English NEW',
                     'shared_field': obj.shared_field,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url, data)
                 expected_url = reverse('admin:app_normal_changelist')
@@ -195,10 +212,16 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
             data_en = {
                 'shared_field': SHARED,
                 'translated_field': TRANS_EN,
+                'simplerel-TOTAL_FORMS': '0',
+                'simplerel-INITIAL_FORMS': '0',
+                'simplerel-MAX_NUM_FORMS': '0',
             }
             data_ja = {
                 'shared_field': SHARED,
                 'translated_field': TRANS_JA,
+                'simplerel-TOTAL_FORMS': '0',
+                'simplerel-INITIAL_FORMS': '0',
+                'simplerel-MAX_NUM_FORMS': '0',
             }
             with LanguageOverride('en'):
                 response = self.client.post(url, data_en)
@@ -224,6 +247,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 data = {
                     'shared_field': SHARED,
                     'translated_field': TRANS,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post("%s?language=en" % url, data)
                 self.assertEqual(response.status_code, 302)
