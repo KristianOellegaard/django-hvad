@@ -432,8 +432,8 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
                     self.query_language_key, request.GET[self.query_language_key])
         return redirect
 
-
-
+    """
+# Should be added
     @csrf_protect_m
     @transaction.commit_on_success
     def delete_translation(self, request, object_id, language_code):
@@ -531,7 +531,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
     def delete_model_translation(self, request, obj):
         obj.delete()
-
+    """
     def queryset(self, request):
         language = self._language(request)
         qs = self.model._default_manager.all()#.language(language)
