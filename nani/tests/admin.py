@@ -403,3 +403,9 @@ class AdminRelationTests(NaniTestCase, BaseAdminTests, SuperuserMixin,
             simplerel = SimpleRelated.objects.all()[0]
             self.assertEqual(simplerel.normal.pk, en.pk)
             self.assertEqual(simplerel.translated_field, TRANS_FIELD)
+
+
+
+class TranslatableInlineAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
+    def test_get_formset(self):
+        self._get_admin()

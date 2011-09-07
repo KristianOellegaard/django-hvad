@@ -15,3 +15,4 @@ from nani.tests.query import (FilterTests, IterTests, UpdateTests,
 from nani.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
     TripleRelationTests)
 from nani.tests.forms_inline import TestBasicInline
+from nani.tests.views import ViewsTest
