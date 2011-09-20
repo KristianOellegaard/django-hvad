@@ -8,6 +8,9 @@ from django.utils.translation import get_language
 from nani.fieldtranslator import translate
 from nani.utils import combine
 import django
+import logging
+
+logger = logging.getLogger(__name__)
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -519,7 +522,7 @@ class FallbackQueryset(QuerySet):
                 yield combine(translation)
             else:
                 # otherwise yield the shared instance only
-                yield instance
+                logger.error("no translation for %s, type %s" % (instance, type(instance)))
         
     def iterator(self):
         """

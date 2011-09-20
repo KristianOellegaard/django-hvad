@@ -36,7 +36,7 @@ class FallbackTests(NaniTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(obj.language_code, 'ja')
             with self.assertNumQueries(2):
                 objs = list(Normal.objects.untranslated().use_fallbacks('en'))
-                self.assertEqual(len(objs), 3)
+                self.assertEqual(len(objs), 2)
                 obj = dict([(obj.pk, obj) for obj in objs])[pk]
                 cached = getattr(obj, obj._meta.translations_cache, None)
                 self.assertEqual(cached, None)
