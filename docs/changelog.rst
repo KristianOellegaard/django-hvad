@@ -1,8 +1,8 @@
 .. _changelog:
 
-########
+#########
 Changelog
-########
+#########
 
 .. glossary::
     :sorted:
