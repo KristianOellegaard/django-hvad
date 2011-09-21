@@ -25,7 +25,8 @@ class ViewsTest(NaniTestCase):
             response = self.client.get(reverse('update_normal', args=[self.object.id]) + "?%s=da" % TranslatableUpdateView.query_language_key)
             self.assertTrue(response.status_code == 200)
 
-
+            response = self.client.get(reverse('update_normal', args=[self.object.id * 100]) + "?%s=da" % TranslatableUpdateView.query_language_key)
+            self.assertTrue(response.status_code == 404)
 
     def test_update_view_post(self):
         with LanguageOverride("en"):
@@ -37,7 +38,6 @@ class ViewsTest(NaniTestCase):
                                                 })
             self.assertTrue(response.status_code == 302)
             obj = Normal.objects.language().filter(pk=self.object.id).get()
-            print obj.translated_field, translated_string
             self.assertTrue(obj.translated_field == translated_string)
 
 

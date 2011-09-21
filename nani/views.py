@@ -1,10 +1,12 @@
+from django.http import Http404
 from django.views.generic.edit import UpdateView
 from admin import TranslatableModelAdminMixin
 from forms import translatable_modelform_factory, TranslatableModelForm
 from utils import collect_context_modifiers
 
-class TranslatableUpdateView(UpdateView, TranslatableModelAdminMixin):
+class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
     form_class = TranslatableModelForm
+
 
     def filter_kwargs(self):
         """
@@ -12,7 +14,7 @@ class TranslatableUpdateView(UpdateView, TranslatableModelAdminMixin):
         Default {'pk': 'object_id'}
 
         Syntax:
-        - {'mode l_attr': 'url_block_name'}
+        - {'model_attr': 'url_block_name'}
         """
         if self.kwargs.has_key("slug"):
             return {self.slug_field: self.kwargs["slug"]}
@@ -28,7 +30,7 @@ class TranslatableUpdateView(UpdateView, TranslatableModelAdminMixin):
                 language = self._language(self.request)
                 return self.model._default_manager.language(language)
 
-    def get_object(self, queryset=None):
+    def _get_object(self, queryset=None):
         if not queryset:
             queryset = self.get_queryset()
         model = self.model
@@ -49,7 +51,6 @@ class TranslatableUpdateView(UpdateView, TranslatableModelAdminMixin):
         setattr(obj, model._meta.translations_cache, new_translation)
         return obj
 
-
     def context_modifier_languages_available(self, **kwargs):
         context = {
             'language_tabs': self.get_language_tabs(self.request, self.get_available_languages(self.object))
@@ -57,6 +58,23 @@ class TranslatableUpdateView(UpdateView, TranslatableModelAdminMixin):
         return context
 
     def get_context_data(self, **kwargs):
-        context = super(TranslatableUpdateView, self).get_context_data(**kwargs)
+        context = super(TranslatableBaseView, self).get_context_data(**kwargs)
         context.update(collect_context_modifiers(self, extra_kwargs=kwargs))
         return context
+
+class TranslatableCreateView(TranslatableBaseView, TranslatableModelAdminMixin):
+    """
+    Untested, use with caution - or write tests if you see this :-)
+    """
+    pass
+
+class TranslatableUpdateView(TranslatableBaseView, TranslatableModelAdminMixin):
+    """
+    A generic class based update view for translatable models.
+    """
+    def get_object(self, queryset=None):
+        obj = self._get_object(queryset)
+        if not obj:
+            raise Http404("%s instance with arguments %s does not exist" % (self.model, self.filter_kwargs()))
+        return obj
+
