@@ -50,11 +50,16 @@ class InlineModelForm(TranslatableModelForm):
                     trans = None
             if trans:
                 object_data = model_to_dict(trans, opts.fields, opts.exclude)
+                # Dirty hack that swaps the id from the translation id, to the master id
+                # This is necessary, because we in this case get the untranslated instance,
+                # and thereafter get the correct translation on save.
+                if object_data.has_key("id"):
+                    object_data["id"] = trans.master.id
         if initial is not None:
             object_data.update(initial)
         initial = object_data
         super(TranslatableModelForm, self).__init__(data, files, auto_id,
-                                                     prefix, object_data,
+                                                     prefix, initial,
                                                      error_class, label_suffix,
                                                      empty_permitted, instance)
 
@@ -377,7 +382,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
     def get_urls(self):
         from django.conf.urls.defaults import patterns, url
 
-        urlpatterns = super(TranslatableAdmin, self).get_urls()
+        urlpatterns = super(InlineModelAdmin, self).get_urls()
 
         def wrap(view):
             def wrapper(*args, **kwargs):
