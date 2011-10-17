@@ -553,7 +553,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
 
 class TranslatableStackedInline(TranslatableInlineModelAdmin):
-    template = 'admin/edit_inline/stacked.html'
+    template = 'admin/nani/edit_inline/stacked.html'
 
 class TranslatableTabularInline(TranslatableInlineModelAdmin):
     template = 'admin/nani/edit_inline/tabular.html'

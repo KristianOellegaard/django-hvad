@@ -1,0 +1,11 @@
+{% load i18n %}
+<div class="nani-language-tabs">
+<a name="{{ inline_admin_formset.opts.verbose_name|slugify }}"></a>
+    {% for url,name,code,status in language_tabs %}
+       {% if status == 'current' %}
+           <span class="current">{{ name }}{% if current_is_translated and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
+       {% else %}
+           <span class="{{ status }}"><a href="{{ url }}#{{ inline_admin_formset.opts.verbose_name|slugify }}">{{ name }}</a> {% if status == 'available' and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
+       {% endif %}
+    {% endfor %}
+</div>
