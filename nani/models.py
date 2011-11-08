@@ -6,6 +6,7 @@ from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager, TranslationsModelManager
 from nani.utils import SmartGetFieldByName
+from nani import settings
 from types import MethodType
 
 
@@ -32,6 +33,7 @@ def create_translations_model(model, related_name, meta, **fields):
     meta['unique_together'] = list(meta.get('unique_together', [])) + unique
     # Create inner Meta class 
     Meta = type('Meta', (object,), meta)
+    Meta.db_table = model._meta.db_table + '%stranslation' % (settings.NANI_TABLE_NAME_SEPARATOR)
     name = '%sTranslation' % model.__name__
     attrs = {}
     attrs.update(fields)

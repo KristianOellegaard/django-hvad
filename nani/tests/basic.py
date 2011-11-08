@@ -267,3 +267,17 @@ class DescriptorTests(NaniTestCase):
         # Its not possible to set/delete a language code
         self.assertRaises(AttributeError, setattr, Normal(), 'language_code', "en")
         self.assertRaises(AttributeError, delattr, Normal(), 'language_code')
+
+
+class TableNameTest(NaniTestCase):
+
+    def test_table_name_separator(self):
+        from nani.models import TranslatedFields
+        from django.db import models
+        from nani import settings
+        sep = settings.NANI_TABLE_NAME_SEPARATOR
+        class MyModel(TranslatableModel):
+            translations = TranslatedFields(
+                hello = models.CharField(max_length=128)
+            )
+        self.assertEqual(MyModel.translations.related.model._meta.db_table, 'tests_mymodel%stranslation' % sep)
