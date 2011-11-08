@@ -270,7 +270,6 @@ class DescriptorTests(NaniTestCase):
 
 
 class TableNameTest(NaniTestCase):
-
     def test_table_name_separator(self):
         from nani.models import TranslatedFields
         from django.db import models
@@ -281,6 +280,11 @@ class TableNameTest(NaniTestCase):
                 hello = models.CharField(max_length=128)
             )
         self.assertEqual(MyModel.translations.related.model._meta.db_table, 'tests_mymodel%stranslation' % sep)
+
+    def test_table_name_override(self):
+        from nani.models import TranslatedFields
+        from django.db import models
+        from django.conf import settings
         with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
             class MyOtherModel(TranslatableModel):
                 translations = TranslatedFields(
