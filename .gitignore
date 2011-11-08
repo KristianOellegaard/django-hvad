@@ -10,3 +10,6 @@ docs/_build
 junit-*
 gorun_settings.py
 docs/src/
+
+lib
+include

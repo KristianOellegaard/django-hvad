@@ -21,8 +21,12 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
         """
         fields = []
         exclude = []
+        fieldsets = []
         if "Meta" in attrs:
             meta = attrs["Meta"]
+            if getattr(meta, "fieldsets", False):
+                fieldsets = meta.fieldsets
+                meta.fieldsets = []
             if getattr(meta, "fields", False):
                 fields = meta.fields
                 meta.fields = []
@@ -42,6 +46,8 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             new_class.Meta.fields = fields
         if exclude:
             new_class.Meta.exclude = exclude
+        if fieldsets:
+            new_class.Meta.fieldsets = fieldsets
         # End 1.3 fix
 
         if not getattr(new_class, "Meta", None):

@@ -22,6 +22,7 @@ from nani.forms import TranslatableModelForm, translatable_inlineformset_factory
 import django
 import urllib
 from nani.utils import get_cached_translation, get_translation
+from nani.manager import FALLBACK_LANGUAGES
 
 
 NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3')
@@ -318,7 +319,11 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
     def queryset(self, request):
         language = self._language(request)
-        qs = self.model._default_manager.language(language)
+        languages = [language,]
+        for lang in FALLBACK_LANGUAGES:
+            if not lang in languages:
+                languages.append(lang)
+        qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
         # TODO: this should be handled by some parameter to the ChangeList.
         ordering = self.ordering or () # otherwise we might try to *None, which is bad ;)
         if ordering:
@@ -548,7 +553,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
 
 class TranslatableStackedInline(TranslatableInlineModelAdmin):
-    template = 'admin/edit_inline/stacked.html'
+    template = 'admin/nani/edit_inline/stacked.html'
 
 class TranslatableTabularInline(TranslatableInlineModelAdmin):
     template = 'admin/nani/edit_inline/tabular.html'

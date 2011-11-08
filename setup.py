@@ -4,7 +4,7 @@ from nani import __version__ as version
 setup(
     name = 'django-hvad',
     version = version,
-    description = 'Fork of django-nani, where the default behavior of django ORM isnt changed. You activate nani with the manager function, using_translations()',
+    description = 'A translations framework for django integrated automatically in the normal ORM. Removes the pain of having to think about translations in a django project.',
     author = 'Kristian Ollegaard',
     author_email = 'kristian.ollegaard@divio.ch',
     url = 'https://github.com/KristianOellegaard/django-hvad',
