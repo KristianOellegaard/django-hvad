@@ -2,11 +2,26 @@
 Release Notes
 #############
 
+.. release-0.1.1
+
+*****************************
+0.1.1 (Alpha, in development)
+*****************************
+
+Released on November 8, 2011
+
+ * A new setting was introduced to configure the table name separator, ``NANI_TABLE_NAME_SEPARATOR``.
+
+   .. note::
+
+       If you upgrade from an earlier version, you'll have to rename your tables yourself (the general template is
+       ``appname_modelname_translation``) or set ``NANI_TABLE_NAME_SEPARATOR`` to the empty string in your settings (which
+       was the implicit default until 0.1.0)
 
 .. release-0.0.4
 
 *****************************
-0.0.4 (Alpha, in development)
+0.0.4 (Alpha)
 *****************************
 
 In development
