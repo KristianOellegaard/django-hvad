@@ -2,10 +2,10 @@
 Release Notes
 #############
 
-.. release-0.1.1
+.. release-0.1.3
 
 *****************************
-0.1.1 (Alpha, in development)
+0.1.3 (Alpha, in development)
 *****************************
 
 Released on November 8, 2011

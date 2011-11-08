@@ -7,7 +7,7 @@ Changelog
 .. glossary::
     :sorted:
 
-    0.1.1
+    0.1.3
         Introduces setting to configure the table name separator (unsurprisingly named ``NANI_TABLE_NAME_SEPARATOR``).
         The default is ``_``, to ensure schema compatibility with the deprecated ``django-multilingual-ng``.
 
