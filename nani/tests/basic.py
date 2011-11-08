@@ -5,7 +5,7 @@ from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from nani.manager import TranslationManager
 from nani.models import TranslatableModelBase, TranslatableModel
-from nani.test_utils.context_managers import LanguageOverride
+from nani.test_utils.context_managers import LanguageOverride, SettingsOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
@@ -274,10 +274,16 @@ class TableNameTest(NaniTestCase):
     def test_table_name_separator(self):
         from nani.models import TranslatedFields
         from django.db import models
-        from nani import settings
-        sep = settings.NANI_TABLE_NAME_SEPARATOR
+        from django.conf import settings
+        sep = getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
         class MyModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(max_length=128)
             )
         self.assertEqual(MyModel.translations.related.model._meta.db_table, 'tests_mymodel%stranslation' % sep)
+        with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
+            class MyOtherModel(TranslatableModel):
+                translations = TranslatedFields(
+                    hello = models.CharField(max_length=128)
+                )
+            self.assertEqual(MyOtherModel.translations.related.model._meta.db_table, 'tests_myothermodelO_Otranslation')

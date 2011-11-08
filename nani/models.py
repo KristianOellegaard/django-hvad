@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings
 from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
@@ -6,7 +7,6 @@ from django.utils.translation import get_language
 from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager, TranslationsModelManager
 from nani.utils import SmartGetFieldByName
-from nani import settings
 from types import MethodType
 
 
@@ -33,7 +33,7 @@ def create_translations_model(model, related_name, meta, **fields):
     meta['unique_together'] = list(meta.get('unique_together', [])) + unique
     # Create inner Meta class 
     Meta = type('Meta', (object,), meta)
-    Meta.db_table = model._meta.db_table + '%stranslation' % (settings.NANI_TABLE_NAME_SEPARATOR)
+    Meta.db_table = model._meta.db_table + '%stranslation' % getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
     name = '%sTranslation' % model.__name__
     attrs = {}
     attrs.update(fields)
