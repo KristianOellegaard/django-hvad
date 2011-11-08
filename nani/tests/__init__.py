@@ -3,7 +3,7 @@ from nani.tests.admin import (NormalAdminTests, AdminEditTests,
     TranslatableInlineAdminTests)
 from nani.tests.basic import (OptionsTest, BasicQueryTest, CreateTest, GetTest, 
     TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests, 
-    DefinitionTests)
+    DefinitionTests, TableNameTest)
 from nani.tests.dates import LatestTests, DatesTests
 from nani.tests.docs import DocumentationTests
 from nani.tests.fallbacks import FallbackTests
