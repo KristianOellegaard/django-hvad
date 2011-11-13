@@ -291,3 +291,13 @@ class TableNameTest(NaniTestCase):
                     hello = models.CharField(max_length=128)
                 )
             self.assertEqual(MyOtherModel.translations.related.model._meta.db_table, 'tests_myothermodelO_Otranslation')
+
+    def test_table_name_from_meta(self):
+        from nani.models import TranslatedFields
+        from django.db import models
+        class MyNamedModel(TranslatableModel):
+            translations = TranslatedFields(
+                hello = models.CharField(max_length=128),
+                meta = {'db_table': 'tests_mymodel_i18n'},
+            )
+        self.assertEqual(MyNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
