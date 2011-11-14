@@ -8,6 +8,9 @@ from django.utils.translation import get_language
 from nani.fieldtranslator import translate
 from nani.utils import combine
 import django
+import logging
+
+logger = logging.getLogger(__name__)
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -428,31 +431,35 @@ class TranslationManager(models.Manager):
     #===========================================================================
     # API 
     #===========================================================================
+
+    def using_translations(self):
+        if not hasattr(self, '_real_manager'):
+            self.contribute_real_manager()
+        qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
+        return qs.select_related('master')
+
     def language(self, language_code=None):
-        return self.get_query_set().language(language_code)
-    
+        return self.using_translations().language(language_code)
+
     def untranslated(self):
         return self._fallback_manager.get_query_set()
-    
+
     #===========================================================================
     # Internals
     #===========================================================================
-    
+
     @property
     def translations_model(self):
         """
         Get the translations model class
         """
         return self.model._meta.translations_model
-    
-    def get_query_set(self):
-        """
-        Make sure that querysets inherit the methods on this manager (chaining)
-        """
-        if not hasattr(self, '_real_manager'):
-            self.contribute_real_manager()
-        qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
-        return qs.select_related('master')
+
+    #def get_query_set(self):
+    #    """
+    #    Make sure that querysets inherit the methods on this manager (chaining)
+    #    """
+    #    return self.untranslated()
     
     def contribute_to_class(self, model, name):
         super(TranslationManager, self).contribute_to_class(model, name)
@@ -518,7 +525,7 @@ class FallbackQueryset(QuerySet):
                 yield combine(translation)
             else:
                 # otherwise yield the shared instance only
-                yield instance
+                logger.error("no translation for %s, type %s" % (instance, type(instance)))
         
     def iterator(self):
         """
@@ -641,7 +648,7 @@ class TranslationAwareQueryset(QuerySet):
         extra_filters = Q()
         language_joins = []
         for field in fields:
-            newfield, langjoins = translate(self.model, field)
+            newfield, langjoins = translate(field, self.model)
             newfields.append(newfield)
             for langjoin in langjoins:
                 if langjoin not in language_joins:
@@ -692,7 +699,8 @@ class TranslationAwareQueryset(QuerySet):
         raise NotImplementedError()
 
     def exclude(self, *args, **kwargs):
-        raise NotImplementedError()
+        newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
+        return self._exclude_extra(extra_filters).exclude(*newargs, **newkwargs)
 
     def complex_filter(self, filter_obj):
         # admin calls this with an empy filter_obj sometimes
@@ -727,6 +735,10 @@ class TranslationAwareQueryset(QuerySet):
     
     def _filter_extra(self, extra_filters):
         qs = super(TranslationAwareQueryset, self).filter(extra_filters)
+        return super(TranslationAwareQueryset, qs)
+
+    def _exclude_extra(self, extra_filters):
+        qs = super(TranslationAwareQueryset, self).exclude(extra_filters)
         return super(TranslationAwareQueryset, qs)
     
 

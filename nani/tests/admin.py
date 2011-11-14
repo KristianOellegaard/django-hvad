@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.test.client import Client
+from nani.admin import InlineModelForm
 from nani.admin import translatable_modelform_factory
 from nani.forms import TranslatableModelForm
 from nani.test_utils.context_managers import LanguageOverride
@@ -11,6 +13,7 @@ from nani.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin,
     OneSingleTranslatedNormalMixin)
 from nani.test_utils.request_factory import RequestFactory
 from nani.test_utils.testcase import NaniTestCase
+from nani.test_utils.context_managers import SettingsOverride
 from testproject.app.models import Normal, SimpleRelated
 
 class BaseAdminTests(object):
@@ -92,6 +95,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 data = {
                     'shared_field': SHARED,
                     'translated_field': TRANS,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302)
@@ -125,7 +131,12 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_field': 'English NEW',
                     'shared_field': obj.shared_field,
                     '_addanother': '1',
+                    
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
+
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302, response.content)
                 expected_url = '%s?language=%s' % (reverse('admin:app_normal_add'), lang)
@@ -146,6 +157,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_field': 'English NEW',
                     'shared_field': obj.shared_field,
                     '_continue': '1',
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302, response.content)
@@ -157,6 +171,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_field': 'Japanese',
                     'shared_field': obj.shared_field,
                     '_continue': '1',
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url2, data)
                 self.assertEqual(response.status_code, 302, response.content)
@@ -178,6 +195,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 data = {
                     'translated_field': 'English NEW',
                     'shared_field': obj.shared_field,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post(url, data)
                 expected_url = reverse('admin:app_normal_changelist')
@@ -195,10 +215,16 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
             data_en = {
                 'shared_field': SHARED,
                 'translated_field': TRANS_EN,
+                'simplerel-TOTAL_FORMS': '0',
+                'simplerel-INITIAL_FORMS': '0',
+                'simplerel-MAX_NUM_FORMS': '0',
             }
             data_ja = {
                 'shared_field': SHARED,
                 'translated_field': TRANS_JA,
+                'simplerel-TOTAL_FORMS': '0',
+                'simplerel-INITIAL_FORMS': '0',
+                'simplerel-MAX_NUM_FORMS': '0',
             }
             with LanguageOverride('en'):
                 response = self.client.post(url, data_en)
@@ -208,10 +234,10 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 response = self.client.post(url, data_ja)
                 self.assertEqual(response.status_code, 302)
                 self.assertEqual(Normal.objects.count(), 2)
-            en = Normal.objects.get(language_code='en')
+            en = Normal.objects.using_translations().get(language_code='en')
             self.assertEqual(en.shared_field, SHARED)
             self.assertEqual(en.translated_field, TRANS_EN)
-            ja = Normal.objects.get(language_code='ja')
+            ja = Normal.objects.using_translations().get(language_code='ja')
             self.assertEqual(ja.shared_field, SHARED)
             self.assertEqual(ja.translated_field, TRANS_JA)
     
@@ -224,6 +250,9 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 data = {
                     'shared_field': SHARED,
                     'translated_field': TRANS,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
                 }
                 response = self.client.post("%s?language=en" % url, data)
                 self.assertEqual(response.status_code, 302)
@@ -341,11 +370,11 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
     def test_translatable_modelform_factory(self):
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id'])
+        self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id'])
+        self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
         class TestForm(TranslatableModelForm):
             class Meta:
@@ -354,7 +383,7 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
                
         t = translatable_modelform_factory('en', Normal, form=TestForm)
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id'])
+        self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
 
 class AdminRelationTests(NaniTestCase, BaseAdminTests, SuperuserMixin,
@@ -377,3 +406,43 @@ class AdminRelationTests(NaniTestCase, BaseAdminTests, SuperuserMixin,
             simplerel = SimpleRelated.objects.all()[0]
             self.assertEqual(simplerel.normal.pk, en.pk)
             self.assertEqual(simplerel.translated_field, TRANS_FIELD)
+
+
+
+class TranslatableInlineAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
+    def test_correct_id_in_inline(self):
+        LANGUAGES = (
+            ('en', u'English'),
+            ('fr', u'Français'),
+            ('da', u'Dansk'),
+            ('ja', u'日本語'),
+        )
+        with SettingsOverride(LANGUAGES=LANGUAGES):
+            with LanguageOverride('en'):
+                normal = Normal.objects.language().create(shared_field="whatever1", translated_field="whatever in another language1")
+                normal2 = Normal.objects.language().create(shared_field="whatever2", translated_field="whatever in another language2")
+                normal3 = Normal.objects.language().create(shared_field="whatever3", translated_field="whatever in another language3")
+
+            simple1 = SimpleRelated.objects.language("en").create(normal=normal3, translated_field="inline whatever translated")
+
+            simple1.translate("ja")
+            simple1.translated_field ="japanese stuff"
+            simple1.save()
+
+            simple1.translate("fr")
+            simple1.translated_field ="french stuff"
+            simple1.save()
+
+            simple1.translate("da")
+            simple1.translated_field ="danish stuff"
+            simple1.save()
+
+
+            with LanguageOverride('da'):
+                instance = SimpleRelated.objects.get(pk=simple1.pk)
+                class ExampleInlineForm(InlineModelForm):
+                    class Meta:
+                        model = SimpleRelated
+                form = ExampleInlineForm(instance=instance)
+
+                self.assertTrue(form.initial["id"] == instance.id)

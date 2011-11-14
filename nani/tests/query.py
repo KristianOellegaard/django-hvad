@@ -169,7 +169,7 @@ class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(values_list, check)
         
     def test_values_post_language(self):
-        values = Normal.objects.values('shared_field').language('en')
+        values = Normal.objects.using_translations().values('shared_field').language('en')
         values_list = list(values)
         check = [
             {'shared_field': DOUBLE_NORMAL[1]['shared_field']},
