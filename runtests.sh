@@ -6,6 +6,7 @@ num_args=${#args[@]}
 index=0
 
 with_coverage=false
+zen=false
 extra=""
 
 while [ "$index" -lt "$num_args" ]
@@ -17,6 +18,9 @@ do
         "-f"|"--failfast")
             extra="$extra --failfast"
             ;;
+	"-z"|"--zen")
+	    zen=true
+	    ;;
     esac
     let "index = $index + 1"
 done
@@ -32,6 +36,9 @@ if [ $with_coverage == true ]; then
     else
         open htmlcov/index.html
     fi
+elif [ $zen == true ]; then
+    python manage.py zen nani $extra
+    statuscode=$?
 else
     python manage.py test nani $extra
     statuscode=$?

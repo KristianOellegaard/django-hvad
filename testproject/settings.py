@@ -30,7 +30,7 @@ TEST_DATABASE_COLLATION = "utf8_general_ci"
 
 DATABASE_SUPPORTS_TRANSACTIONS = True
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.admin',
     'django.contrib.contenttypes',
@@ -39,7 +39,13 @@ INSTALLED_APPS = (
     
     'testproject.app',
     'nani',
-)
+]
+
+try:
+    import pyzen
+    INSTALLED_APPS.append('pyzen')
+except ImportError:
+    pass
 
 LANGUAGE_CODE = "en"
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.core.exceptions import FieldError
 from nani.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.testcase import NaniTestCase
@@ -17,6 +18,11 @@ class NormalMediaForm(TranslatableModelForm):
         css = {
             'all': ('layout.css',)
         }
+
+class NormalFormExclude(TranslatableModelForm):
+    class Meta:
+        model = Normal
+        exclude = ['shared_field']
 
 class FormTests(NaniTestCase):
     
@@ -110,3 +116,24 @@ class FormTests(NaniTestCase):
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANSLATED)
                 self.assertNotEqual(obj.pk, None)
+
+    def test_no_language_code_in_fields(self):
+        with LanguageOverride("en"):
+            form = NormalForm()
+            self.assertFalse(form.fields.has_key("language_code"))
+
+            form = NormalMediaForm()
+            self.assertFalse(form.fields.has_key("language_code"))
+
+            form = NormalFormExclude()
+            self.assertFalse(form.fields.has_key("language_code"))
+
+    def test_form_wrong_field_in_class(self):
+        with LanguageOverride("en"):
+            with self.assertRaises(FieldError):
+                class WrongForm(TranslatableModelForm):
+                    class Meta:
+                        model = Normal
+                        fields = ['a_field_that_doesnt_exist']
+
+                form = WrongForm()

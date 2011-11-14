@@ -5,7 +5,7 @@ from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from nani.manager import TranslationManager
 from nani.models import TranslatableModelBase, TranslatableModel
-from nani.test_utils.context_managers import LanguageOverride
+from nani.test_utils.context_managers import LanguageOverride, SettingsOverride
 from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
@@ -185,7 +185,7 @@ class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_get(self):
         en = Normal.objects.language('en').get(pk=1)
         with self.assertNumQueries(1):
-            got = Normal.objects.get(pk=en.pk, language_code='en')
+            got = Normal.objects.using_translations().get(pk=en.pk, language_code='en')
         with self.assertNumQueries(0):
             self.assertEqual(got.shared_field, "shared")
             self.assertEqual(got.translated_field, "English")
@@ -208,14 +208,14 @@ class GetByLanguageTest(NaniTestCase, TwoTranslatedNormalMixin):
     def test_args(self):
         with LanguageOverride('en'):
             q = Q(language_code='ja', pk=1)
-            obj = Normal.objects.get(q)
+            obj = Normal.objects.using_translations().get(q)
             self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
             self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
     
     def test_kwargs(self):
         with LanguageOverride('en'):
             kwargs = {'language_code':'ja', 'pk':1}
-            obj = Normal.objects.get(**kwargs)
+            obj = Normal.objects.using_translations().get(**kwargs)
             self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
             self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
         
@@ -267,3 +267,37 @@ class DescriptorTests(NaniTestCase):
         # Its not possible to set/delete a language code
         self.assertRaises(AttributeError, setattr, Normal(), 'language_code', "en")
         self.assertRaises(AttributeError, delattr, Normal(), 'language_code')
+
+
+class TableNameTest(NaniTestCase):
+    def test_table_name_separator(self):
+        from nani.models import TranslatedFields
+        from django.db import models
+        from django.conf import settings
+        sep = getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
+        class MyModel(TranslatableModel):
+            translations = TranslatedFields(
+                hello = models.CharField(max_length=128)
+            )
+        self.assertEqual(MyModel.translations.related.model._meta.db_table, 'tests_mymodel%stranslation' % sep)
+
+    def test_table_name_override(self):
+        from nani.models import TranslatedFields
+        from django.db import models
+        from django.conf import settings
+        with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
+            class MyOtherModel(TranslatableModel):
+                translations = TranslatedFields(
+                    hello = models.CharField(max_length=128)
+                )
+            self.assertEqual(MyOtherModel.translations.related.model._meta.db_table, 'tests_myothermodelO_Otranslation')
+
+    def test_table_name_from_meta(self):
+        from nani.models import TranslatedFields
+        from django.db import models
+        class MyNamedModel(TranslatableModel):
+            translations = TranslatedFields(
+                hello = models.CharField(max_length=128),
+                meta = {'db_table': 'tests_mymodel_i18n'},
+            )
+        self.assertEqual(MyNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')

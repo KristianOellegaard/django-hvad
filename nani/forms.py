@@ -1,7 +1,8 @@
 from django.core.exceptions import FieldError
 from django.forms.forms import get_declared_fields
+from django.forms.formsets import formset_factory
 from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 
-    fields_for_model, model_to_dict, save_instance)
+    fields_for_model, model_to_dict, save_instance, BaseInlineFormSet, BaseModelFormSet)
 from django.forms.util import ErrorList
 from django.forms.widgets import media_property
 from django.utils.translation import get_language
@@ -20,8 +21,12 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
         """
         fields = []
         exclude = []
+        fieldsets = []
         if "Meta" in attrs:
             meta = attrs["Meta"]
+            if getattr(meta, "fieldsets", False):
+                fieldsets = meta.fieldsets
+                meta.fieldsets = []
             if getattr(meta, "fields", False):
                 fields = meta.fields
                 meta.fields = []
@@ -41,7 +46,20 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             new_class.Meta.fields = fields
         if exclude:
             new_class.Meta.exclude = exclude
+        if fieldsets:
+            new_class.Meta.fieldsets = fieldsets
         # End 1.3 fix
+
+        if not getattr(new_class, "Meta", None):
+            class Meta:
+                exclude = ['language_code']
+            new_class.Meta = Meta
+        elif not getattr(new_class.Meta, 'exclude', None):
+            new_class.Meta.exclude = ['language_code']
+        elif getattr(new_class.Meta, 'exclude', False):
+            if 'language_code' not in new_class.Meta.exclude:
+                new_class.Meta.exclude.append("language_code")
+
         if 'Media' not in attrs:
             new_class.media = media_property(new_class)
         opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
@@ -114,11 +132,12 @@ class TranslatableModelForm(ModelForm):
         opts = self._meta
         model_opts = opts.model._meta
         object_data = {}
+        language = getattr(self, 'language', get_language())
         if instance is not None:
             trans = get_cached_translation(instance)
             if not trans:
                 try:
-                    trans = get_translation(instance)
+                    trans = get_translation(instance, language)
                 except model_opts.translations_model.DoesNotExist:
                     trans = None
             if trans:
@@ -143,7 +162,7 @@ class TranslatableModelForm(ModelForm):
         language_code = self.cleaned_data.get('language_code', get_language())
         if not new:
             trans = get_cached_translation(self.instance)
-            if not trans:
+            if not trans or trans.language_code != language_code:
                 try:
                     trans = get_translation(self.instance, language_code)
                 except trans_model.DoesNotExist:
@@ -167,3 +186,93 @@ class TranslatableModelForm(ModelForm):
                 language_code = self.cleaned_data.get('language_code', get_language())
                 self.instance = self.instance.translate(language_code)
         return super(TranslatableModelForm, self)._post_clean()
+
+
+
+class CleanMixin(object):
+    def clean(self):
+        data = super(CleanMixin, self).clean()
+        data['language_code'] = self.language
+        return data
+
+
+def LanguageAwareCleanMixin(language):
+    return type('BoundCleanMixin', (CleanMixin,), {'language': language})
+
+
+def translatable_modelform_factory(language, model, form=TranslatableModelForm,
+                                   fields=None, exclude=None,
+                                   formfield_callback=None):
+    # Create the inner Meta class. FIXME: ideally, we should be able to
+    # construct a ModelForm without creating and passing in a temporary
+    # inner class.
+
+    # Build up a list of attributes that the Meta object will have.
+    attrs = {'model': model}
+    if fields is not None:
+        attrs['fields'] = fields
+    if exclude is not None:
+        attrs['exclude'] = exclude
+
+    # If parent form class already has an inner Meta, the Meta we're
+    # creating needs to inherit from the parent's inner meta.
+    parent = (object,)
+    if hasattr(form, 'Meta'):
+        parent = (form.Meta, object)
+    Meta = type('Meta', parent, attrs)
+
+    # Give this new form class a reasonable name.
+    class_name = model.__name__ + 'Form'
+
+    # Class attributes for the new form class.
+    form_class_attrs = {
+        'Meta': Meta,
+        'formfield_callback': formfield_callback
+    }
+    clean_mixin = LanguageAwareCleanMixin(language)
+    return type(class_name, (clean_mixin, form,), form_class_attrs)
+
+def translatable_modelformset_factory(language, model, form=TranslatableModelForm, formfield_callback=None,
+                         formset=BaseModelFormSet,
+                         extra=1, can_delete=False, can_order=False,
+                         max_num=None, fields=None, exclude=None):
+    """
+    Returns a FormSet class for the given Django model class.
+    """
+    form = translatable_modelform_factory(language, model, form=form, fields=fields, exclude=exclude,
+                             formfield_callback=formfield_callback)
+    FormSet = formset_factory(form, formset, extra=extra, max_num=max_num,
+                              can_order=can_order, can_delete=can_delete)
+    FormSet.model = model
+    return FormSet
+
+def translatable_inlineformset_factory(language, parent_model, model, form=TranslatableModelForm,
+                          formset=BaseInlineFormSet, fk_name=None,
+                          fields=None, exclude=None,
+                          extra=3, can_order=False, can_delete=True, max_num=None,
+                          formfield_callback=None):
+    """
+    Returns an ``InlineFormSet`` for the given kwargs.
+
+    You must provide ``fk_name`` if ``model`` has more than one ``ForeignKey``
+    to ``parent_model``.
+    """
+    from django.forms.models import _get_foreign_key
+    fk = _get_foreign_key(parent_model, model, fk_name=fk_name)
+    # enforce a max_num=1 when the foreign key to the parent model is unique.
+    if fk.unique:
+        max_num = 1
+    kwargs = {
+        'form': form,
+        'formfield_callback': formfield_callback,
+        'formset': formset,
+        'extra': extra,
+        'can_delete': can_delete,
+        'can_order': can_order,
+        'fields': fields,
+        'exclude': exclude,
+        'max_num': max_num,
+    }
+    FormSet = translatable_modelformset_factory(language, model, **kwargs)
+    FormSet.fk = fk
+    return FormSet

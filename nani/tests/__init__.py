@@ -1,8 +1,9 @@
 from nani.tests.admin import (NormalAdminTests, AdminEditTests, 
-    AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests)
+    AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests,
+    TranslatableInlineAdminTests)
 from nani.tests.basic import (OptionsTest, BasicQueryTest, CreateTest, GetTest, 
     TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests, 
-    DefinitionTests)
+    DefinitionTests, TableNameTest)
 from nani.tests.dates import LatestTests, DatesTests
 from nani.tests.docs import DocumentationTests
 from nani.tests.fallbacks import FallbackTests
@@ -14,3 +15,5 @@ from nani.tests.query import (FilterTests, IterTests, UpdateTests,
     AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
 from nani.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
     TripleRelationTests)
+from nani.tests.forms_inline import TestBasicInline
+from nani.tests.views import ViewsTest
