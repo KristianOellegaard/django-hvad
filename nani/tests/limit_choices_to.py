@@ -15,9 +15,9 @@ class LimitChoicesToTests(
     TwoTranslatedNormalMixin,
     SuperuserMixin
 ):
-    def test_limit_choices_to_fk(self):
+    def test_limit_choices_to(self):
         """
-        Checks if limit_choices_to works on a ForeignKey field.
+        Checks if limit_choices_to works on ForeignKey and ManyToManyField.
         """
 
         limited_choice_admin = admin.site._registry[LimitedChoice]
