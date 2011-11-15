@@ -1,5 +1,5 @@
 from django.contrib import admin
-from models import Normal, SimpleRelated
+from models import Normal, SimpleRelated, LimitedChoice
 from nani.admin import TranslatableAdmin, TranslatableTabularInline
 
 class SimpleRelatedInline(TranslatableTabularInline):
@@ -10,3 +10,5 @@ class NormalAdmin(TranslatableAdmin):
 
 admin.site.register(Normal, NormalAdmin)
 admin.site.register(SimpleRelated, TranslatableAdmin)
+admin.site.register(LimitedChoice)
+
