@@ -37,6 +37,23 @@ class Other(models.Model):
     normal = models.ForeignKey(Normal, related_name='others')
     
 
+class LimitedChoice(models.Model):
+    choice_fk = models.ForeignKey(
+        Normal,
+        limit_choices_to={
+            'shared_field__startswith': 'Shared1',
+        },
+        related_name='limitedchoices_fk'
+    )
+
+    choice_mm = models.ManyToManyField(
+        Normal,
+        limit_choices_to={
+            'shared_field__startswith': 'Shared2'
+        },
+        related_name='limitedchoices_mm'
+    )
+
 class Date(TranslatableModel):
     shared_date = models.DateTimeField()
     

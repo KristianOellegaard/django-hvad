@@ -201,3 +201,4 @@ class TripleRelationTests(NaniTestCase):
         with LanguageOverride('ja'):
             obj = Standard.objects.get(normal__others__pk=other.pk)
             self.assertEqual(obj.pk, standard.pk)
+
