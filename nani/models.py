@@ -140,6 +140,9 @@ class TranslatableModelBase(ModelBase):
         return new_model
     
 
+class NoTranslation(object):
+    pass
+
 class TranslatableModel(models.Model):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
@@ -251,6 +254,20 @@ class TranslatableModel(models.Model):
         if not cache:
             return default
         return getattr(cache, name, default)
+
+    def lazy_translation_getter(self, name, default=None):
+        """
+        Lazy translation getter that fetches translations from DB in case the instance is currently untranslated and
+        saves the translation instance in the translation cache
+        """
+        cache = getattr(self, self._meta.translations_cache, NoTranslation)
+        if not cache and cache != NoTranslation:
+            return default
+        elif getattr(cache, name, NoTranslation) == NoTranslation:
+            trans = self._meta.translations_model.objects.get(master__pk=self.pk)
+            setattr(self, self._meta.translations_cache, trans)
+            return getattr(trans, name)
+        return getattr(cache, name)
     
     def get_available_languages(self):
         manager = self._meta.translations_model.objects

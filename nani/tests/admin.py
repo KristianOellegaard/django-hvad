@@ -14,7 +14,7 @@ from nani.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin,
 from nani.test_utils.request_factory import RequestFactory
 from nani.test_utils.testcase import NaniTestCase
 from nani.test_utils.context_managers import SettingsOverride
-from testproject.app.models import Normal, SimpleRelated
+from testproject.app.models import Normal, SimpleRelated, Other
 
 class BaseAdminTests(object):
     def _get_admin(self, model):
@@ -22,6 +22,21 @@ class BaseAdminTests(object):
 
 
 class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
+
+    def test_lazy_translation_getter(self):
+        translated_field_value = u"rød grød med fløde"
+        normal = Normal.objects.language("da").create(
+            shared_field = "shared field",
+            translated_field = translated_field_value,
+        )
+
+        Other.objects.create(normal=normal)
+        self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
+        n2 =  Normal.objects.get(pk=normal.pk)
+        self.assertEqual(n2.safe_translation_getter("translated_field"), None)
+        self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
+        self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
+
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
         myadmin = self._get_admin(Normal)
