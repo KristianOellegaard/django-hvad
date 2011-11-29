@@ -2,10 +2,21 @@
 Release Notes
 #############
 
+.. release-0.1.4
+
+*****************************
+0.1.4 (Alpha)
+*****************************
+
+Released on November 29, 2011
+
+ * Introduces :meth:`lazy_translation_getter`
+
+
 .. release-0.1.3
 
 *****************************
-0.1.3 (Alpha, in development)
+0.1.3 (Alpha)
 *****************************
 
 Released on November 8, 2011
