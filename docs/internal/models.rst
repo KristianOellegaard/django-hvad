@@ -109,6 +109,11 @@ TranslatableModel
     .. method:: safe_translation_getter(self, name, default=None)
     
         Helper method to safely get a field from the :term:`Translations Model`.
+        
+    .. method:: lazy_translation_getter(self, name, default=None)
+
+        Helper method to get the cached translation, and in the case the cache
+        for some reason doesnt exist, it gets it from the database.
     
     .. method:: get_available_languages(self)
     

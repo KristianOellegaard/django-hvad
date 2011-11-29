@@ -84,6 +84,29 @@ Example usage::
         
         def __unicode__(self):
             return self.safe_translation_getter('name', 'MyMode: %s' % self.pk)
+            
+            
+.. method:: lazy_translation_getter(name, default=None)
+
+    Returns the value of the field specified by ``name`` even thought it's not available on
+    this instance in the currently cached language. Returns the value specified in ``default`` if no
+    translation available on this instance or the translation does not have a
+    value for this field.
+
+    This method is useful to get a value in methods such as
+    :meth:`__unicode__`.
+
+    .. note:: This method may perform database queries.
+
+Example usage::
+
+    class MyModel(TranslatableModel):
+        translations = TranslatedFields(
+            name = models.CharField(max_length=255)
+        )
+
+        def __unicode__(self):
+            return self.lazy_translation_getter('name', 'MyMode: %s' % self.pk)
 
 
 get_available_languages
