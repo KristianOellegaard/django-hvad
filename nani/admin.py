@@ -107,12 +107,20 @@ class TranslatableModelAdminMixin(object):
                                     request.get_host(), request.path,
                                     urllib.urlencode(get))
             if language == key:
-                status = 'current'
-            elif key in available_languages:
+                current = True
+            else:
+                current = False
+            if key in available_languages:
                 status = 'available'
             else:
                 status = 'empty'
-            tabs.append((url, name, key, status))
+            if key == settings.LANGUAGE_CODE:
+                primary = True
+            else:
+                primary = False
+            tabs.append((url, name, key, status, primary, current))
+        scmp = lambda x,y: cmp((primary or y[3]!='empty'), x[3]!='empty')
+        tabs.sort(scmp)
         return tabs
 
     def _language(self, request):
