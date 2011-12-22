@@ -188,6 +188,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
+        
+        if add:
+            context['language_tabs'] = context['language_tabs'][:1]
+        
         return super(TranslatableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,
