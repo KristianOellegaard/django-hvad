@@ -19,6 +19,8 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from nani.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
+from nani.utils import get_cached_translation, get_translation
+from nani.models import get_language_name
 import django
 import urllib
 from nani.utils import get_cached_translation, get_translation
@@ -28,8 +30,6 @@ from nani.manager import FALLBACK_LANGUAGES
 NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3')
 
 
-def get_language_name(language_code):
-    return dict(settings.LANGUAGES).get(language_code, language_code)
 
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
