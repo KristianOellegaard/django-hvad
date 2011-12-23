@@ -19,7 +19,6 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from nani.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
-from nani.utils import get_cached_translation, get_translation
 from nani.models import get_language_name
 import django
 import urllib
