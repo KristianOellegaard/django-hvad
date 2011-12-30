@@ -9,8 +9,8 @@ This project provides the same functionality as django-nani, but it as opposed t
 
 You have to activate the translated fields, by calling a specific method on the manager.
 
-.. warning:: django-hvad is still in early alpha status, please use it with
-             caution.
+.. warning:: django-hvad is still in beta, please use it with
+             caution and report any bug(s) you might encounter.
 
 
 
