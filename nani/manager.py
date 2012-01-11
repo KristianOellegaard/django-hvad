@@ -262,12 +262,12 @@ class TranslationQueryset(QuerySet):
         # Enforce 'select related' onto 'master'
         # Get the translated instance
         found = False
-        qs = self
+        qs = self._clone()
         
         
         if 'language_code' in newkwargs:
             language_code = newkwargs.pop('language_code')
-            qs = self.language(language_code)
+            qs = qs.language(language_code)
             found = True
         elif args:
             language_code = None
@@ -278,7 +278,7 @@ class TranslationQueryset(QuerySet):
                 if language_code:
                     break
             if language_code:
-                qs = self.language(language_code)
+                qs = qs.language(language_code)
                 found = True
         else:
             for where in qs.query.where.children:
@@ -290,7 +290,7 @@ class TranslationQueryset(QuerySet):
                 if found:
                     break
         if not found:
-            qs = self.language()
+            qs = qs.language()
         # self.iterator already combines! Isn't that nice?
         return QuerySet.get(qs, *newargs, **newkwargs)
 
