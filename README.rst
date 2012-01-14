@@ -12,7 +12,7 @@ You have to activate the translated fields, by calling a specific method on the 
 .. warning:: django-hvad is still in beta, please use it with
              caution and report any bug(s) you might encounter.
 
-** Feel free to join us at #django-hvad on irc.freenode.net for a chat **
+**Feel free to join us at #django-hvad on irc.freenode.net for a chat**
 
 
 
