@@ -4,10 +4,10 @@ from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
-    TwoNormalOneStandardMixin)
+    TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
 from nani.test_utils.testcase import NaniTestCase
 from nani.utils import get_translation_aware_manager
-from testproject.app.models import Normal, Related, Standard, Other
+from testproject.app.models import Normal, Related, Standard, Other, Many
 
 
 class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):
@@ -202,3 +202,19 @@ class TripleRelationTests(NaniTestCase):
             obj = Standard.objects.get(normal__others__pk=other.pk)
             self.assertEqual(obj.pk, standard.pk)
 
+
+class ManyToManyTest(NaniTestCase, TwoTranslatedNormalMixin):
+    def test_triple(self):
+        normal1 = Normal.objects.language('en').get(pk=1)
+        many = normal1.manyrels.create(name="many1")
+        
+        with LanguageOverride('en'):
+            # Get the Normal objects associated with the Many object "many1":
+            normals = Normal.objects.language().filter(manyrels__id=many.pk).order_by("translated_field")
+            self.assertEqual([n.pk for n in normals], [normal1.pk])
+            
+            # Same thing, another way:
+            normals = many.normals.language() # This query is fetching Normal objects that are not associated with the Many object "many" !
+            normals_plain = many.normals.all()
+            # The two queries above should return the same objects, since all normals are translated
+            self.assertEqual([n.pk for n in normals], [n.pk for n in normals_plain])
