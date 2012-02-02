@@ -29,6 +29,10 @@ class SimpleRelated(TranslatableModel):
     )
 
 
+class Many(models.Model):
+    name = models.CharField(max_length=128)
+    normals = models.ManyToManyField(Normal, related_name="manyrels")
+
 class Standard(models.Model):
     normal_field = models.CharField(max_length=255)
     normal = models.ForeignKey(Normal, related_name='standards')

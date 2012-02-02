@@ -436,6 +436,8 @@ class TranslationManager(models.Manager):
         if not hasattr(self, '_real_manager'):
             self.contribute_real_manager()
         qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
+        if hasattr(self, 'core_filters'):
+            qs = qs._next_is_sticky().filter(**(self.core_filters))
         return qs.select_related('master')
 
     def language(self, language_code=None):
