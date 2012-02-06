@@ -1,3 +1,5 @@
+import copy
+
 from distutils.version import LooseVersion
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
@@ -64,10 +66,33 @@ class InlineModelForm(TranslatableModelForm):
                                                      error_class, label_suffix,
                                                      empty_permitted, instance)
 
+from django.forms import MediaDefiningClass
+class TranslatableModelAdminDefiningClass(MediaDefiningClass):
+    def __new__(cls, name, bases, attrs):
+        new_class = super(TranslatableModelAdminDefiningClass, cls).__new__(cls, name, bases,
+                                                                            attrs)
 
+        fnames = ['fieldsets', 'translated_fields', 'declared_fieldsets']
+        fieldsets, translated_fields, declared_fieldsets = [attrs.get(fn, None) for fn in fnames]
+
+        if declared_fieldsets or not (fieldsets and translated_fields):
+            return new_class
+
+        full_fieldsets = copy.deepcopy(fieldsets)
+        new_class.declared_fieldsets = property(lambda self: full_fieldsets)
+        
+        for fn, kw in fieldsets:
+            fields = kw.get('fields')
+            if fields:
+                kw['fields'] = tuple(f for f in fields if f not in translated_fields)
+
+        return new_class
+        
 class TranslatableModelAdminMixin(object):
+    __metaclass__ = TranslatableModelAdminDefiningClass
     query_language_key = 'language'
-
+    translated_fields = []
+    
     def all_translations(self, obj):
         """
         use this to display all languages the object has been translated to
@@ -88,6 +113,7 @@ class TranslatableModelAdminMixin(object):
             return u' '.join(languages)
         else:
             return ''
+            
     all_translations.allow_tags = True
     all_translations.short_description = _('all translations')
 
@@ -174,6 +200,16 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         }
         defaults.update(kwargs)
         language = self._language(request)
+
+        if self.translated_fields:
+            mopts = self.model._meta
+            all_translated_fields = mopts.translations_model._meta.get_all_field_names()
+            unknown = [fn for fn in self.translated_fields if fn not in all_translated_fields]
+            if unknown:
+                raise AttributeError("Fields %s are in %s.translated_fields, "
+                                     "but there are no surch fields in %s" \
+                                     % (unknown, self.__class__, mopts.translations_model))
+                
         return translatable_modelform_factory(language, self.model, **defaults)
     
 
