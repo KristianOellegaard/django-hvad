@@ -255,6 +255,15 @@ class TranslatableModel(models.Model):
             return default
         return getattr(cache, name, default)
 
+    def fill_cache(self, language_code):
+        cache = getattr(self, self._meta.translations_cache, None)
+        if not cache or getattr(cache, 'language_code', None) != language_code:
+            try:
+                trans = self._meta.translations_model.objects.get(master__pk=self.pk, language_code=language_code)
+                setattr(self, self._meta.translations_cache, trans)
+            except self.DoesNotExist:
+                self.translate(language_code)
+
     def lazy_translation_getter(self, name, default=None):
         """
         Lazy translation getter that fetches translations from DB in case the instance is currently untranslated and

@@ -301,3 +301,23 @@ class TableNameTest(NaniTestCase):
                 meta = {'db_table': 'tests_mymodel_i18n'},
             )
         self.assertEqual(MyNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
+
+
+class GetTranslatedTest(NaniTestCase, OneSingleTranslatedNormalMixin):
+    def test_fill_cache_with_existing_translation(self):
+        en = Normal.objects.get(pk=1)
+        with self.assertNumQueries(1):
+            en.fill_cache('en')
+        self.assertEqual(en.language_code, 'en')
+
+    def test_fill_cache_without_existing_translation(self):
+        ja = Normal.objects.get(pk=1)
+        with self.assertNumQueries(1):
+            ja.fill_cache('ja')
+        self.assertEqual(ja.language_code, 'ja')
+
+    def test_refill_cache_doesnt_touch_database(self):
+        en = Normal.objects.language('en').get(pk=1)
+        with self.assertNumQueries(0):
+            en.fill_cache('en')
+        self.assertEqual(en.language_code, 'en')
