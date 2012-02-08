@@ -301,3 +301,47 @@ class TableNameTest(NaniTestCase):
                 meta = {'db_table': 'tests_mymodel_i18n'},
             )
         self.assertEqual(MyNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
+
+
+class GetOrCreateTest(NaniTestCase):
+    def test_create_new_translatable_instance(self):
+        with self.assertNumQueries(2):
+            en, created = Normal.objects.language('en').get_or_create(
+                shared_field="shared",
+                defaults={'translated_field': 'English',},
+            )
+        self.assertTrue(created)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
+
+    def test_create_new_language(self):
+        en = Normal.objects.language('en').create(
+            shared_field="shared",
+            translated_field='English',
+        )
+        # TODO: Determine correct number of queries for this case
+        with self.assertNumQueries(2):
+            ja, created = Normal.objects.language('ja').get_or_create(
+                shared_field="shared",
+                defaults={'translated_field': u'日本語',},
+            )
+        self.assertFalse(created) # TODO: Is this appropriate?
+        self.assertEqual(ja.shared_field, "shared")
+        self.assertEqual(ja.translated_field, u'日本語')
+        self.assertEqual(ja.language_code, "ja")
+
+    def test_get_existing_language(self):
+        en = Normal.objects.language('en').create(
+            shared_field="shared",
+            translated_field='English',
+        )
+        with self.assertNumQueries(1):
+            en, created = Normal.objects.language('en').get_or_create(
+                shared_field="shared",
+                defaults={'translated_field': 'x-English',},
+            )
+        self.assertFalse(created)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
