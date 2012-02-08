@@ -218,6 +218,15 @@ TranslationQueryset
         Returns a (combined) instance if one can be found for the filters given,
         otherwise raises an appropriate exception depending on whether no or
         multiple objects were found.
+     
+    .. method:: get_or_create(self, **kwargs)
+    
+        Will try to fetch the translated instance for the kwargs given.
+        
+        If it can't find it, it will try to find a shared instance (using
+        :meth:`_splitkwargs`). If it finds a shared instance, it will create
+        the translated instance. If it does not find a shared instance, it will
+        create both.
 
     .. method:: filter(self, *args, **kwargs)
         
