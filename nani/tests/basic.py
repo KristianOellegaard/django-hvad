@@ -304,11 +304,12 @@ class TableNameTest(NaniTestCase):
 
 class GetOrCreateTest(NaniTestCase):
     def test_create_new_translatable_instance(self):
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             """
             1: get
-            2: create shared
-            3: create translation
+            2: check shared
+            3: create shared
+            4: create translation
             """
             en, created = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
@@ -324,7 +325,6 @@ class GetOrCreateTest(NaniTestCase):
             shared_field="shared",
             translated_field='English',
         )
-        created = False
         with self.assertNumQueries(3):
             """
             1: get

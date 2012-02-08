@@ -304,6 +304,15 @@ class TranslationQueryset(QuerySet):
         assert kwargs, \
                 'get_or_create() must be passed at least one keyword argument'
         defaults = kwargs.pop('defaults', {})
+        # START PATCH
+        if 'language_code' not in kwargs:
+            if self._language_code:
+                language_code = self._language_code
+            else:
+                language_code = get_language()
+        else:
+            language_code = kwargs['language_code']
+        # END PATCH
         lookup = kwargs.copy()
         for f in self.model._meta.fields:
             if f.attname in lookup:
@@ -316,17 +325,27 @@ class TranslationQueryset(QuerySet):
                 params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
                 params.update(defaults)
                 # START PATCH
-                if 'language_code' not in kwargs:
-                    if self._language_code:
-                        params['language_code'] = self._language_code
-                    else:
-                        params['language_code'] = get_language()
-                obj = self.shared_model(**params)
-                # END PATCH
-                sid = transaction.savepoint(using=self.db)
-                obj.save(force_insert=True, using=self.db)
-                transaction.savepoint_commit(sid, using=self.db)
+                shared_lookup, translated_lookup = self._split_kwargs(**params)
+                try:
+                    shared = self.shared_model.objects.get(**shared_lookup)
+                except self.shared_model.DoesNotExist:
+                    if 'language_code' not in kwargs:
+                        if self._language_code:
+                            params['language_code'] = self._language_code
+                        else:
+                            params['language_code'] = get_language()
+                    obj = self.shared_model(**params)
+                    sid = transaction.savepoint(using=self.db)
+                    obj.save(force_insert=True, using=self.db)
+                    transaction.savepoint_commit(sid, using=self.db)
+                    return obj, True
+                obj = shared.translate(language_code)
+                for key, value in translated_lookup.items():
+                    setattr(obj, key, value)
+                translated = getattr(obj, obj._meta.translations_cache)
+                translated.save()
                 return obj, True
+                # END PATCH
             except IntegrityError, e:
                 transaction.savepoint_rollback(sid, using=self.db)
                 exc_info = sys.exc_info()
