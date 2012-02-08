@@ -195,7 +195,7 @@ class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
         untranslated = Normal.objects.untranslated().get(pk=1)
         with LanguageOverride('en'):
             self.assertEqual(untranslated.safe_translation_getter('translated_field', None), None)
-            en = Normal.objects.untranslated().get(pk=1)
+            Normal.objects.untranslated().get(pk=1)
             self.assertEqual(untranslated.safe_translation_getter('translated_field', "English"), "English")
         with LanguageOverride('ja'):
             self.assertEqual(untranslated.safe_translation_getter('translated_field', None), None)
@@ -284,7 +284,6 @@ class TableNameTest(NaniTestCase):
     def test_table_name_override(self):
         from nani.models import TranslatedFields
         from django.db import models
-        from django.conf import settings
         with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
             class MyOtherModel(TranslatableModel):
                 translations = TranslatedFields(
@@ -305,7 +304,12 @@ class TableNameTest(NaniTestCase):
 
 class GetOrCreateTest(NaniTestCase):
     def test_create_new_translatable_instance(self):
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
+            """
+            1: get
+            2: create shared
+            3: create translation
+            """
             en, created = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
                 defaults={'translated_field': 'English',},
@@ -316,27 +320,35 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(en.language_code, "en")
 
     def test_create_new_language(self):
-        en = Normal.objects.language('en').create(
+        Normal.objects.language('en').create(
             shared_field="shared",
             translated_field='English',
         )
-        # TODO: Determine correct number of queries for this case
-        with self.assertNumQueries(2):
+        created = False
+        with self.assertNumQueries(3):
+            """
+            1: get
+            2: create shared
+            3: create translation
+            """
             ja, created = Normal.objects.language('ja').get_or_create(
                 shared_field="shared",
                 defaults={'translated_field': u'日本語',},
             )
-        self.assertFalse(created) # TODO: Is this appropriate?
+        self.assertTrue(created)
         self.assertEqual(ja.shared_field, "shared")
         self.assertEqual(ja.translated_field, u'日本語')
         self.assertEqual(ja.language_code, "ja")
 
     def test_get_existing_language(self):
-        en = Normal.objects.language('en').create(
+        Normal.objects.language('en').create(
             shared_field="shared",
             translated_field='English',
         )
         with self.assertNumQueries(1):
+            """
+            1: get
+            """
             en, created = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
                 defaults={'translated_field': 'x-English',},

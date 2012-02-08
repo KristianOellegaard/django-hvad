@@ -1,6 +1,6 @@
-from django.conf import settings
 from collections import defaultdict
-from django.db import models
+from django.conf import settings
+from django.db import models, transaction, IntegrityError
 from django.db.models.query import (QuerySet, ValuesQuerySet, DateQuerySet, 
     CHUNK_SIZE)
 from django.db.models.query_utils import Q
@@ -9,6 +9,7 @@ from nani.fieldtranslator import translate
 from nani.utils import combine
 import django
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -314,8 +315,14 @@ class TranslationQueryset(QuerySet):
             try:
                 params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
                 params.update(defaults)
-                # THE NEXT LINE IS THE ONLY LINE CHANGED FROM ORIGINAL DJANGO CODE
+                # START PATCH
+                if 'language_code' not in kwargs:
+                    if self._language_code:
+                        params['language_code'] = self._language_code
+                    else:
+                        params['language_code'] = get_language()
                 obj = self.shared_model(**params)
+                # END PATCH
                 sid = transaction.savepoint(using=self.db)
                 obj.save(force_insert=True, using=self.db)
                 transaction.savepoint_commit(sid, using=self.db)
