@@ -227,6 +227,10 @@ TranslationQueryset
         :meth:`_splitkwargs`). If it finds a shared instance, it will create
         the translated instance. If it does not find a shared instance, it will
         create both.
+        
+        Returns a tuple of a (combined) instance and a boolean flag which is
+        ``False`` if it found the instance or ``True`` if it created **either**
+        the translated or both instances.
 
     .. method:: filter(self, *args, **kwargs)
         
