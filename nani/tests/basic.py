@@ -320,7 +320,7 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(en.language_code, "en")
 
     def test_create_new_language(self):
-        Normal.objects.language('en').create(
+        en = Normal.objects.language('en').create(
             shared_field="shared",
             translated_field='English',
         )
@@ -339,6 +339,7 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(ja.shared_field, "shared")
         self.assertEqual(ja.translated_field, u'日本語')
         self.assertEqual(ja.language_code, "ja")
+        self.assertEqual(en.pk, ja.pk)
 
     def test_get_existing_language(self):
         Normal.objects.language('en').create(
