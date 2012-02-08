@@ -37,10 +37,11 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
 
         Other.objects.create(normal=normal)
         self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
-        n2 =  Normal.objects.get(pk=normal.pk)
-        self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-        self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
-        self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
+        with LanguageOverride('da'):
+            n2 =  Normal.objects.get(pk=normal.pk)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
 
         with LanguageOverride('sl'):
             n2 =  Normal.objects.get(pk=normal.pk)
