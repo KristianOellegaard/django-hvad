@@ -294,6 +294,41 @@ class TranslationQueryset(QuerySet):
         # self.iterator already combines! Isn't that nice?
         return QuerySet.get(qs, *newargs, **newkwargs)
 
+    def get_or_create(self, **kwargs):
+        """
+        Looks up an object with the given kwargs, creating one if necessary.
+        Returns a tuple of (object, created), where created is a boolean
+        specifying whether an object was created.
+        """
+        assert kwargs, \
+                'get_or_create() must be passed at least one keyword argument'
+        defaults = kwargs.pop('defaults', {})
+        lookup = kwargs.copy()
+        for f in self.model._meta.fields:
+            if f.attname in lookup:
+                lookup[f.name] = lookup.pop(f.attname)
+        try:
+            self._for_write = True
+            return self.get(**lookup), False
+        except self.model.DoesNotExist:
+            try:
+                params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
+                params.update(defaults)
+                # THE NEXT LINE IS THE ONLY LINE CHANGED FROM ORIGINAL DJANGO CODE
+                obj = self.shared_model(**params)
+                sid = transaction.savepoint(using=self.db)
+                obj.save(force_insert=True, using=self.db)
+                transaction.savepoint_commit(sid, using=self.db)
+                return obj, True
+            except IntegrityError, e:
+                transaction.savepoint_rollback(sid, using=self.db)
+                exc_info = sys.exc_info()
+                try:
+                    return self.get(**lookup), False
+                except self.model.DoesNotExist:
+                    # Re-raise the IntegrityError with its original traceback.
+                    raise exc_info[1], None, exc_info[2]
+
     def filter(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
