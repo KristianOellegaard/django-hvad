@@ -10,7 +10,7 @@ from nani.test_utils.data import DOUBLE_NORMAL
 from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
 from nani.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal
+from testproject.app.models import Normal, MultipleFields
 
 
 class InvalidModel2(object):
@@ -358,3 +358,80 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(en.shared_field, "shared")
         self.assertEqual(en.translated_field, "English")
         self.assertEqual(en.language_code, "en")
+
+    # Evil starts here
+
+    def test_split_params(self):
+        en, created = Normal.objects.language('en').get_or_create(
+            shared_field="shared",
+            translated_field="English",
+        )
+        self.assertTrue(created)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
+
+    def test_split_params_shared_already_exists(self):
+        Normal.objects.language('en').create(
+            shared_field="shared",
+            translated_field="English",
+        )
+        en, created = Normal.objects.language('en').get_or_create(
+            shared_field="shared",
+            translated_field="x-English"
+        )
+        self.assertFalse(created)
+
+    def test_new_language_split_params(self):
+        en = Normal.objects.language('en').create(
+            shared_field="shared",
+            translated_field="English",
+        )
+        ja, created = Normal.objects.language('ja').get_or_create(
+            shared_field="shared",
+            translated_field=u'日本語',
+        )
+        self.assertTrue(created)
+        self.assertEqual(ja.shared_field, "shared")
+        self.assertEqual(ja.translated_field, u'日本語')
+        self.assertEqual(ja.language_code, "ja")
+        self.assertEqual(en.pk, ja.pk)
+
+    def test_split_defaults(self):
+        en, created = MultipleFields.objects.language('en').get_or_create(
+            first_shared_field="shared-one",
+            first_translated_field='English-one',
+            defaults={
+                'second_shared_field': 'shared-two',
+                'second_translated_field': 'English-two',
+            }
+        )
+        self.assertTrue(created)
+        self.assertEqual(en.first_shared_field, "shared-one")
+        self.assertEqual(en.second_shared_field, "shared-two")
+        self.assertEqual(en.first_translated_field, "English-one")
+        self.assertEqual(en.second_translated_field, "English-two")
+        self.assertEqual(en.language_code, "en")
+
+    def test_new_language_split_defaults(self):
+        en = MultipleFields.objects.language('en').create(
+            first_shared_field="shared-one",
+            second_shared_field='shared-two',
+            first_translated_field='English-one',
+            second_translated_field='English-two',
+        )
+        ja, created = MultipleFields.objects.language('ja').get_or_create(
+            first_shared_field="shared-one",
+            first_translated_field=u'日本語-一',
+            defaults={
+                'second_shared_field': 'x-shared-two',
+                'second_translated_field': u'日本語-二',
+            }
+        )
+        self.assertTrue(created)
+        self.assertEqual(ja.first_shared_field, "shared-one")
+        #self.assertEqual(ja.second_shared_field, "shared-two")
+        self.assertEqual(ja.first_translated_field, u'日本語-一')
+        self.assertEqual(ja.second_translated_field,  u'日本語-二')
+        self.assertEqual(ja.language_code, "ja")
+        self.assertEqual(en.pk, ja.pk)
