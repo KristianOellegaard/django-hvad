@@ -22,6 +22,12 @@ The following methods run two queries where standard querysets would run one:
 * :meth:`nani.manager.TranslationQueryset.create`
 * :meth:`nani.manager.TranslationQueryset.update` (only if both translated and 
   untranslated fields are updated at once)
+  
+:meth:`nani.manager.TranslationQueryset.get_or_create` runs 1 query if the
+object exists, 3 queries if the object does not exist in this language, but in
+another language and 4 queries if the object does not exist at all. It will
+return ``True`` for created if either the shared or translated instance was
+created.
 
 
 New methods
