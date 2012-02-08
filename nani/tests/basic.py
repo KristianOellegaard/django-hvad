@@ -304,12 +304,11 @@ class TableNameTest(NaniTestCase):
 
 class GetOrCreateTest(NaniTestCase):
     def test_create_new_translatable_instance(self):
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             """
             1: get
-            2: check shared
-            3: create shared
-            4: create translation
+            2: create shared
+            3: create translation
             """
             en, created = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
@@ -339,7 +338,7 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(ja.shared_field, "shared")
         self.assertEqual(ja.translated_field, u'日本語')
         self.assertEqual(ja.language_code, "ja")
-        self.assertEqual(en.pk, ja.pk)
+        self.assertNotEqual(en.pk, ja.pk)
 
     def test_get_existing_language(self):
         Normal.objects.language('en').create(
@@ -380,7 +379,7 @@ class GetOrCreateTest(NaniTestCase):
             shared_field="shared",
             translated_field="x-English"
         )
-        self.assertFalse(created)
+        self.assertTrue(created)
 
     def test_new_language_split_params(self):
         en = Normal.objects.language('en').create(
@@ -395,7 +394,7 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(ja.shared_field, "shared")
         self.assertEqual(ja.translated_field, u'日本語')
         self.assertEqual(ja.language_code, "ja")
-        self.assertEqual(en.pk, ja.pk)
+        self.assertNotEqual(en.pk, ja.pk)
 
     def test_split_defaults(self):
         en, created = MultipleFields.objects.language('en').get_or_create(
@@ -434,4 +433,4 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(ja.first_translated_field, u'日本語-一')
         self.assertEqual(ja.second_translated_field,  u'日本語-二')
         self.assertEqual(ja.language_code, "ja")
-        self.assertEqual(en.pk, ja.pk)
+        self.assertNotEqual(en.pk, ja.pk)
