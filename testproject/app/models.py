@@ -70,3 +70,12 @@ class AggregateModel(TranslatableModel):
     translated_fields = TranslatedFields(
         translated_number = models.IntegerField(),
     )
+
+
+class MultipleFields(TranslatableModel):
+    first_shared_field = models.CharField(max_length=255)
+    second_shared_field = models.CharField(max_length=255)
+    translations = TranslatedFields(
+        first_translated_field = models.CharField(max_length=255),
+        second_translated_field = models.CharField(max_length=255)
+    )
