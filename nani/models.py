@@ -140,9 +140,6 @@ class TranslatableModelBase(ModelBase):
         return new_model
     
 
-class NoTranslation(object):
-    pass
-
 class TranslatableModel(models.Model):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
@@ -233,6 +230,12 @@ class TranslatableModel(models.Model):
                 trans.master = instance
             trans.save()
     
+    def _cache(self):
+        return getattr(self, self._meta.translations_cache, None)
+    def __set_cache(self, translated):
+        setattr(self, self._meta.translations_cache, translated)
+    _cache = property(_cache, __set_cache)
+
     def translate(self, language_code):
         """
         Returns an Model instance in the specified language.
@@ -246,33 +249,43 @@ class TranslatableModel(models.Model):
             'master': self,
         }
         translated = self._meta.translations_model(**tkwargs)
-        setattr(self, self._meta.translations_cache, translated)
+        self._cache = translated
         return self
-    
+
     def safe_translation_getter(self, name, default=None):
-        cache = getattr(self, self._meta.translations_cache, None)
-        if not cache:
+        if not self._cache:
             return default
-        return getattr(cache, name, default)
+        return getattr(self._cache, name, default)
+
+    def get_translated(self, language_code):
+        return self.__class__.objects.language(language_code).get(pk=self.pk)
+
+    def fill_cache(self, language_code):
+        cache = getattr(self, self._meta.translations_cache, None)
+        if not cache or getattr(cache, 'language_code', None) != language_code:
+            try:
+                trans = self._meta.translations_model.objects.get(master__pk=self.pk, language_code=language_code)
+                setattr(self, self._meta.translations_cache, trans)
+            except self.DoesNotExist:
+                self.translate(language_code)
 
     def lazy_translation_getter(self, name, default=None):
         """
         Lazy translation getter that fetches translations from DB in case the instance is currently untranslated and
         saves the translation instance in the translation cache
         """
-        cache = getattr(self, self._meta.translations_cache, NoTranslation)
-        trans = self._meta.translations_model.objects.filter(master__pk=self.pk)
-        if not cache and cache != NoTranslation and not trans.exists(): # check if there is no translations
+        # If the cache is filled, use it. Don't care what language it's in --
+        # we're *that* lazy
+        try:
+            return getattr(self._cache, name)
+        except AttributeError:
+            # Try to get the current language's translation out of the database
+            self.fill_cache(get_language())
+            if self._cache.pk:
+                # If we got a translation returned from the database, then use it
+                return getattr(self._cache, name)
+            # Otherwise, the cache is a new object, so return the provided default
             return default
-        elif getattr(cache, name, NoTranslation) == NoTranslation and trans.exists(): # We have translations, but no specific translation cached
-            trans_in_own_language = trans.filter(language_code=get_language())
-            if trans_in_own_language.exists():
-                trans = trans_in_own_language[0]
-            else:
-                trans = trans[0]
-            setattr(self, self._meta.translations_cache, trans)
-            return getattr(trans, name)
-        return getattr(cache, name)
     
     def get_available_languages(self):
         manager = self._meta.translations_model.objects
