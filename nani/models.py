@@ -114,15 +114,16 @@ class TranslatableModelBase(ModelBase):
                 continue
             if not hasattr(obj.related, 'model'):
                 continue
-            if issubclass(obj.related.model, BaseTranslationModel):
+            if obj.related.model._meta.shared_model is new_model:
                 if found:
                     raise ImproperlyConfigured(
                         "A TranslatableModel can only define one set of "
-                        "TranslatedFields, %r defines more than one" %
-                        new_model)
+                        "TranslatedFields, %r defines more than one: %r to %r "
+                        "and %r to %r and possibly more" % (new_model, obj,
+                        obj.related.model, found, found.related.model))
                 else:
                     new_model.contribute_translations(obj.related)
-                    found = True
+                    found = obj
 
         if not found:
             raise ImproperlyConfigured(
