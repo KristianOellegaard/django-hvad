@@ -238,4 +238,15 @@ class ForwardDeclaringForeignKeyTests(NaniTestCase):
             translated_fields = TranslatedFields(
                 translated = models.CharField(max_length=1)
             )
-
+    def test_issue_22_non_translatable_model(self):
+        class ForwardRelated2(models.Model):
+            shared_field = models.CharField(max_length=255)
+            fk = models.ForeignKey("ReverseRelated2", related_name='rel', null=True)
+        
+        
+        class ReverseRelated2(TranslatableModel):
+            shared_field = models.CharField(max_length=255)
+        
+            translated_fields = TranslatedFields(
+                translated = models.CharField(max_length=1)
+            )

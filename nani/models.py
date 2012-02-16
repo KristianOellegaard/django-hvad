@@ -114,7 +114,7 @@ class TranslatableModelBase(ModelBase):
                 continue
             if not hasattr(obj.related, 'model'):
                 continue
-            if obj.related.model._meta.shared_model is new_model:
+            if getattr(obj.related.model._meta, 'shared_model', None) is new_model:
                 if found:
                     raise ImproperlyConfigured(
                         "A TranslatableModel can only define one set of "
