@@ -79,19 +79,3 @@ class MultipleFields(TranslatableModel):
         first_translated_field = models.CharField(max_length=255),
         second_translated_field = models.CharField(max_length=255)
     )
-
-
-
-class ForwardRelated(TranslatableModel):
-    shared_field = models.CharField(max_length=255)
-    translations = TranslatedFields(
-        translated = models.ForeignKey("ReverseRelated", related_name='rel', null=True),
-    )
-
-
-class ReverseRelated(TranslatableModel):
-    shared_field = models.CharField(max_length=255)
-
-    translated_fields = TranslatedFields(
-        translated = models.CharField(max_length=1)
-    )

@@ -14,7 +14,7 @@ from nani.tests.query import (FilterTests, IterTests, UpdateTests,
     ValuesListTests, ValuesTests, DeleteTests, GetTranslationFromInstanceTests, 
     AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
 from nani.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
-    TripleRelationTests, ManyToManyTest)
+    TripleRelationTests, ManyToManyTest, ForwardDeclaringForeignKeyTests)
 from nani.tests.forms_inline import TestBasicInline
 from nani.tests.views import ViewsTest
 from nani.tests.limit_choices_to import LimitChoicesToTests
