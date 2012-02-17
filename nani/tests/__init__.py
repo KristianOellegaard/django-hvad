@@ -1,7 +1,7 @@
 from nani.tests.admin import (NormalAdminTests, AdminEditTests, 
     AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests,
     TranslatableInlineAdminTests)
-from nani.tests.basic import (OptionsTest, BasicQueryTest, CreateTest, GetTest, 
+from nani.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest, CreateTest, GetTest, 
     TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests, 
     DefinitionTests, TableNameTest, GetOrCreateTest)
 from nani.tests.dates import LatestTests, DatesTests
