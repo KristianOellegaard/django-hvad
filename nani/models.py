@@ -35,6 +35,8 @@ def create_translations_model(model, related_name, meta, **fields):
     Meta = type('Meta', (object,), meta)
     if not hasattr(Meta, 'db_table'):
         Meta.db_table = model._meta.db_table + '%stranslation' % getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
+    if not hasattr(Meta, 'app_label'):
+        Meta.app_label = model._meta.app_label
     name = '%sTranslation' % model.__name__
     attrs = {}
     attrs.update(fields)
