@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     
     'testproject.app',
+    'testproject.alternate_models_app',
     'nani',
 ]
 

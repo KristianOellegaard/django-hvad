@@ -11,7 +11,7 @@ from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin,
     TwoTranslatedNormalMixin)
 from nani.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal, MultipleFields
-
+from testproject.alternate_models_app.models import NormalAlternate
 
 class InvalidModel2(object):
     objects = TranslationManager()
@@ -53,6 +53,18 @@ class OptionsTest(NaniTestCase):
         relmodel = Normal._meta.get_field_by_name(opts.translations_accessor)[0].model
         self.assertEqual(relmodel, opts.translations_model)
 
+
+class AlternateCreateTest(NaniTestCase):
+    def test_create_instance_simple(self):
+        obj = NormalAlternate(language_code='en')
+        obj.shared_field = "shared"
+        obj.translated_field = "English"
+        obj.save()
+        en = NormalAlternate.objects.language('en').get(pk=obj.pk)
+        self.assertEqual(en.shared_field, "shared")
+        self.assertEqual(en.translated_field, "English")
+        self.assertEqual(en.language_code, "en")
+    
 
 class CreateTest(NaniTestCase):
     def test_create(self):
