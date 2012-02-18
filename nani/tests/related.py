@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.core.exceptions import FieldError
+from django.db import models
 from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
+from nani.models import (TranslatedFields, TranslatableModelBase, 
+    TranslatableModel)
 from nani.test_utils.context_managers import LanguageOverride
 from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
@@ -218,3 +221,32 @@ class ManyToManyTest(NaniTestCase, TwoTranslatedNormalMixin):
             normals_plain = many.normals.all()
             # The two queries above should return the same objects, since all normals are translated
             self.assertEqual([n.pk for n in normals], [n.pk for n in normals_plain])
+
+
+class ForwardDeclaringForeignKeyTests(NaniTestCase):
+    def test_issue_22(self):
+        class ForwardRelated(TranslatableModel):
+            shared_field = models.CharField(max_length=255)
+            translations = TranslatedFields(
+                translated = models.ForeignKey("ReverseRelated", related_name='rel', null=True),
+            )
+        
+        
+        class ReverseRelated(TranslatableModel):
+            shared_field = models.CharField(max_length=255)
+        
+            translated_fields = TranslatedFields(
+                translated = models.CharField(max_length=1)
+            )
+    def test_issue_22_non_translatable_model(self):
+        class ForwardRelated2(models.Model):
+            shared_field = models.CharField(max_length=255)
+            fk = models.ForeignKey("ReverseRelated2", related_name='rel', null=True)
+        
+        
+        class ReverseRelated2(TranslatableModel):
+            shared_field = models.CharField(max_length=255)
+        
+            translated_fields = TranslatedFields(
+                translated = models.CharField(max_length=1)
+            )
