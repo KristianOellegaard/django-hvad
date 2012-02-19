@@ -118,6 +118,7 @@ class TranslatableModelAdminMixin(object):
             else:
                 primary = False
             tabs.append((url, name, key, status, primary, current))
+        cmp = lambda x,y: (x>y) - (x<y)
         scmp = lambda x,y: cmp((primary or y[3]!='empty'), x[3]!='empty')
         tabs.sort(scmp)
         return tabs
