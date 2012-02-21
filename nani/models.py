@@ -56,8 +56,7 @@ def create_translations_model(model, related_name, meta, **fields):
     opts.shared_model = model
 
     # Register it as a global
-    mod = sys.modules[model.__module__]
-    mod.__dict__[name] = translations_model
+    setattr(sys.modules[model.__module__], name, translations_model)
 
     return translations_model
 
