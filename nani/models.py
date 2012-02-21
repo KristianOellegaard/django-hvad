@@ -55,8 +55,12 @@ def create_translations_model(model, related_name, meta, **fields):
     opts = translations_model._meta
     opts.shared_model = model
 
-    # Register it as a global
-    setattr(sys.modules[model.__module__], name, translations_model)
+    # Register it as a global in the shared model's module.
+    # This is needed so that Translation model instances, and objects which
+    # refer to them, can be properly pickled and unpickled. The Django session
+    # and caching frameworks, in particular, depend on this behaviour.
+    mod = sys.modules[model.__module__]
+    setattr(mod, name, translations_model)
 
     return translations_model
 
