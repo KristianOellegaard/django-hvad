@@ -8,6 +8,7 @@ from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager, TranslationsModelManager
 from nani.utils import SmartGetFieldByName
 from types import MethodType
+import sys
 
 
 def create_translations_model(model, related_name, meta, **fields):
@@ -53,6 +54,11 @@ def create_translations_model(model, related_name, meta, **fields):
     translations_model.DoesNotExist = DNE
     opts = translations_model._meta
     opts.shared_model = model
+
+    # Register it as a global
+    mod = sys.modules[model.__module__]
+    mod.__dict__[name] = translations_model
+
     return translations_model
 
 
@@ -294,41 +300,3 @@ class TranslatableModel(models.Model):
         if getattr(self, '_translated_field_names_cache', None) is None:
             self._translated_field_names_cache = self._meta.translations_model._meta.get_all_field_names()
         return self._translated_field_names_cache
-
-    def __reduce__(self):
-        """
-        Because the TranslationsModel is not defined at the top level of the
-        module, we need to jump through some hoops in order to allow it to be
-        pickled.
-        """
-        constructor, constructor_args, object_state = super(TranslatableModel, self).__reduce__()
-        if 'translations_cache' in object_state:
-            # If this model has been translated, save the translated fields and
-            # language code in a sub-dictionary on the pickled state.
-            trans_object_state = dict(
-                (field.name, getattr(self.translations_cache, field.name))
-                for field in self.translations_cache._meta.fields
-                if field.name != 'master'
-            )
-            # Clone the object_state, without the cached translated fields
-            object_state = dict(
-                x for x in object_state.items()
-                if x[0] != 'translations_cache'
-            )
-            object_state['__translations_cache'] = trans_object_state
-        return (constructor, constructor_args, object_state)
-
-    def __setstate__(self, state):
-        """
-        When unpicking this object, look for the translated fields in the
-        saved state, and construct a TranslationModel if present.
-        """
-        translations_cache = state.pop('__translations_cache', None)
-        if hasattr(super(TranslatableModel, self), '__setstate__'):
-            super(TranslatableModel, self).__setstate__(state)
-        else:
-            self.__dict__ = state
-        if translations_cache:
-          translations_cache['master'] = self
-          translated = self._meta.translations_model(**translations_cache)
-          setattr(self, self._meta.translations_cache, translated)

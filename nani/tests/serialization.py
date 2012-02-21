@@ -43,3 +43,40 @@ class PicklingTest(NaniTestCase):
         self.assertEqual(normal.shared_field, unpickled.shared_field)
         self.assertEqual(normal.language_code, unpickled.language_code)
         self.assertEqual(normal.translated_field, unpickled.translated_field)
+
+    def test_queryset_can_be_pickled(self):
+        normal = Normal.objects.create(
+            shared_field="Shared",
+        )
+        qs = Normal.objects.all()
+        serialized_repr = pickle.dumps(qs)
+
+        unpickled = pickle.loads(serialized_repr)
+        self.assertEqual(unpickled.model, qs.model)
+        self.assertEqual(unpickled.get(pk=normal.pk), normal)
+
+    def test_queryset_with_translated_objects_can_be_pickled(self):
+        with LanguageOverride('en'):
+            normal = Normal.objects.create(
+                shared_field="Shared",
+                translated_field = "English",
+            )
+        qs = Normal.objects.all()
+        serialized_repr = pickle.dumps(qs)
+
+        unpickled = pickle.loads(serialized_repr)
+        self.assertEqual(unpickled.model, qs.model)
+        self.assertEqual(unpickled.get(pk=normal.pk), normal)
+
+    def test_translated_queryset_with_translated_objects_can_be_pickled(self):
+        with LanguageOverride('en'):
+            normal = Normal.objects.create(
+                shared_field="Shared",
+                translated_field = "English",
+            )
+        qs = Normal.objects.language('en').all()
+        serialized_repr = pickle.dumps(qs)
+
+        unpickled = pickle.loads(serialized_repr)
+        self.assertEqual(unpickled.model, qs.model)
+        self.assertEqual(unpickled.get(pk=normal.pk), normal)
