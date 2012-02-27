@@ -19,6 +19,7 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from nani.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
+from nani.models import get_language_name
 import django
 import urllib
 from nani.utils import get_cached_translation, get_translation
@@ -28,8 +29,6 @@ from nani.manager import FALLBACK_LANGUAGES
 NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3')
 
 
-def get_language_name(language_code):
-    return dict(settings.LANGUAGES).get(language_code, language_code)
 
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
@@ -107,12 +106,21 @@ class TranslatableModelAdminMixin(object):
                                     request.get_host(), request.path,
                                     urllib.urlencode(get))
             if language == key:
-                status = 'current'
-            elif key in available_languages:
+                current = True
+            else:
+                current = False
+            if key in available_languages:
                 status = 'available'
             else:
                 status = 'empty'
-            tabs.append((url, name, key, status))
+            if key == settings.LANGUAGE_CODE:
+                primary = True
+            else:
+                primary = False
+            tabs.append((url, name, key, status, primary, current))
+        cmp = lambda x,y: (x>y) - (x<y)
+        scmp = lambda x,y: cmp((primary or y[3]!='empty'), x[3]!='empty')
+        tabs.sort(scmp)
         return tabs
 
     def _language(self, request):
@@ -188,6 +196,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
+        
+        if add:
+            context['language_tabs'] = context['language_tabs'][:1]
+        
         return super(TranslatableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,

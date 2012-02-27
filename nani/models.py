@@ -8,7 +8,10 @@ from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from nani.manager import TranslationManager, TranslationsModelManager
 from nani.utils import SmartGetFieldByName
 from types import MethodType
+from django.conf import settings
 
+def get_language_name(language_code):
+    return dict(settings.LANGUAGES).get(language_code, language_code)
 
 def create_translations_model(model, related_name, meta, **fields):
     """
@@ -81,6 +84,9 @@ class BaseTranslationModel(models.Model):
         
     class Meta:
         abstract = True
+    
+    def __unicode__(self):
+        return get_language_name(self.language_code)
         
 
 class TranslatableModelBase(ModelBase):
