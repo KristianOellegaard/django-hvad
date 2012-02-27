@@ -14,6 +14,7 @@ You have to activate the translated fields, by calling a specific method on the 
 
 **Feel free to join us at #django-hvad on irc.freenode.net for a chat**
 
+.. image:: https://secure.travis-ci.org/KristianOellegaard/django-hvad.png?branch=master
 
 
 Example
