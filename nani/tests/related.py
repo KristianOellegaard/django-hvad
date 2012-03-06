@@ -10,7 +10,7 @@ from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin,
     TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
 from nani.test_utils.testcase import NaniTestCase
 from nani.utils import get_translation_aware_manager
-from testproject.app.models import Normal, Related, Standard, Other, Many
+from testproject.app.models import Normal, Related, SimpleRelated, Standard, Other, Many
 
 
 class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):
@@ -250,3 +250,33 @@ class ForwardDeclaringForeignKeyTests(NaniTestCase):
             translated_fields = TranslatedFields(
                 translated = models.CharField(max_length=1)
             )
+
+
+class SelectRelatedTests(NaniTestCase, TwoTranslatedNormalMixin):
+    def create_fixtures(self):
+        super(SelectRelatedTests, self).create_fixtures()
+        with LanguageOverride('en'):
+            self.normal1 = Normal.objects.language().get(pk=1)
+            SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1").save()
+            self.normal2 = Normal.objects.language().get(pk=2)
+            SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test2").save()
+        
+    def test_select_related(self):
+        with LanguageOverride('en'):  
+            with self.assertNumQueries(1):
+                rel_objects = SimpleRelated.objects.language().select_related('normal')
+                for r in rel_objects:
+                    if r.normal_id == 1:
+                        self.assertEqual(self.normal1.shared_field, r.normal.shared_field)
+                    else:
+                        self.assertEqual(self.normal2.shared_field, r.normal.shared_field)
+    
+    def test_select_translated_related(self):
+        with LanguageOverride('en'):        
+            with self.assertNumQueries(1):
+                rel_objects = SimpleRelated.objects.language().select_related('normal')
+                for r in rel_objects:
+                    if r.normal_id == 1:
+                        self.assertEqual(self.normal1.translated_field, r.normal.translated_field)
+                    else:
+                        self.assertEqual(self.normal2.translated_field, r.normal.translated_field)
