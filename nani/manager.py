@@ -98,7 +98,12 @@ class TranslationQueryset(QuerySet):
         self._real_manager = real
         self._fallback_manager = None
         self._language_code = None
+        
         super(TranslationQueryset, self).__init__(model=model, query=query, using=using)
+
+        # Finally, make sure we retrieve the shared model:
+        if not self.query.select_related:
+            self.query.add_select_related(('master',))
 
     #===========================================================================
     # Helpers and properties (INTERNAL!)
@@ -404,6 +409,14 @@ class TranslationQueryset(QuerySet):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).exclude(*newargs, **newkwargs)
 
+    def select_related(self, *fields):
+        if not fields:
+            raise NotImplementedError("To use select_related on a translated model, you must provide a list of fields.")
+        fields = ['master'] + self._translate_fieldnames(fields)
+        obj = self._clone()
+        obj.query.add_select_related(fields)
+        return obj
+
     def complex_filter(self, filter_obj):
         # Don't know how to handle Q object yet, but it is probably doable...
         # An unknown type object that supports 'add_to_query' is a different story :)
@@ -480,7 +493,7 @@ class TranslationManager(models.Manager):
         qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
         if hasattr(self, 'core_filters'):
             qs = qs._next_is_sticky().filter(**(self.core_filters))
-        return qs.select_related('master')
+        return qs
 
     def language(self, language_code=None):
         return self.using_translations().language(language_code)
