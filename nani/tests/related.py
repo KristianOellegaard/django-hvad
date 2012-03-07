@@ -268,15 +268,24 @@ class SelectRelatedTests(NaniTestCase, TwoTranslatedNormalMixin):
                 for r in rel_objects:
                     if r.normal_id == 1:
                         self.assertEqual(self.normal1.shared_field, r.normal.shared_field)
-                    else:
-                        self.assertEqual(self.normal2.shared_field, r.normal.shared_field)
-    
-    def test_select_translated_related(self):
-        with LanguageOverride('en'):        
-            with self.assertNumQueries(1):
-                rel_objects = SimpleRelated.objects.language().select_related('normal')
-                for r in rel_objects:
-                    if r.normal_id == 1:
                         self.assertEqual(self.normal1.translated_field, r.normal.translated_field)
                     else:
+                        self.assertEqual(self.normal2.shared_field, r.normal.shared_field)
                         self.assertEqual(self.normal2.translated_field, r.normal.translated_field)
+
+    def test_select_related_using_get(self):
+        with LanguageOverride('en'):  
+            with self.assertNumQueries(1):
+                r = SimpleRelated.objects.language().select_related('normal').get(translated_field="test1")
+                self.assertEqual(r.normal.pk, 1)
+                self.assertEqual(self.normal1.shared_field, r.normal.shared_field)
+                self.assertEqual(self.normal1.translated_field, r.normal.translated_field)
+                
+    def test_select_related_from_translated_field(self):
+        with LanguageOverride('en'):
+            Related.objects.language().create(pk=1, translated=self.normal1).save()
+            with self.assertNumQueries(1):
+                r = Related.objects.language().select_related('translated').get(translated=self.normal1)
+                self.assertEqual(r.translated.pk, 1)
+                self.assertEqual(self.normal1.shared_field, r.translated.shared_field)
+                self.assertEqual(self.normal1.translated_field, r.translated.translated_field)
