@@ -456,11 +456,13 @@ class TranslationQueryset(QuerySet):
             else:
                 related_model_keys.append(query_key)
         obj = self._clone()
-        obj.query.get_compiler(obj.db).pre_sql_setup()  # seems to be necessary; not sure why
+        obj.query.get_compiler(obj.db).fill_related_selections() # seems to be necessary; not sure why
         for j in related_model_explicit_joins:
             obj.query.join(j, outer_if_first=True)
         for f in related_model_extra_filters:
-            obj.query.add_filter(f)
+            f1 = {f[0]: f[1]}
+            f2 = {f[0]: None} # Allow select_related() to fetch objects with a relation set to NULL
+            obj.query.add_q( Q(**f1) | Q(**f2) )
         obj._forced_unique_fields.extend(forced_unique_fields)
         obj.query.add_select_related(related_model_keys)
         
@@ -557,7 +559,7 @@ class TranslationQueryset(QuerySet):
                 self._use_related_translations(obj.master, relations_dict[related_field_name], follow_relations=False)
             else:
                 related_obj = getattr(obj, related_field_name)
-                if hasattr(related_obj._meta, 'translations_cache'): # This is a related translated model included using select_related:
+                if related_obj and hasattr(related_obj._meta, 'translations_cache'): # This is a related translated model included using select_related:
                     # The following is a generic version of "related_obj.translations_cache = related_obj._translations_cache"
                     setattr(related_obj, related_obj._meta.translations_cache, getattr(related_obj, getattr(related_obj.__class__, related_obj._meta.translations_accessor).related.get_cache_name(), None))
 

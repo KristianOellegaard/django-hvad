@@ -257,12 +257,13 @@ class SelectRelatedTests(NaniTestCase, TwoTranslatedNormalMixin):
         super(SelectRelatedTests, self).create_fixtures()
         with LanguageOverride('en'):
             self.normal1 = Normal.objects.language().get(pk=1)
-            SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1").save()
-            self.normal2 = Normal.objects.language().get(pk=2)
-            SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test2").save()
+            SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1")
         
     def test_select_related(self):
         with LanguageOverride('en'):  
+            self.normal2 = Normal.objects.language().get(pk=2)
+            SimpleRelated.objects.language().create(normal=self.normal2, translated_field="test2")
+            
             with self.assertNumQueries(1):
                 rel_objects = SimpleRelated.objects.language().select_related('normal')
                 for r in rel_objects:
@@ -289,3 +290,24 @@ class SelectRelatedTests(NaniTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(r.translated.pk, 1)
                 self.assertEqual(self.normal1.shared_field, r.translated.shared_field)
                 self.assertEqual(self.normal1.translated_field, r.translated.translated_field)
+
+    def test_select_related_with_null_relation(self):
+        with LanguageOverride('en'):
+            # First, two Normal objects are created by TwoTranslatedNormalMixin (in English and Japanese)
+            related1 = Related.objects.language().create(normal=self.normal1, translated=self.normal1)
+            # Now we create another, but with relations set to None:
+            related2 = Related.objects.language().create(normal=None, translated=None)
+
+            with self.assertNumQueries(1):
+                rel_objects = Related.objects.language().select_related('normal', 'translated')
+                #print(rel_objects.query) # Note: uncommenting this line causes the test to fail, which shouldn't happen :-()
+                self.assertEqual(len(rel_objects), 2)
+                for r in rel_objects:
+                    if (r.id == related1.id):
+                        self.assertEqual(self.normal1.translated_field, r.normal.translated_field)
+                        self.assertEqual(self.normal1.translated_field, r.translated.translated_field)
+                    elif (r.id == related2.id):
+                        self.assertEqual(r.normal, None)
+                        self.assertEqual(r.translated, None)
+                    else:
+                        self.fail("Invalid Related object; ID is %s" % r.id)
