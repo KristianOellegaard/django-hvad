@@ -325,7 +325,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 languages.append(lang)
         qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
         # TODO: this should be handled by some parameter to the ChangeList.
-        ordering = self.ordering or () # otherwise we might try to *None, which is bad ;)
+        ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
@@ -546,7 +546,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         language = self._language(request)
         qs = self.model._default_manager.all()#.language(language)
         # TODO: this should be handled by some parameter to the ChangeList.
-        ordering = self.ordering or () # otherwise we might try to *None, which is bad ;)
+        ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
