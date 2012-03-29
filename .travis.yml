@@ -2,7 +2,11 @@ language: python
 python:
   - 2.6
   - 2.7
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: python setup.py install && pip install sphinx
-# command to run tests, e.g. python setup.py test
+env:
+  - DJANGO_VERSION=1.2.7
+  - DJANGO_VERSION=1.3.1
+  - DJANGO_VERSION=1.4
+install:
+  - pip install -q Django==$DJANGO_VERSION && pip install sphinx
+  - python setup.py -q install
 script:  ./runtests.sh
