@@ -5,6 +5,8 @@ django-hvad
 This project is yet another attempt at making model translations suck less in
 Django.
 
+Documentation for django-hvad can be found at http://django-hvad.readthedocs.org/.
+
 This project provides the same functionality as django-nani, but it as opposed to django-nani, this project does not affect the default queries, which means that everything will continue to work as it was before.
 
 You have to activate the translated fields, by calling a specific method on the manager.
