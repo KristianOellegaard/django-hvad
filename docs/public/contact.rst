@@ -2,7 +2,7 @@
 Contact and support channels
 ############################
 
-* IRC: irc.freenode.net/#django-nani
+* IRC: irc.freenode.net/#django-hvad
 * Twitter: `@ojiidotch`_
 * Github: https://github.com/ojii/
 
