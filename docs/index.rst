@@ -5,7 +5,7 @@ Welcome to the Django hvad documentation!
 .. warning:: Please note that django-hvad is still in alpha status and should be
              used with caution.
 
-.. note:: django-hvad is closely related (and derives) from django-nani.
+.. note:: django-hvad is closely related to (and derives from) django-nani.
            Don't be confused if that name is used in the docs or elsewhere,
            many of the functions are also compatible with django-nani.
 
