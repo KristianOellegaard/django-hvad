@@ -1,20 +1,27 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
+from django.contrib.auth.models import User
 
 from nani.test_utils.testcase import NaniTestCase
-from nani.test_utils.fixtures import (
-    TwoTranslatedNormalMixin,
-    SuperuserMixin,
-)
+from nani.test_utils.fixtures import TwoTranslatedNormalMixin
 
 from testproject.app.models import LimitedChoice
 
 
-class LimitChoicesToTests(
-    NaniTestCase,
-    TwoTranslatedNormalMixin,
-    SuperuserMixin
-):
+class LimitChoicesToTests(NaniTestCase, TwoTranslatedNormalMixin):
+    def create_fixtures(self):
+        su = User(
+            email='admin@admin.com',
+            is_staff=True,
+            is_superuser=True,
+            is_active=True,
+            username='admin',
+        )
+        su.set_password('admin')
+        su.save()
+        self.user = su
+        super(LimitChoicesToTests, self).create_fixtures()
+
     def test_limit_choices_to(self):
         """
         Checks if limit_choices_to works on ForeignKey and ManyToManyField.
@@ -32,6 +39,9 @@ class LimitChoicesToTests(
             # We need to attach the client's session to the request,
             # otherwise admin won't let us in 
             get_request.session = self.client.session 
+
+            # in django 1.4 request.user is required
+            get_request.user = self.user
 
             # Let's construct the relevant admin form...
             Form = limited_choice_admin.get_form(get_request)
