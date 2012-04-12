@@ -273,9 +273,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             "perms_lacking": perms_needed,
             "protected": protected,
             "opts": opts,
-            "root_path": self.admin_site.root_path,
             "app_label": app_label,
         }
+
+        # in django > 1.4 root_path is removed
+        if hasattr(self.admin_site, 'root_path'):
+            context.update({"root_path": self.admin_site.root_path})
 
         return render_to_response(self.delete_confirmation_template or [
             "admin/%s/%s/delete_confirmation.html" % (app_label, opts.object_name.lower()),
