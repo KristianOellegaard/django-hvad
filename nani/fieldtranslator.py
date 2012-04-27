@@ -33,7 +33,7 @@ def _build_model_info(model):
 def get_model_info(model):
     """
     Returns a dictionary with 'translated' and 'shared' as keys, and a list of
-    respective field names as values. Also has a key 'type' which is either 
+    respective field names as values. Also has a key 'type' which is either
     TRANSLATIONS, TRANSLATED or NORMAL
     """
     if model not in MODEL_INFO:
@@ -58,6 +58,7 @@ def translate(querykey, starting_model):
     translated_bits = []
     model = starting_model
     language_joins = []
+    rel_joins = []
     max_index = len(bits) - 1
     # iterate over the bits
     for index, bit in enumerate(bits):
@@ -73,6 +74,7 @@ def translate(querykey, starting_model):
         # lookup via the translations accessor. Also add a language join on this
         # table.
         elif model_info['type'] == TRANSLATED:
+            rel_path = '__'.join(translated_bits)
             if bit in model_info['translated']:
                 translated_bits.append(model._meta.translations_accessor)
                 path = '__'.join(translated_bits)
@@ -80,6 +82,7 @@ def translate(querykey, starting_model):
                 # language
                 if index != 0:
                     language_joins.append('%s__language_code' % path)
+                    rel_joins.append(rel_path)
                 translated_bits.append(bit)
             else:
                 path = '__'.join(translated_bits + [model._meta.translations_accessor])
@@ -87,6 +90,7 @@ def translate(querykey, starting_model):
                 # language
                 if index != 0:
                     language_joins.append('%s__language_code' % path)
+                    rel_joins.append(rel_path)
                 translated_bits.append(bit)
         # else (if it's a translations table), inject a 'master' if the field is
         # untranslated and add language joins.
@@ -99,6 +103,7 @@ def translate(querykey, starting_model):
                 # language
                 if index != 0:
                     language_joins.append('%s__language_code' % path)
+                    rel_joins.append(path)
                 translated_bits.append('master')
                 translated_bits.append(bit)
         # do we really want to get the next model? Is there a next model?
@@ -106,4 +111,4 @@ def translate(querykey, starting_model):
             next = bits[index + 1]
             if next not in QUERY_TERMS:
                 model = _get_model_from_field(model, bit)
-    return '__'.join(translated_bits), language_joins
+    return '__'.join(translated_bits), zip(language_joins, rel_joins)
