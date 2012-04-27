@@ -3,10 +3,10 @@ from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.query_utils import Q
 from nani.exceptions import WrongManager
-from nani.models import (TranslatedFields, TranslatableModelBase, 
+from nani.models import (TranslatedFields, TranslatableModelBase,
     TranslatableModel)
 from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
+from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin,
     TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
 from nani.test_utils.testcase import NaniTestCase
 from nani.utils import get_translation_aware_manager
@@ -27,13 +27,13 @@ class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):
         self.assertEqual(related.normal.shared_field, normal.shared_field)
         self.assertEqual(related.normal.translated_field, normal.translated_field)
         self.assertTrue(related in normal.rel1.all())
-    
+
     def test_failed_relation(self):
         related = Related.objects.create()
         related.normal_id = 999
         related.save()
         self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
-        
+
 
 
 class StandardToTransFKTest(NaniTestCase, TwoNormalOneStandardMixin):
@@ -98,13 +98,13 @@ class StandardToTransFKTest(NaniTestCase, TwoNormalOneStandardMixin):
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.get,
                               normal__translated_field=en.translated_field)
-    
+
     def test_lookup_by_non_existing_field(self):
         en = Normal.objects.language('en').get(pk=1)
         with LanguageOverride('en'):
             self.assertRaises(FieldError, Standard.objects.get,
                               normal__non_existing_field=1)
-        
+
 
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=1)
@@ -192,15 +192,11 @@ class TripleRelationTests(NaniTestCase):
             obj = get_translation_aware_manager(Standard).get(normal__others__pk=other.pk)
             self.assertEqual(obj.pk, standard.pk)
 
-        # If we don't use language 'en', it should give DoesNotExist, when using the
-        # translation aware manager
         with LanguageOverride('ja'):
             manager = get_translation_aware_manager(Standard)
-            self.assertRaises(Standard.DoesNotExist, manager.get, normal__others__pk=other.pk)
+            obj = manager.get(normal__others__pk=other.pk)
+            self.assertEqual(obj.pk, standard.pk)
 
-        # However, if we don't use the translation aware manager, we can query any
-        # the shared fields in any language, and it should return the object,
-        # even though there is no translated Normal objects
         with LanguageOverride('ja'):
             obj = Standard.objects.get(normal__others__pk=other.pk)
             self.assertEqual(obj.pk, standard.pk)
@@ -210,12 +206,12 @@ class ManyToManyTest(NaniTestCase, TwoTranslatedNormalMixin):
     def test_triple(self):
         normal1 = Normal.objects.language('en').get(pk=1)
         many = normal1.manyrels.create(name="many1")
-        
+
         with LanguageOverride('en'):
             # Get the Normal objects associated with the Many object "many1":
             normals = Normal.objects.language().filter(manyrels__id=many.pk).order_by("translated_field")
             self.assertEqual([n.pk for n in normals], [normal1.pk])
-            
+
             # Same thing, another way:
             normals = many.normals.language() # This query is fetching Normal objects that are not associated with the Many object "many" !
             normals_plain = many.normals.all()
@@ -230,11 +226,11 @@ class ForwardDeclaringForeignKeyTests(NaniTestCase):
             translations = TranslatedFields(
                 translated = models.ForeignKey("ReverseRelated", related_name='rel', null=True),
             )
-        
-        
+
+
         class ReverseRelated(TranslatableModel):
             shared_field = models.CharField(max_length=255)
-        
+
             translated_fields = TranslatedFields(
                 translated = models.CharField(max_length=1)
             )
@@ -242,11 +238,11 @@ class ForwardDeclaringForeignKeyTests(NaniTestCase):
         class ForwardRelated2(models.Model):
             shared_field = models.CharField(max_length=255)
             fk = models.ForeignKey("ReverseRelated2", related_name='rel', null=True)
-        
-        
+
+
         class ReverseRelated2(TranslatableModel):
             shared_field = models.CharField(max_length=255)
-        
+
             translated_fields = TranslatedFields(
                 translated = models.CharField(max_length=1)
             )
