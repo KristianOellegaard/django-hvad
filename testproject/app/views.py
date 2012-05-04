@@ -1,5 +1,5 @@
 from django.core.urlresolvers import reverse
-from nani.views import TranslatableUpdateView
+from hvad.views import TranslatableUpdateView
 from testproject.app.models import Normal
 
 class NormalUpdateView(TranslatableUpdateView):

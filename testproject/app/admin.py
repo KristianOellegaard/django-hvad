@@ -1,6 +1,6 @@
 from django.contrib import admin
 from models import Normal, SimpleRelated, LimitedChoice
-from nani.admin import TranslatableAdmin, TranslatableTabularInline
+from hvad.admin import TranslatableAdmin, TranslatableTabularInline
 
 class SimpleRelatedInline(TranslatableTabularInline):
     model = SimpleRelated

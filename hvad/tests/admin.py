@@ -5,15 +5,15 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.test.client import Client
-from nani.admin import InlineModelForm
-from nani.admin import translatable_modelform_factory
-from nani.forms import TranslatableModelForm
-from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin, 
+from hvad.admin import InlineModelForm
+from hvad.admin import translatable_modelform_factory
+from hvad.forms import TranslatableModelForm
+from hvad.test_utils.context_managers import LanguageOverride
+from hvad.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin, 
     OneSingleTranslatedNormalMixin)
-from nani.test_utils.request_factory import RequestFactory
-from nani.test_utils.testcase import NaniTestCase
-from nani.test_utils.context_managers import SettingsOverride
+from hvad.test_utils.request_factory import RequestFactory
+from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.context_managers import SettingsOverride
 from testproject.app.models import Normal, SimpleRelated, Other
 
 class BaseAdminTests(object):
@@ -307,7 +307,7 @@ class AdminDeleteTranslationsTests(NaniTestCase, BaseAdminTests, SuperuserMixin)
         with self.login_user_context(username='admin', password='admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            self.assertTemplateUsed(response, 'admin/nani/deletion_not_allowed.html')
+            self.assertTemplateUsed(response, 'admin/hvad/deletion_not_allowed.html')
         self.assertTrue(Normal.objects.language('en').get(pk=en.pk))
             
     def test_delete_translation_get(self):

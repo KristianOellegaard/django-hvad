@@ -3,13 +3,13 @@ from __future__ import with_statement
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
-from nani.manager import TranslationManager
-from nani.models import TranslatableModelBase, TranslatableModel
-from nani.test_utils.context_managers import LanguageOverride, SettingsOverride
-from nani.test_utils.data import DOUBLE_NORMAL
-from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
+from hvad.manager import TranslationManager
+from hvad.models import TranslatableModelBase, TranslatableModel
+from hvad.test_utils.context_managers import LanguageOverride, SettingsOverride
+from hvad.test_utils.data import DOUBLE_NORMAL
+from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
-from nani.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal, MultipleFields
 from testproject.alternate_models_app.models import NormalAlternate
 

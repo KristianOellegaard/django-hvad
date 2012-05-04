@@ -5,8 +5,8 @@ from django.db.models.query import (QuerySet, ValuesQuerySet, DateQuerySet,
     CHUNK_SIZE)
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
-from nani.fieldtranslator import translate
-from nani.utils import combine
+from hvad.fieldtranslator import translate
+from hvad.utils import combine
 import django
 import logging
 import sys

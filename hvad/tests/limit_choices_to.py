@@ -2,8 +2,8 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 
-from nani.test_utils.testcase import NaniTestCase
-from nani.test_utils.fixtures import TwoTranslatedNormalMixin
+from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 from testproject.app.models import LimitedChoice
 

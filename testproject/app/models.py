@@ -1,5 +1,5 @@
 from django.db import models
-from nani.models import TranslatableModel, TranslatedFields
+from hvad.models import TranslatableModel, TranslatedFields
 
 
 class Normal(TranslatableModel):

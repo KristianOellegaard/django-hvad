@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     
     'testproject.app',
     'testproject.alternate_models_app',
-    'nani',
+    'hvad',
 ]
 
 try:

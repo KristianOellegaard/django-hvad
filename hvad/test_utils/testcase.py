@@ -3,8 +3,8 @@ from django.core.signals import request_started
 from django.db import reset_queries, connections
 from django.db.utils import DEFAULT_DB_ALIAS
 from django.test import testcases
-from nani.test_utils.context_managers import UserLoginContext
-from nani.test_utils.request_factory import RequestFactory
+from hvad.test_utils.context_managers import UserLoginContext
+from hvad.test_utils.request_factory import RequestFactory
 import sys
 
 

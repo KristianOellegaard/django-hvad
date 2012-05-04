@@ -6,7 +6,7 @@
    <a name="{{ inline_admin_formset.opts.verbose_name|slugify }}"></a>
    <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
    {{ inline_admin_formset.formset.non_form_errors }}
-    {% include "admin/nani/includes/translation_tabs.html" %}
+    {% include "admin/hvad/includes/translation_tabs.html" %}
    <table>
      <thead><tr>
      {% for field in inline_admin_formset.fields %}

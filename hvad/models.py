@@ -4,9 +4,9 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
 from django.utils.translation import get_language
-from nani.descriptors import LanguageCodeAttribute, TranslatedAttribute
-from nani.manager import TranslationManager, TranslationsModelManager
-from nani.utils import SmartGetFieldByName
+from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
+from hvad.manager import TranslationManager, TranslationsModelManager
+from hvad.utils import SmartGetFieldByName
 from types import MethodType
 import sys
 

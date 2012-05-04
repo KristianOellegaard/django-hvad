@@ -1,6 +1,6 @@
 import pickle
-from nani.test_utils.testcase import NaniTestCase
-from nani.test_utils.context_managers import LanguageOverride
+from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.context_managers import LanguageOverride
 from testproject.app.models import Normal
 
 class PicklingTest(NaniTestCase):

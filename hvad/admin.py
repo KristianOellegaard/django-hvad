@@ -18,11 +18,11 @@ from django.utils.encoding import iri_to_uri, force_unicode
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
-from nani.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
+from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 import django
 import urllib
-from nani.utils import get_cached_translation, get_translation
-from nani.manager import FALLBACK_LANGUAGES
+from hvad.utils import get_cached_translation, get_translation
+from hvad.manager import FALLBACK_LANGUAGES
 
 
 NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3')
@@ -122,9 +122,9 @@ class TranslatableModelAdminMixin(object):
 class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     form = TranslatableModelForm
     
-    change_form_template = 'admin/nani/change_form.html'
+    change_form_template = 'admin/hvad/change_form.html'
     
-    deletion_not_allowed_template = 'admin/nani/deletion_not_allowed.html'
+    deletion_not_allowed_template = 'admin/hvad/deletion_not_allowed.html'
     
     def get_urls(self):
         from django.conf.urls.defaults import patterns, url
@@ -353,9 +353,9 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin):
     form = InlineModelForm
 
-    change_form_template = 'admin/nani/change_form.html'
+    change_form_template = 'admin/hvad/change_form.html'
 
-    deletion_not_allowed_template = 'admin/nani/deletion_not_allowed.html'
+    deletion_not_allowed_template = 'admin/hvad/deletion_not_allowed.html'
 
     def get_formset(self, request, obj=None, **kwargs):
         """Returns a BaseInlineFormSet class for use in admin add/change views."""
@@ -556,7 +556,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
 
 class TranslatableStackedInline(TranslatableInlineModelAdmin):
-    template = 'admin/nani/edit_inline/stacked.html'
+    template = 'admin/hvad/edit_inline/stacked.html'
 
 class TranslatableTabularInline(TranslatableInlineModelAdmin):
-    template = 'admin/nani/edit_inline/tabular.html'
+    template = 'admin/hvad/edit_inline/tabular.html'

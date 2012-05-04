@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from django.db import connection
-from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.testcase import NaniTestCase
+from hvad.test_utils.context_managers import LanguageOverride
+from hvad.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
-from nani.test_utils.fixtures import TwoTranslatedNormalMixin
+from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 
 class FallbackTests(NaniTestCase, TwoTranslatedNormalMixin):

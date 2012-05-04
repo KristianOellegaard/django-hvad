@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.core.exceptions import FieldError
-from nani.forms import TranslatableModelForm, TranslatableModelFormMetaclass
-from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.testcase import NaniTestCase
+from hvad.forms import TranslatableModelForm, TranslatableModelFormMetaclass
+from hvad.test_utils.context_managers import LanguageOverride
+from hvad.test_utils.testcase import NaniTestCase
 from testproject.app.models import Normal
 from django.db import models
 

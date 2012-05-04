@@ -4,7 +4,7 @@ from django.db.models.fields import FieldDoesNotExist, DateField
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.sql.datastructures import Date
 from django.db.models.sql.query import Query
-from nani.manager import TranslationQueryset
+from hvad.manager import TranslationQueryset
 
 class DateQuerySet(TranslationQueryset):
     def iterator(self):
