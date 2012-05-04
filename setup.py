@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from nani import __version__ as version
+from hvad import __version__ as version
 
 setup(
     name = 'django-hvad',

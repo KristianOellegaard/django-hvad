@@ -196,7 +196,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def response_change(self, request, obj):
         redirect = super(TranslatableAdmin, self).response_change(request, obj)
         uri = iri_to_uri(request.path)
-        if redirect['Location'] in (uri, "../add/"):
+        app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
+        if redirect['Location'] in (uri, "../add/", reverse('admin:%s_%s_add' % (app_label, model_name))):
             if self.query_language_key in request.GET:
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
                     self.query_language_key, request.GET[self.query_language_key])
@@ -328,7 +329,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 languages.append(lang)
         qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
         # TODO: this should be handled by some parameter to the ChangeList.
-        ordering = self.ordering or () # otherwise we might try to *None, which is bad ;)
+        ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
@@ -549,7 +550,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         language = self._language(request)
         qs = self.model._default_manager.all()#.language(language)
         # TODO: this should be handled by some parameter to the ChangeList.
-        ordering = self.ordering or () # otherwise we might try to *None, which is bad ;)
+        ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
