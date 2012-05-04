@@ -1,0 +1,43 @@
+{% extends base_template %}
+{% load i18n admin_modify %}
+
+{% block extrahead %}
+{{ block.super }}
+<style type="text/css">
+.nani-language-tabs span {
+    display: inline-block;
+    padding: 5px 15px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    position: relative;
+    left: 0px;
+    top: 1px;
+    font-weight: bold;
+}
+.nani-language-tabs span.current {
+    border-bottom: 1px solid #fff;
+}
+.nani-language-tabs span.empty {
+    opacity: 0.7;
+    font-weight: normal;
+}
+.nani-language-tabs a.deletelink {
+    right: -17px;
+    bottom: 4px;
+    position: relative;
+}
+</style>
+{% endblock %}
+
+{% block object-tools %}
+{{ block.super }}
+<div class="nani-language-tabs">
+	{% for url,name,code,status in language_tabs %}
+	   {% if status == 'current' %}
+	       <span class="current">{{ name }}{% if current_is_translated and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
+       {% else %}
+	       <span class="{{ status }}"><a href="{{ url }}">{{ name }}</a> {% if status == 'available' and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
+       {% endif %} 
+    {% endfor %}
+</div>
+{% endblock %}

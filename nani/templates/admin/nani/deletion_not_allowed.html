@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+     <a href="../../../../../">{% trans "Home" %}</a> &rsaquo;
+     <a href="../../../../">{{ app_label|capfirst }}</a> &rsaquo; 
+     <a href="../../../">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+     <a href="../../">{{ object|truncatewords:"18" }}</a> &rsaquo;
+     {% trans 'Delete Translation' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<p>{% blocktrans with object as escaped_object %}Deletion of the the {{ language_name }} translation of {{ object_name }} '{{ escaped_object }}' is not allowed, because it is the last available translation of this instance.{% endblocktrans %}</p>
+{% endblock %}
