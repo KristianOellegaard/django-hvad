@@ -196,7 +196,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def response_change(self, request, obj):
         redirect = super(TranslatableAdmin, self).response_change(request, obj)
         uri = iri_to_uri(request.path)
-        if redirect['Location'] in (uri, "../add/"):
+        app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
+        if redirect['Location'] in (uri, "../add/", reverse('admin:%s_%s_add' % (app_label, model_name))):
             if self.query_language_key in request.GET:
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
                     self.query_language_key, request.GET[self.query_language_key])
