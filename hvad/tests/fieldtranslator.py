@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from nani.fieldtranslator import translate
-from nani.test_utils.testcase import NaniTestCase
+from hvad.fieldtranslator import translate
+from hvad.test_utils.testcase import NaniTestCase
 from testproject.app.models import Related
 
 

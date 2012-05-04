@@ -2,14 +2,14 @@
 from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.query_utils import Q
-from nani.exceptions import WrongManager
-from nani.models import (TranslatedFields, TranslatableModelBase, 
+from hvad.exceptions import WrongManager
+from hvad.models import (TranslatedFields, TranslatableModelBase, 
     TranslatableModel)
-from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
+from hvad.test_utils.context_managers import LanguageOverride
+from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
-from nani.test_utils.testcase import NaniTestCase
-from nani.utils import get_translation_aware_manager
+from hvad.test_utils.testcase import NaniTestCase
+from hvad.utils import get_translation_aware_manager
 from testproject.app.models import Normal, Related, Standard, Other, Many
 
 

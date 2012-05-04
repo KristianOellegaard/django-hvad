@@ -1,2 +1,4 @@
-__version__ = '0.1.5'
+from hvad import *
 
+import warnings
+warnings.warn("The 'nani' namespace is deprecated, please change your imports to use 'hvad' instead", DeprecationWarning)

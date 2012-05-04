@@ -28,7 +28,7 @@ done
 cd testproject
 
 if [ $with_coverage == true ]; then
-    coverage run manage.py test nani $extra
+    coverage run manage.py test hvad $extra
     statuscode=$?
     coverage html
     if which x-www-browser &> /dev/null; then 
@@ -37,10 +37,10 @@ if [ $with_coverage == true ]; then
         open htmlcov/index.html
     fi
 elif [ $zen == true ]; then
-    python manage.py zen nani $extra
+    python manage.py zen hvad $extra
     statuscode=$?
 else
-    python manage.py test nani $extra
+    python manage.py test hvad $extra
     statuscode=$?
 fi
 cd ..

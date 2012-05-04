@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.core.urlresolvers import reverse
-from nani.test_utils.context_managers import LanguageOverride
-from nani.test_utils.testcase import NaniTestCase
-from nani.test_utils.request_factory import RequestFactory
+from hvad.test_utils.context_managers import LanguageOverride
+from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.request_factory import RequestFactory
 from testproject.app.models import Normal, Related
-from nani.views import TranslatableUpdateView
+from hvad.views import TranslatableUpdateView
 
 class ViewsTest(NaniTestCase):
     def setUp(self):

@@ -1,6 +1,6 @@
-from nani.test_utils.data import DATES_REVERSED, D3
-from nani.test_utils.fixtures import DatesMixin
-from nani.test_utils.testcase import NaniTestCase
+from hvad.test_utils.data import DATES_REVERSED, D3
+from hvad.test_utils.fixtures import DatesMixin
+from hvad.test_utils.testcase import NaniTestCase
 from testproject.app.models import Date
 import datetime
 
