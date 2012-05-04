@@ -129,11 +129,12 @@ class FormTests(NaniTestCase):
             self.assertFalse(form.fields.has_key("language_code"))
 
     def test_form_wrong_field_in_class(self):
-        with LanguageOverride("en"):
-            with self.assertRaises(FieldError):
+        with LanguageOverride("en"):            
+            def create_wrong_form():
                 class WrongForm(TranslatableModelForm):
                     class Meta:
                         model = Normal
                         fields = ['a_field_that_doesnt_exist']
 
                 form = WrongForm()
+            self.assertRaises(FieldError, create_wrong_form)

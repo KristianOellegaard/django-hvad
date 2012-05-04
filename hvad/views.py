@@ -1,5 +1,8 @@
 from django.http import Http404
-from django.views.generic.edit import UpdateView
+try:
+    from django.views.generic.edit import UpdateView
+except ImportError:
+    from cbv.views.edit import UpdateView
 from admin import TranslatableModelAdminMixin
 from forms import translatable_modelform_factory, TranslatableModelForm
 from utils import collect_context_modifiers
