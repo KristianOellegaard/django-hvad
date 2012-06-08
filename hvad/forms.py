@@ -157,7 +157,7 @@ class TranslatableModelForm(ModelForm):
         else:
             fail_message = 'changed'
             new = False
-        super(TranslatableModelForm, self).save(True)
+        super(TranslatableModelForm, self).save(commit)
         trans_model = self.instance._meta.translations_model
         language_code = self.cleaned_data.get('language_code', get_language())
         if not new:
