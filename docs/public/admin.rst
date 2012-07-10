@@ -25,7 +25,7 @@ ModelAdmin APIs you should not change on TranslatableAdmin
 ***********************************************************
 
 Some public APIs on :class:`django.contrib.admin.ModelAdmin` are crucial for
-:class:`nani.admin.TranslateablAdmin` to work and should not be altered in
+:class:`nani.admin.TranslatableAdmin` to work and should not be altered in
 subclasses. Only do so if you have a good understanding of what the API you want
 to change does.
 
