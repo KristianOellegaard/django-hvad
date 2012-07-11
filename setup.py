@@ -8,8 +8,8 @@ setup(
     author = 'Kristian Ollegaard',
     author_email = 'kristian.ollegaard@divio.ch',
     url = 'https://github.com/KristianOellegaard/django-hvad',
-    packages = find_packages(exclude=['testproject', 'testproject.app',
-                                      'nani.tests']),
+    packages = find_packages(exclude=['nani', 'testproject', 'testproject.app',
+                                      'hvad.tests']),
     zip_safe=False,
     include_package_data = True,
     install_requires=[
