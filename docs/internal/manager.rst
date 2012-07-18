@@ -1,8 +1,8 @@
 ###################
-:mod:`nani.manager`
+:mod:`hvad.manager`
 ###################
 
-.. module:: nani.manager
+.. module:: hvad.manager
 
 This module is where most of the functionality is implemented.
 
@@ -24,7 +24,7 @@ FieldTranslator
     
     Possibly this class is not feature complete since it does not care about
     multi-relation queries. It should probably use
-    :func:`nani.fieldtranslator.translate` after the first level if it hits
+    :func:`hvad.fieldtranslator.translate` after the first level if it hits
     the :term:`Shared Model`.てz
         
     .. method:: get(self, key)
@@ -73,7 +73,7 @@ TranslationQueryset
 
     .. attribute:: override_classes
     
-        A dictionary of django classes to nani classes to mixin when
+        A dictionary of django classes to hvad classes to mixin when
         :meth:`_clone` is called with an explicit *klass* argument.
         
     .. attribute:: _local_field_names
@@ -344,7 +344,7 @@ TranslationManager
 
 .. class:: TranslationManager
 
-    Manager to be used on :class:`nani.models.TranslatableModel`.
+    Manager to be used on :class:`hvad.models.TranslatableModel`.
     
     .. attribute:: translations_model
     
@@ -452,7 +452,7 @@ TranslationAwareQueryset
         as an argument.
     
         Translates *args* and *kwargs* into translation aware *args* and
-        *kwargs* using :func:`nani.fieldtranslator.translate` by iterating over
+        *kwargs* using :func:`hvad.fieldtranslator.translate` by iterating over
         the *kwargs* dictionary and translating it's keys and recursing over the
         :class:`django.db.models.expressions.Q` objects in *args* using 
         :meth:`_recurse_q`. 
@@ -467,7 +467,7 @@ TranslationAwareQueryset
     
         Recursively translate the keys in the
         :class:`django.db.models.expressions.Q` object given using 
-        :func:`nani.fieldtranslator.translate`. For more information about
+        :func:`hvad.fieldtranslator.translate`. For more information about
         :class:`django.db.models.expressions.Q`, see
         :meth:`TranslationQueryset._recurse_q`.
         
@@ -482,7 +482,7 @@ TranslationAwareQueryset
         as an argument.
         
         Translates the fieldnames given using
-        :func:`nani.fieldtranslator.translate`
+        :func:`hvad.fieldtranslator.translate`
         
         Returns a tuple of *newfields* and *extra_filters* where *newfields* is
         a list of translated fieldnames and *extra_filters* is a
@@ -520,9 +520,9 @@ TranslationAwareQueryset
 
     .. method:: latest(self, field_name=None)
     
-        If a fieldname is given, uses :func:`nani.fieldtranslator.translate` to
+        If a fieldname is given, uses :func:`hvad.fieldtranslator.translate` to
         translate that fieldname. Calls :meth:`_filter_extra` with the
-        *extra_filters* returned by :func:`nani.fieldtranslator.translate` if it
+        *extra_filters* returned by :func:`hvad.fieldtranslator.translate` if it
         was used, otherwise with an empty
         :class:`django.db.models.expressions.Q` object.
 

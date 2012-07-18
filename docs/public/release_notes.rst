@@ -53,13 +53,13 @@ Released on May 26, 2011.
   maintainable.
 * Nicer language tabs in admin thanks to the amazing help of Angelo Dini.
 * Ability to delete translations from the admin.
-* Changed nani.admin.TranslatableAdmin.get_language_tabs signature.
+* Changed hvad.admin.TranslatableAdmin.get_language_tabs signature.
 * Removed tests from egg.
 * Fixed some tests possibly leaking client state information.
-* Fixed a critical bug in nani.forms.TranslatableModelForm where attempting to
+* Fixed a critical bug in hvad.forms.TranslatableModelForm where attempting to
   save a translated model with a relation (FK) would cause IntegrityErrors when
   it's a new instance.
-* Fixed a critical bug in nani.models.TranslatableModelBase where certain field
+* Fixed a critical bug in hvad.models.TranslatableModelBase where certain field
   types on models would break the metaclass. (Many thanks to Kristian
   Oellegaard for the fix)
 * Fixed a bug that prevented abstract TranslatableModel subclasses with no

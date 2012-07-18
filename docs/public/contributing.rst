@@ -12,7 +12,7 @@ the :doc:`/internal/index`. It was written for developers who want to
 understand how things work.
 
 Patches can be sent as pull requests on Github to
-https://github.com/ojii/django-nani.
+https://github.com/KristianOellegaard/django-hvad.
 
 
 Code Style
