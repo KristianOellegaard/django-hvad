@@ -2,12 +2,8 @@
 Welcome to the Django hvad documentation!
 #########################################
 
-.. warning:: Please note that django-hvad is still in alpha status and should be
-             used with caution.
-
-.. note:: django-hvad is closely related to (and derives from) django-nani.
-           Don't be confused if that name is used in the docs or elsewhere,
-           many of the functions are also compatible with django-nani.
+.. warning:: The previously used ``nani`` package name is now deprecated,
+             please upgrade your code to use ``hvad``. 
 
 ******************
 About this project
@@ -29,10 +25,12 @@ Python and Django.
 
 
 ************************
-Notes on django versions
+Notes on Django versions
 ************************
 
-django-hvad is tested on python 2.6 and 2.7 with django 1.2.7, 1.3.1 and 1.4. These should all work as expected, but for django 1.2.x you need you need to install django-cbv to use the class based views.
+django-hvad is tested on python 2.6 and 2.7 with django 1.2.7, 1.3.1 and 1.4.
+These should all work as expected, but for django 1.2.x you need you need to
+install django-cbv to use the class based views.
 
 
 ***************

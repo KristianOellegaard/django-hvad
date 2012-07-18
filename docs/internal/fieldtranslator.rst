@@ -1,8 +1,8 @@
 ###########################
-:mod:`nani.fieldtranslator`
+:mod:`hvad.fieldtranslator`
 ########################### 
 
-.. module:: nani.fieldtranslator
+.. module:: hvad.fieldtranslator
 
 .. data:: TRANSLATIONS
     
