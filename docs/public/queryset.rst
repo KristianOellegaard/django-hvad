@@ -8,22 +8,22 @@ Queryset API
 TranslationQueryset
 *******************
 
-This is the queryset used by the :class:`nani.manager.TranslationManager`.
+This is the queryset used by the :class:`hvad.manager.TranslationManager`.
 
 Performance consideration
 =========================
 
-While most methods on :class:`nani.manager.TranslationQueryset` querysets run
+While most methods on :class:`hvad.manager.TranslationQueryset` querysets run
 using the same amount of queries as if they were untranslated, they all do
 slightly more complex queries (one extra join).
 
 The following methods run two queries where standard querysets would run one:
 
-* :meth:`nani.manager.TranslationQueryset.create`
-* :meth:`nani.manager.TranslationQueryset.update` (only if both translated and 
+* :meth:`hvad.manager.TranslationQueryset.create`
+* :meth:`hvad.manager.TranslationQueryset.update` (only if both translated and 
   untranslated fields are updated at once)
   
-:meth:`nani.manager.TranslationQueryset.get_or_create` runs one query if the
+:meth:`hvad.manager.TranslationQueryset.get_or_create` runs one query if the
 object exists, three queries if the object does not exist in this language, but
 in another language and four queries if the object does not exist at all. It
 will return ``True`` for created if either the shared or translated instance
@@ -33,7 +33,7 @@ was created.
 New methods
 ===========
 
-Methods described here are unique to django-nani and cannot be used on normal
+Methods described here are unique to django-hvad and cannot be used on normal
 querysets.
 
 
@@ -54,7 +54,7 @@ untranslated
 
 .. method:: untranslated
 
-    Returns a :class:`nani.manager.FallbackQueryset` instance which by default
+    Returns a :class:`hvad.manager.FallbackQueryset` instance which by default
     does not fetch any translations. This is useful if you want a list of
     :term:`Shared Model` instances, regardless of whether they're translated in
     any language.
@@ -79,14 +79,14 @@ Not implemented public queryset methods
 =======================================
 
 The following are methods on a queryset which are public APIs in Django, but are
-not implemented (yet) in django-nani:
+not implemented (yet) in django-hvad:
 
-* :meth:`nani.manager.TranslationQueryset.in_bulk`
-* :meth:`nani.manager.TranslationQueryset.complex_filter`
-* :meth:`nani.manager.TranslationQueryset.annotate`
-* :meth:`nani.manager.TranslationQueryset.reverse`
-* :meth:`nani.manager.TranslationQueryset.defer`
-* :meth:`nani.manager.TranslationQueryset.only`
+* :meth:`hvad.manager.TranslationQueryset.in_bulk`
+* :meth:`hvad.manager.TranslationQueryset.complex_filter`
+* :meth:`hvad.manager.TranslationQueryset.annotate`
+* :meth:`hvad.manager.TranslationQueryset.reverse`
+* :meth:`hvad.manager.TranslationQueryset.defer`
+* :meth:`hvad.manager.TranslationQueryset.only`
 
 Using any of these methods will raise a :exc:`NotImplementedError`.
 

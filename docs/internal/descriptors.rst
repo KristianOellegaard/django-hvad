@@ -1,8 +1,8 @@
 #######################
-:mod:`nani.descriptors`
+:mod:`hvad.descriptors`
 #######################
 
-.. module:: nani.descriptors
+.. module:: hvad.descriptors
 
 .. class:: NULL
 

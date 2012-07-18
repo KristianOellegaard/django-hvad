@@ -1,8 +1,8 @@
 #################
-:mod:`nani.forms`
+:mod:`hvad.forms`
 #################
 
-.. module:: nani.forms
+.. module:: hvad.forms
 
 
 *******************************

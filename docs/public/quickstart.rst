@@ -8,15 +8,15 @@ Define a multilingual model
 
 Defining a multilingual model is very similar to defining a normal Django model,
 with the difference that instead of subclassing :class:`django.db.models.Model`
-you have to subclass :class:`nani.models.TranslatableModel` and that all fields
+you have to subclass :class:`hvad.models.TranslatableModel` and that all fields
 which should be translatable have to be wrapped inside a 
-:class:`nani.models.TranslatedFields`.
+:class:`hvad.models.TranslatedFields`.
 
 Let's write an easy model which describes Django applications with translatable
 descriptions and information about who wrote the description::
 
     from django.db import models
-    from nani.models import TranslatableModel, TranslatedFields
+    from hvad.models import TranslatableModel, TranslatedFields
     
     
     class DjangoApplication(TranslatableModel):
@@ -50,29 +50,29 @@ Import our model::
 
 Create an **untranslated** instance::
 
-    >>> nani = DjangoApplication.objects.create(name='django-nani', author='Jonas Obrist')
-    >>> nani.name
-    'django-nani'
-    >>> nani.author
+    >>> hvad = DjangoApplication.objects.create(name='django-hvad', author='Jonas Obrist')
+    >>> hvad.name
+    'django-hvad'
+    >>> hvad.author
     'Jonas Obrist'
 
 Turn the **untranslated** instance into a **translated** instance with the
 language ``'en'`` (English)::
 
-    >>> nani.translate('en')
-    <DjangoApplication: django-nani>
+    >>> hvad.translate('en')
+    <DjangoApplication: django-hvad>
 
 Set some translated fields and save the instance::
 
-    >>> nani.description = 'A project to do multilingual models in Django'
-    >>> nani.description_author = 'Jonas Obrist'
-    >>> nani.save()
+    >>> hvad.description = 'A project to do multilingual models in Django'
+    >>> hvad.description_author = 'Jonas Obrist'
+    >>> hvad.save()
 
 Get the instance again and check that the fields are correct::
 
-    >>> obj = DjangoApplication.objects.language('en').get(name='django-nani')
+    >>> obj = DjangoApplication.objects.language('en').get(name='django-hvad')
     >>> obj.name
-    u'django-nani'
+    u'django-hvad'
     >>> obj.author
     u'Jonas Obrist'
     >>> obj.description
@@ -80,7 +80,7 @@ Get the instance again and check that the fields are correct::
     >>> obj.description_author
     u'Jonas Obrist'
 
-.. note:: I use :meth:`nani.manager.TranslationQueryset.language` here because
+.. note:: I use :meth:`hvad.manager.TranslationQueryset.language` here because
           I'm in an interactive shell, which is not necessarily in English, in
           your normal views, you can usually omit the call to that method, since
           the environment should already be in a valid language when in a
@@ -90,4 +90,4 @@ Let's get all Django applications which have a description written by
 ``'Jonas Obrist'`` (in English)::
 
     >>> DjangoApplication.objects.language('en').filter(description_author='Jonas Obrist')
-    [<DjangoApplication: django-nani>]
+    [<DjangoApplication: django-hvad>]

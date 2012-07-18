@@ -1,8 +1,8 @@
 #################
-:mod:`nani.utils`
+:mod:`hvad.utils`
 #################
 
-.. module:: nani.utils
+.. module:: hvad.utils
 
 .. function:: combine(trans)
 

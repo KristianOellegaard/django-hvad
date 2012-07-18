@@ -1,8 +1,8 @@
 #################
-:mod:`nani.admin`
+:mod:`hvad.admin`
 #################
 
-.. module:: nani.admin
+.. module:: hvad.admin
 
 .. function:: translatable_modelform_factory(model, form=TranslatableModelForm, fields=None, exclude=None, formfield_callback=None)
     
@@ -18,7 +18,7 @@ TranslatableAdmin
 .. class:: TranslatableAdmin
 
     A subclass of :class:`django.contrib.admin.ModelAdmin` to be used for
-    :class:`nani.models.TranslatableModel` subclasses.
+    :class:`hvad.models.TranslatableModel` subclasses.
     
     .. attribute:: query_language_key
         
@@ -28,12 +28,12 @@ TranslatableAdmin
     .. attribute:: form
     
         The form to be used for this admin class, defaults to
-        :class:`nani.forms.TranslatableModelForm` and if overwritten should
+        :class:`hvad.forms.TranslatableModelForm` and if overwritten should
         always be a subclass of that class.
     
     .. attribute:: change_form_template
         
-        We use ``'admin/nani/change_form.html'`` here which extends the correct
+        We use ``'admin/hvad/change_form.html'`` here which extends the correct
         template using the logic from django admin, see
         :meth:`get_change_form_base_template`. This attribute should never
         change.
@@ -60,7 +60,7 @@ TranslatableAdmin
     
     .. method:: queryset(self, request)
         
-        Calls :meth:`nani.manager.TranslationQueryset.language` with the current
+        Calls :meth:`hvad.manager.TranslationQueryset.language` with the current
         language from :meth:`_language` on the queryset returned by the call to
         the super class and returns that queryset.
     

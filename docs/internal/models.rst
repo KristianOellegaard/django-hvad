@@ -1,8 +1,8 @@
 ##################
-:mod:`nani.models`
+:mod:`hvad.models`
 ##################
 
-.. module:: nani.models
+.. module:: hvad.models
 
 .. function:: create_translations_model(model, related_name, meta, **fields)
 
@@ -77,7 +77,7 @@ TranslatableModel
 
     .. attribute:: objects
     
-        An instance of :class:`nani.manager.TranslationManager`.
+        An instance of :class:`hvad.manager.TranslationManager`.
     
     .. attribute:: _shared_field_names
     

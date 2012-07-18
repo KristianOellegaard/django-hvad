@@ -1,8 +1,8 @@
 ########################
-:mod:`nani.compat.date`
+:mod:`hvad.compat.date`
 ########################
 
-.. module:: nani.compat.date
+.. module:: hvad.compat.date
 
 This module provides backwards compatiblity for Django 1.2 for the
 :meth:`django.db.models.query.QuerySet.dates` API, which in Django 1.3 allows

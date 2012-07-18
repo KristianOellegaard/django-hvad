@@ -27,4 +27,4 @@ Glossary
         A Django model that does not have :term:`Translated Fields`.
         
     Translated Model
-        A Django model that subclasses :class:`nani.models.TranslatableModel`.
+        A Django model that subclasses :class:`hvad.models.TranslatableModel`.

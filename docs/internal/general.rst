@@ -1,5 +1,5 @@
 #############################################
-General information on django-nani internals
+General information on django-hvad internals
 #############################################
 
 
@@ -11,14 +11,14 @@ How it works
 Model Definition
 ================
 
-The :class:`nani.models.TranslatableModelBase` metaclass scans all attributes
-on the model defined for instances of :class:`nani.models.TranslatedFields`, and
+The :class:`hvad.models.TranslatableModelBase` metaclass scans all attributes
+on the model defined for instances of :class:`hvad.models.TranslatedFields`, and
 if it finds one, sets the respective options onto meta.
 
-:class:`nani.models.TranslatedFields` both creates the
+:class:`hvad.models.TranslatedFields` both creates the
 :term:`Translations Model` and makes a foreign key from that model to point to
 the :term:`Shared Model` which has the name of the attribute of the
-:class:`nani.models.TranslatedFields` instance as related name.
+:class:`hvad.models.TranslatedFields` instance as related name.
 
 In the database, two tables are created:
 
@@ -33,17 +33,17 @@ In the database, two tables are created:
 Queries
 =======
 
-The main idea of django-nani is that when you query the :term:`Shared Model`
+The main idea of django-hvad is that when you query the :term:`Shared Model`
 using the Django ORM, what actually happens behind the scenes (in the queryset)
 is that it queries the :term:`Translations Model` and selects the relation to
 the :term:`Shared Model`. This means that model instances can only be queried if
 they have a translation in the language queried in, unless an alternative 
 manager is used, for example by using
-:meth:`nani.manager.FallbackManager.untranslated`.
+:meth:`hvad.manager.FallbackManager.untranslated`.
 
 Due to the way the Django ORM works, this approach does not seem to be possible
 when querying from a :term:`Normal Model`, even when using 
-:func:`nani.utils.get_translations_aware_manager` and therefore in that case we
+:func:`hvad.utils.get_translations_aware_manager` and therefore in that case we
 just add extra filters to limit the lookups to rows in the database where the
 :term:`Translations Model` row existist in a specific language, using
 ``<translations_accessor>__language_code=<current_language>``. This is
