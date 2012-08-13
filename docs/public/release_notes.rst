@@ -2,6 +2,20 @@
 Release Notes
 #############
 
+.. release-0.2
+
+*****************************
+0.2
+*****************************
+
+The package is now called 'hvad'. Old imports should result in an import error.
+
+Fixed django 1.4 support
+
+Fixed a number of minor issues
+
+
+
 .. release-0.1.4
 
 *****************************
