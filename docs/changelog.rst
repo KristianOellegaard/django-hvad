@@ -6,6 +6,12 @@ Changelog
 
 .. glossary::
     :sorted:
+    0.2.0
+        The package is now called 'hvad'. Old imports should result in an import error.
+
+        Fixed django 1.4 support
+
+        Fixed a number of minor issues
 
     0.1.4
         Introduces :meth:`lazy_translation_getter`
