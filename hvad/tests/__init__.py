@@ -3,7 +3,7 @@ from hvad.tests.admin import (NormalAdminTests, AdminEditTests,
     TranslatableInlineAdminTests)
 from hvad.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest, CreateTest, GetTest, 
     TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests, 
-    DefinitionTests, TableNameTest, GetOrCreateTest)
+    DefinitionTests, TableNameTest, GetOrCreateTest, BooleanTests)
 from hvad.tests.dates import LatestTests, DatesTests
 from hvad.tests.docs import DocumentationTests
 from hvad.tests.fallbacks import FallbackTests

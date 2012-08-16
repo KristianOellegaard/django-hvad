@@ -1,5 +1,5 @@
 from django.contrib import admin
-from models import Normal, SimpleRelated, LimitedChoice
+from hvad.test_utils.project.app.models import Normal, SimpleRelated, LimitedChoice
 from hvad.admin import TranslatableAdmin, TranslatableTabularInline
 
 class SimpleRelatedInline(TranslatableTabularInline):

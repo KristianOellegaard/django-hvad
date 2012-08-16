@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from django.db import connection
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal
+from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 

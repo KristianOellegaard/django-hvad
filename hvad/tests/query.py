@@ -3,7 +3,7 @@ from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal, AggregateModel
+from hvad.test_utils.project.app.models import Normal, AggregateModel
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 
@@ -308,4 +308,3 @@ class ComplexFilterTests(NaniTestCase):
         qs = Normal.objects.language('en').complex_filter({})
         self.assertEqual(qs.count(), 1)
         self.assertRaises(NotImplementedError, Normal.objects.language('en').complex_filter, Q(shared_field=SHARED))
-    
