@@ -34,7 +34,7 @@
 <div class="nani-language-tabs">
 	{% for url,name,code,status in language_tabs %}
 	   {% if status == 'current' %}
-	       <span class="current">{{ name }}{% if current_is_translated and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
+	       <span class="current" title="{{code}}">{{ name }}{% if current_is_translated and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
        {% else %}
 	       <span class="{{ status }}"><a href="{{ url }}">{{ name }}</a> {% if status == 'available' and allow_deletion %}<a class="deletelink" href="./delete-translation/{{ code }}/" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
        {% endif %} 
