@@ -11,6 +11,15 @@ class Normal(TranslatableModel):
     def __unicode__(self):
         return self.safe_translation_getter('translated_field', self.shared_field)
 
+
+class NormalProxy(Normal):
+
+    def __unicode__(self):
+        return u'proxied %s' % self.safe_translation_getter('translated_field', self.shared_field)
+
+    class Meta:
+        proxy = True
+
     
 class Related(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='rel1', null=True)

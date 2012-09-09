@@ -115,7 +115,12 @@ class TranslatableModelBase(ModelBase):
             return new_model
         
         found = False
-        for relation in new_model.__dict__.keys():
+        if new_model._meta.proxy:
+            concrete_model = new_model._meta.concrete_model
+        else:
+            concrete_model = new_model
+
+        for relation in concrete_model.__dict__.keys():
             try:
                 obj = getattr(new_model, relation)
             except AttributeError:
@@ -124,7 +129,7 @@ class TranslatableModelBase(ModelBase):
                 continue
             if not hasattr(obj.related, 'model'):
                 continue
-            if getattr(obj.related.model._meta, 'shared_model', None) is new_model:
+            if getattr(obj.related.model._meta, 'shared_model', None) is concrete_model:
                 if found:
                     raise ImproperlyConfigured(
                         "A TranslatableModel can only define one set of "
