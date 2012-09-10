@@ -6,6 +6,7 @@ Changelog
 
 .. glossary::
     :sorted:
+
     0.2.0
         The package is now called 'hvad'. Old imports should result in an import error.
 
