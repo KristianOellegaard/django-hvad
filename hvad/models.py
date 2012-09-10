@@ -114,12 +114,18 @@ class TranslatableModelBase(ModelBase):
         if opts.abstract:
             return new_model
         
-        found = False
-        if new_model._meta.proxy:
-            concrete_model = new_model._meta.concrete_model
-        else:
-            concrete_model = new_model
+        concrete_model = new_model
 
+        # Check if it's a proxy model
+        if new_model._meta.proxy:
+            if hasattr(new_model._meta, 'concrete_model'):
+                concrete_model = new_model._meta.concrete_model
+            else:
+                # We need this prior to Django 1.4
+                while concrete_model._meta.proxy:
+                    concrete_model = concrete_model._meta.proxy_for_model
+
+        found = False
         for relation in concrete_model.__dict__.keys():
             try:
                 obj = getattr(new_model, relation)

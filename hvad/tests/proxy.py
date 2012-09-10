@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal, NormalProxy
+from testproject.app.models import Normal, NormalProxy, NormalProxyProxy
 
 
 class ProxyTests(NaniTestCase):
@@ -23,3 +22,10 @@ class ProxyTests(NaniTestCase):
         self.assertEqual(NormalProxy.objects.filter(shared_field__startswith='SHARED').count(), 2)
         self.assertEqual(NormalProxy.objects.language('en').filter(translated_field__startswith='English').count(), 2)
         self.assertEqual(NormalProxy.objects.language('en').filter(translated_field='English').count(), 1)
+
+    def test_proxy_proxy(self):
+        self.assertEqual(NormalProxyProxy.objects.language('en').count(), 0)
+
+        # creation
+        NormalProxyProxy.objects.language('en').create(shared_field='SHARED', translated_field='English')
+        self.assertEqual(NormalProxyProxy.objects.language('en').count(), 1)

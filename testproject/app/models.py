@@ -20,6 +20,15 @@ class NormalProxy(Normal):
     class Meta:
         proxy = True
 
+
+class NormalProxyProxy(NormalProxy):
+
+    def __unicode__(self):
+        return u'proxied^2 %s' % self.safe_translation_getter('translated_field', self.shared_field)
+
+    class Meta:
+        proxy = True
+
     
 class Related(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='rel1', null=True)
