@@ -40,6 +40,14 @@ A full example of a model with translations::
         )
 
 
+.. note::
+
+    When using proxy models with hvad, the ``__init__`` method of the proxy
+    model will not be called when it is loaded from the database. As a result,
+    the ``pre_init`` and ``post_init`` signals will not be called for the proxy
+    model either. The ``__init__`` method and signals for the concrete model
+    will still be called.
+
 ***********
 New methods
 ***********
