@@ -463,7 +463,7 @@ class TranslationQueryset(QuerySet):
                 if not obj.master:
                     yield obj
                 else:
-                    yield combine(obj)
+                    yield combine(obj, self.shared_model)
 
 
 class TranslationManager(models.Manager):
@@ -566,7 +566,7 @@ class FallbackQueryset(QuerySet):
                     break
             # if we found a translation, yield the combined result
             if translation:
-                yield combine(translation)
+                yield combine(translation, self.model)
             else:
                 # otherwise yield the shared instance only
                 logger.error("no translation for %s, type %s" % (instance, type(instance)))

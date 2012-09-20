@@ -174,14 +174,14 @@ class TranslatableModelForm(ModelForm):
         trans.master = self.instance
         trans = save_instance(self, trans, self._meta.fields, fail_message,
                               commit, construct=True)
-        return combine(trans)
+        return combine(trans, self.Meta.model)
         
     def _post_clean(self):
         if self.instance.pk:
             try:
                 trans = trans = get_translation(self.instance, self.instance.language_code)
                 trans.master = self.instance
-                self.instance = combine(trans)
+                self.instance = combine(trans, self.Meta.model)
             except self.instance._meta.translations_model.DoesNotExist:
                 language_code = self.cleaned_data.get('language_code', get_language())
                 self.instance = self.instance.translate(language_code)

@@ -114,8 +114,19 @@ class TranslatableModelBase(ModelBase):
         if opts.abstract:
             return new_model
         
+        concrete_model = new_model
+
+        # Check if it's a proxy model
+        if new_model._meta.proxy:
+            if hasattr(new_model._meta, 'concrete_model'):
+                concrete_model = new_model._meta.concrete_model
+            else:
+                # We need this prior to Django 1.4
+                while concrete_model._meta.proxy:
+                    concrete_model = concrete_model._meta.proxy_for_model
+
         found = False
-        for relation in new_model.__dict__.keys():
+        for relation in concrete_model.__dict__.keys():
             try:
                 obj = getattr(new_model, relation)
             except AttributeError:
@@ -124,7 +135,7 @@ class TranslatableModelBase(ModelBase):
                 continue
             if not hasattr(obj.related, 'model'):
                 continue
-            if getattr(obj.related.model._meta, 'shared_model', None) is new_model:
+            if getattr(obj.related.model._meta, 'shared_model', None) is concrete_model:
                 if found:
                     raise ImproperlyConfigured(
                         "A TranslatableModel can only define one set of "
