@@ -12,9 +12,9 @@ def combine(trans, klass):
 
     The result is casted to klass (needed for proxy models).
     """
-    master = trans.master
-    combined = klass()
-    combined.__dict__ = master.__dict__
+    combined = trans.master
+    if klass._meta.proxy:
+        combined.__class__ = klass
     opts = combined._meta
     setattr(combined, opts.translations_cache, trans)
     return combined
