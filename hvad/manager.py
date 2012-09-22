@@ -570,6 +570,7 @@ class FallbackQueryset(QuerySet):
             else:
                 # otherwise yield the shared instance only
                 logger.error("no translation for %s, type %s" % (instance, type(instance)))
+                yield instance
         
     def iterator(self):
         """
