@@ -19,3 +19,4 @@ from hvad.tests.forms_inline import TestBasicInline
 from hvad.tests.views import ViewsTest
 from hvad.tests.limit_choices_to import LimitChoicesToTests
 from hvad.tests.serialization import PicklingTest
+from hvad.tests.proxy import ProxyTests

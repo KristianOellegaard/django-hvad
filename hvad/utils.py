@@ -4,13 +4,17 @@ from hvad.exceptions import WrongManager
 from django.db.models.loading import get_models
 from django.db.models.fields.related import RelatedObject
 
-def combine(trans):
+def combine(trans, klass):
     """
     'Combine' the shared and translated instances by setting the translation
     on the 'translations_cache' attribute of the shared instance and returning
     the shared instance.
+
+    The result is casted to klass (needed for proxy models).
     """
     combined = trans.master
+    if klass._meta.proxy:
+        combined.__class__ = klass
     opts = combined._meta
     setattr(combined, opts.translations_cache, trans)
     return combined
