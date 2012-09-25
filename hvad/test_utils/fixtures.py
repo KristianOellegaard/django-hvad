@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime
 from django.contrib.auth.models import User
 from hvad.test_utils.data import D1, D3, D2
-from testproject.app.models import Normal, Date, Standard
+from hvad.test_utils.project.app.models import Normal, Date, Standard
 
 
 class Fixture(object):

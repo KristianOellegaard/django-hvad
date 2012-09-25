@@ -1,1 +1,0 @@
-from .normal import NormalAlternate

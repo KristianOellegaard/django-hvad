@@ -10,8 +10,8 @@ from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal, MultipleFields
-from testproject.alternate_models_app.models import NormalAlternate
+from hvad.test_utils.project.app.models import Normal, MultipleFields, Boolean
+from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 
 class InvalidModel2(object):
     objects = TranslationManager()
@@ -21,7 +21,7 @@ class DefinitionTests(NaniTestCase):
     def test_invalid_manager(self):
         attrs = {
             'objects': Manager(),
-            '__module__': 'testproject.app',
+            '__module__': 'hvad.test_utils.project.app',
         }
         self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
                           'InvalidModel', (TranslatableModel,), attrs)
@@ -39,7 +39,7 @@ class DefinitionTests(NaniTestCase):
             abstract = True
         attrs = {
             'Meta': Meta,
-            '__module__': 'testproject.app',
+            '__module__': 'hvad.test_utils.project.app',
         }
         model = TranslatableModelBase('MyBaseModel', (TranslatableModel,), attrs)
         self.assertTrue(model._meta.abstract)
@@ -446,3 +446,11 @@ class GetOrCreateTest(NaniTestCase):
         self.assertEqual(ja.second_translated_field,  u'日本語-二')
         self.assertEqual(ja.language_code, "ja")
         self.assertNotEqual(en.pk, ja.pk)
+
+
+class BooleanTests(NaniTestCase):
+    def test_boolean_on_shared(self):
+        Boolean.objects.language('en').create(shared_flag=True, translated_flag=False)
+        en = Boolean.objects.language('en').get()
+        self.assertEqual(en.shared_flag, True)
+        self.assertEqual(en.translated_flag, False)

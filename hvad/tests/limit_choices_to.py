@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
-from testproject.app.models import LimitedChoice
+from hvad.test_utils.project.app.models import LimitedChoice
 
 
 class LimitChoicesToTests(NaniTestCase, TwoTranslatedNormalMixin):

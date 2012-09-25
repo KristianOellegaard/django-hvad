@@ -1,7 +1,7 @@
 from hvad.test_utils.data import DATES_REVERSED, D3
 from hvad.test_utils.fixtures import DatesMixin
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Date
+from hvad.test_utils.project.app.models import Date
 import datetime
 
 class LatestTests(NaniTestCase, DatesMixin):

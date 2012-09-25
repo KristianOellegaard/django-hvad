@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from hvad.fieldtranslator import translate
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Related
+from hvad.test_utils.project.app.models import Related
 
 
 class FieldtranslatorTests(NaniTestCase):

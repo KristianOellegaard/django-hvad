@@ -1,7 +1,6 @@
-from django.conf.urls.defaults import *
-
+from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from testproject.app.views import NormalUpdateView
+from hvad.test_utils.project.app.views import NormalUpdateView
 
 admin.autodiscover()
 

@@ -97,3 +97,10 @@ class MultipleFields(TranslatableModel):
         first_translated_field = models.CharField(max_length=255),
         second_translated_field = models.CharField(max_length=255)
     )
+
+
+class Boolean(TranslatableModel):
+    shared_flag = models.BooleanField()
+    translations = TranslatedFields(
+        translated_flag = models.BooleanField()
+    )

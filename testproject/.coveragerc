@@ -1,9 +1,0 @@
-[run]
-branch = True
-source =
-    nani
-omit =
-    ../*test*
-    ../*compat*
-[report]
-precision = 2

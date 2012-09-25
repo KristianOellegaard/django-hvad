@@ -9,4 +9,4 @@ env:
 install:
   - pip install -q Django==$DJANGO_VERSION && pip install $ADDITIONAL_PACKAGES
   - python setup.py -q install
-script:  ./runtests.sh
+script: python runtests.py 
