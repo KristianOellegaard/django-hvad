@@ -4,6 +4,7 @@ from django.db import models, transaction, IntegrityError
 from django.db.models.query import (QuerySet, ValuesQuerySet, DateQuerySet, 
     CHUNK_SIZE)
 from django.db.models.query_utils import Q
+from django.db.models.sql.where import WhereNode
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
 from hvad.utils import combine
@@ -283,11 +284,15 @@ class TranslationQueryset(QuerySet):
                 found = True
         else:
             for where in qs.query.where.children:
-                if where.children:
+                if isinstance(where, WhereNode):
                     for child in where.children:
                         if child[0].field.name == 'language_code':
                             found = True
                             break
+                else:
+                    if where[0].field.name == 'language_code':
+                        found = True
+                        break
                 if found:
                     break
         if not found:
