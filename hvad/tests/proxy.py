@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from hvad.test_utils.testcase import NaniTestCase
-from testproject.app.models import Normal, NormalProxy, NormalProxyProxy
+from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy
 
 
 class ProxyTests(NaniTestCase):
