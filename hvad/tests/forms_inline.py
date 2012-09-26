@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 from hvad.admin import TranslatableModelAdminMixin
 from hvad.forms import translatable_inlineformset_factory
-from hvad.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.request_factory import RequestFactory
-from testproject.app.models import Normal, Related
-from django.db import models
+from hvad.test_utils.project.app.models import Normal, Related
 
 class TestBasicInline(NaniTestCase):
     def setUp(self):

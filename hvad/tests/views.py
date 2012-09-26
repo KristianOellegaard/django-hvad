@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.request_factory import RequestFactory
-from testproject.app.models import Normal, Related
+from hvad.test_utils.project.app.models import Normal
 from hvad.views import TranslatableUpdateView
 
 class ViewsTest(NaniTestCase):

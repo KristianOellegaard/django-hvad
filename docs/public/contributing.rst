@@ -4,6 +4,40 @@ How to contribute
 
 
 *****************
+Running the tests
+*****************
+
+Common Setup
+============
+
+* ``virtualenv env``
+* ``source env/bin/activate``
+* ``pip install django``
+
+Postgres Setup
+==============
+
+Additional to the steps above, install ``psycopg2`` using pip and have a postgres server running that you have access to
+with a user that can create databases.
+
+Mysql Setup
+===========
+
+Additional to the steps above, install ``mysql-python`` using pip and have a mysql server running that you have
+access to with a user that can create databases.
+
+Run the test
+============
+
+* ``python runtests.py``
+
+Optionally, prefix it with a environemnt variable called ``DATBASE_URL``, for example for a postgres server running on
+``myserver.com`` on port ``5432`` with the user ``username`` and password ``password`` and database name ``hvad``:
+
+* ``DATABASE_URL=postgres://username:password@myserver.com:5432/hvad python runtests.py``
+
+
+*****************
 Contributing Code
 *****************
 

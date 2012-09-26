@@ -1,6 +1,6 @@
 from django.core.urlresolvers import reverse
 from hvad.views import TranslatableUpdateView
-from testproject.app.models import Normal
+from hvad.test_utils.project.app.models import Normal
 
 class NormalUpdateView(TranslatableUpdateView):
     model = Normal

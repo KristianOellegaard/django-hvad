@@ -3,14 +3,13 @@ from django.core.exceptions import FieldError
 from django.db import models
 from django.db.models.query_utils import Q
 from hvad.exceptions import WrongManager
-from hvad.models import (TranslatedFields, TranslatableModelBase, 
-    TranslatableModel)
+from hvad.models import (TranslatedFields, TranslatableModel)
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.utils import get_translation_aware_manager
-from testproject.app.models import Normal, Related, Standard, Other, Many
+from hvad.test_utils.project.app.models import Normal, Related, Standard, Other
 
 
 class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):

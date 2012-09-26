@@ -1,7 +1,7 @@
 import pickle
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.context_managers import LanguageOverride
-from testproject.app.models import Normal
+from hvad.test_utils.project.app.models import Normal
 
 class PicklingTest(NaniTestCase):
     def test_untranslated_new_object_can_be_pickled(self):
