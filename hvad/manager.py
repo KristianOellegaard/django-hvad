@@ -340,6 +340,10 @@ class TranslationQueryset(QuerySet):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
 
+    def select_related(self, *args):
+        args = [("master__%s" % arg if (arg != "master" and not arg.startswith("master__")) else arg) for arg in args]
+        return super(TranslationQueryset, self).select_related(*args)
+
     def aggregate(self, *args, **kwargs):
         """
         Loops over all the passed aggregates and translates the fieldnames
@@ -361,7 +365,7 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).latest(field_name)
 
     def in_bulk(self, id_list):
-        raise NotImplementedError()
+        return dict((m.pk, m) for m in self.filter(id__in = id_list))
 
     def delete(self):
         qs = self._get_shared_query_set()
