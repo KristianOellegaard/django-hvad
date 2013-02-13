@@ -569,7 +569,7 @@ class FallbackQueryset(QuerySet):
                 yield combine(translation, self.model)
             else:
                 # otherwise yield the shared instance only
-                logger.error("no translation for %s, type %s" % (instance, type(instance)))
+                logger.error("no translation for %s.%s (pk=%s)" % (instance._meta.app_label, instance.__class__.__name__, str(instance.pk)))
                 yield instance
         
     def iterator(self):
