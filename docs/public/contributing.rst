@@ -31,7 +31,7 @@ Run the test
 
 * ``python runtests.py``
 
-Optionally, prefix it with a environemnt variable called ``DATBASE_URL``, for example for a postgres server running on
+Optionally, prefix it with a environment variable called ``DATBASE_URL``, for example for a Postgres server running on
 ``myserver.com`` on port ``5432`` with the user ``username`` and password ``password`` and database name ``hvad``:
 
 * ``DATABASE_URL=postgres://username:password@myserver.com:5432/hvad python runtests.py``
