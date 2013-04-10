@@ -12,5 +12,5 @@
 {% endblock %}
 
 {% block content %}
-<p>{% blocktrans with object as escaped_object %}Deletion of the the {{ language_name }} translation of {{ object_name }} '{{ escaped_object }}' is not allowed, because it is the last available translation of this instance.{% endblocktrans %}</p>
+<p>{% blocktrans with object as escaped_object %}Deletion of the {{ language_name }} translation of {{ object_name }} '{{ escaped_object }}' is not allowed, because it is the last available translation of this instance.{% endblocktrans %}</p>
 {% endblock %}
