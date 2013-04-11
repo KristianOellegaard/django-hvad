@@ -282,20 +282,42 @@ class TranslatableModel(models.Model):
         Lazy translation getter that fetches translations from DB in case the instance is currently untranslated and
         saves the translation instance in the translation cache
         """
-        cache = getattr(self, self._meta.translations_cache, NoTranslation)
-        trans = self._meta.translations_model.objects.filter(master__pk=self.pk)
-        if not cache and cache != NoTranslation and not trans.exists(): # check if there is no translations
+        stuff = self.safe_translation_getter(name, NoTranslation)
+        if stuff is not NoTranslation:
+            return stuff
+
+        # get all translations
+        translations = self._meta.translations_model.objects.filter(master__pk=self.pk)
+
+        # make them a nice dict
+        translation_dict = {}
+        for translation in translations:
+            translation_dict[translation.language_code] = translation
+
+        # see if we have the right language
+        correct_language = translation_dict.get(get_language())
+        if correct_language:
+            # CACHE IT!
+            setattr(self, self._meta.translations_cache, correct_language)
+            return getattr(correct_language, name, default)
+
+        # Nope? Ok, let's try the default language for the installation
+        default_language = translation_dict.get(settings.LANGUAGE_CODE)
+        if default_language:
+            # CACHE IT!
+            setattr(self, self._meta.translations_cache, default_language)
+            return getattr(default_language, name, default)
+
+        # *Sigh*, OK, any available langauge?
+        try:
+            any_language = translation_dict.values()[0]
+        except IndexError:
+            # OK, can't say we didn't try!
             return default
-        elif getattr(cache, name, NoTranslation) == NoTranslation and trans.exists(): # We have translations, but no specific translation cached
-            trans_in_own_language = trans.filter(language_code=get_language())
-            if trans_in_own_language.exists():
-                trans = trans_in_own_language[0]
-            else:
-                trans = trans[0]
-            setattr(self, self._meta.translations_cache, trans)
-            return getattr(trans, name)
-        return getattr(cache, name)
-    
+
+        setattr(self, self._meta.translations_cache, any_language)
+        return getattr(any_language, name, default)
+
     def get_available_languages(self):
         manager = self._meta.translations_model.objects
         return manager.filter(master=self).values_list('language_code', flat=True)
