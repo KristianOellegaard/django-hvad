@@ -32,7 +32,15 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         normal_si = Normal.objects.get(pk=normal.pk).translate('sl')
         normal_si.translated_field = slovenian_string
         normal_si.save()
-
+        
+        en_us_string = u'en-us test string'
+        default = Normal.objects.language("en-us").create(
+            shared_field = "shared field",
+            translated_field = en_us_string,
+        )
+        default_si = Normal.objects.get(pk=normal.pk).translate('us-en')
+        default_si.translated_field = en_us_string
+        default_si.save()
 
         Other.objects.create(normal=normal)
         self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
@@ -46,6 +54,13 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
             self.assertEqual(n2.safe_translation_getter("translated_field"), None)
             self.assertEqual(n2.lazy_translation_getter("translated_field"), slovenian_string)
             self.assertEqual(n2.safe_translation_getter("translated_field"), slovenian_string)
+        
+        # This tests a langauge that we do not currently have, so don't add Japanese translations, please.
+        with LanguageOverride('jp'):
+            n2 = Normal.objects.get(pl=normal.pk)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), en_us_string)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
 
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
