@@ -44,10 +44,12 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
 
         Other.objects.create(normal=normal)
         self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
-        n2 =  Normal.objects.get(pk=normal.pk)
-        self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-        self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
-        self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
+
+        with LanguageOverride('da'):
+            n2 =  Normal.objects.get(pk=normal.pk)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
 
         with LanguageOverride('sl'):
             n2 =  Normal.objects.get(pk=normal.pk)
@@ -57,10 +59,12 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         
         # This tests a langauge that we do not currently have, so don't add Japanese translations, please.
         with LanguageOverride('jp'):
-            n2 = Normal.objects.get(pl=normal.pk)
+            n2 = Normal.objects.get(pk=normal.pk)
             self.assertEqual(n2.safe_translation_getter("translated_field"), None)
             self.assertEqual(n2.lazy_translation_getter("translated_field"), en_us_string)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
+            # This should work because when 'jp' isn't found, it will then try
+            # the default language, which is en-us, in this case.
+            self.assertEqual(n2.safe_translation_getter("translated_field"), en_us_string)
 
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
