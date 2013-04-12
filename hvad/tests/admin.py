@@ -33,13 +33,13 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         normal_si.translated_field = slovenian_string
         normal_si.save()
         
-        en_us_string = u'en-us test string'
-        default = Normal.objects.language("en-us").create(
+        english_string = u'English test string'
+        default = Normal.objects.language("en").create(
             shared_field = "shared field",
-            translated_field = en_us_string,
+            translated_field = english_string,
         )
         default_si = Normal.objects.get(pk=normal.pk).translate('us-en')
-        default_si.translated_field = en_us_string
+        default_si.translated_field = english_string
         default_si.save()
 
         Other.objects.create(normal=normal)
@@ -61,10 +61,10 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         with LanguageOverride('jp'):
             n2 = Normal.objects.get(pk=normal.pk)
             self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-            self.assertEqual(n2.lazy_translation_getter("translated_field"), en_us_string)
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), english_string)
             # This should work because when 'jp' isn't found, it will then try
-            # the default language, which is en-us, in this case.
-            self.assertEqual(n2.safe_translation_getter("translated_field"), en_us_string)
+            # the default language, which is en, in this case.
+            self.assertEqual(n2.safe_translation_getter("translated_field"), english_string)
 
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
