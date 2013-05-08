@@ -15,6 +15,7 @@ from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.context_managers import SettingsOverride
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, Other
 
+
 class BaseAdminTests(object):
     def _get_admin(self, model):
         return admin.site._registry[model]
@@ -22,27 +23,51 @@ class BaseAdminTests(object):
 
 class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
 
-    def test_lazy_translation_getter(self):
+    def test_lazy_translation_getter_perf(self):
         translated_field_value = u"rød grød med fløde"
         slovenian_string = u'pozdravčki čćžđš'
         normal = Normal.objects.language("da").create(
-            shared_field = "shared field",
-            translated_field = translated_field_value,
+            shared_field="shared field",
+            translated_field=translated_field_value,
         )
         normal_si = Normal.objects.get(pk=normal.pk).translate('sl')
         normal_si.translated_field = slovenian_string
         normal_si.save()
 
+        Other.objects.create(normal=normal)
+        self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
+
+        n2 = Normal.objects.get(pk=normal.pk)
+        with self.assertNumQueries(1):
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
+        with self.assertNumQueries(0):
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
+
+        with LanguageOverride('sl'):
+            n2 = Normal.objects.get(pk=normal.pk)
+            with self.assertNumQueries(1):
+                self.assertEqual(n2.lazy_translation_getter("translated_field"), slovenian_string)
+
+    def test_lazy_translation_getter(self):
+        translated_field_value = u"rød grød med fløde"
+        slovenian_string = u'pozdravčki čćžđš'
+        normal = Normal.objects.language("da").create(
+            shared_field="shared field",
+            translated_field=translated_field_value,
+        )
+        normal_si = Normal.objects.get(pk=normal.pk).translate('sl')
+        normal_si.translated_field = slovenian_string
+        normal_si.save()
 
         Other.objects.create(normal=normal)
         self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
-        n2 =  Normal.objects.get(pk=normal.pk)
+        n2 = Normal.objects.get(pk=normal.pk)
         self.assertEqual(n2.safe_translation_getter("translated_field"), None)
         self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
         self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
 
         with LanguageOverride('sl'):
-            n2 =  Normal.objects.get(pk=normal.pk)
+            n2 = Normal.objects.get(pk=normal.pk)
             self.assertEqual(n2.safe_translation_getter("translated_field"), None)
             self.assertEqual(n2.lazy_translation_getter("translated_field"), slovenian_string)
             self.assertEqual(n2.safe_translation_getter("translated_field"), slovenian_string)

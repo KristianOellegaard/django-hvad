@@ -283,19 +283,22 @@ class TranslatableModel(models.Model):
         saves the translation instance in the translation cache
         """
         cache = getattr(self, self._meta.translations_cache, NoTranslation)
-        trans = self._meta.translations_model.objects.filter(master__pk=self.pk)
-        if not cache and cache != NoTranslation and not trans.exists(): # check if there is no translations
-            return default
-        elif getattr(cache, name, NoTranslation) == NoTranslation and trans.exists(): # We have translations, but no specific translation cached
-            trans_in_own_language = trans.filter(language_code=get_language())
-            if trans_in_own_language.exists():
-                trans = trans_in_own_language[0]
-            else:
-                trans = trans[0]
-            setattr(self, self._meta.translations_cache, trans)
-            return getattr(trans, name)
-        return getattr(cache, name)
-    
+
+        if getattr(cache, name, NoTranslation) != NoTranslation:
+            return getattr(cache, name)
+
+        model = self._meta.translations_model
+        trans = list(model.objects.filter(master__pk=self.pk))
+
+        try:
+            lang = get_language()
+            trans = [t for t in trans if t.language_code == lang][0]
+        except IndexError:
+            trans = trans[0]
+
+        setattr(self, self._meta.translations_cache, trans)
+        return getattr(trans, name)
+
     def get_available_languages(self):
         manager = self._meta.translations_model.objects
         return manager.filter(master=self).values_list('language_code', flat=True)
