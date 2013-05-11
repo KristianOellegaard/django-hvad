@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils.translation import get_language, activate
 from shutil import rmtree as _rmtree
 from tempfile import template, mkdtemp, _exists
-import StringIO
+from hvad.compat.string_io import StringIO
 import sys
 
 class NULL:
@@ -53,7 +53,7 @@ class StdoutOverride(object):
         lines = buffer.getvalue()
     """
     def __enter__(self):
-        self.buffer = StringIO.StringIO()
+        self.buffer = StringIO()
         sys.stdout = self.buffer
         return self.buffer
         

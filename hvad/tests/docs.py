@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+import sys
 from django.test.testcases import TestCase
 from shutil import rmtree
 from tempfile import template, mkdtemp, _exists
 import os
-try:
-    from cStringIO import StringIO
-except ImportError: # pragma: no cover
-    from StringIO import StringIO
+from hvad.compat.string_io import StringIO
 
 
 ROOT_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -59,5 +57,6 @@ class DocumentationTests(TestCase):
             )
             try:
                 app.build()
-            except Exception, e:
+            except Exception:
+                e = sys.exc_info()[1]
                 self.fail('%s\n%s' % (e, nullout.getvalue()))

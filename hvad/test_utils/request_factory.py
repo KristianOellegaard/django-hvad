@@ -1,12 +1,12 @@
-from StringIO import StringIO
+from hvad.compat.string_io import StringIO
+from hvad.compat.urlencode import urlencode
+from hvad.compat.urlparse import urlparse
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import SimpleCookie
 from django.test.client import (FakePayload, MULTIPART_CONTENT, encode_multipart, 
     BOUNDARY, CONTENT_TYPE_RE)
 from django.utils.encoding import smart_str
-from urllib import urlencode
-from urlparse import urlparse
 import urllib
 
 
