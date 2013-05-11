@@ -7,7 +7,7 @@ from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
 from hvad.utils import SmartGetFieldByName
-from types import MethodType
+from hvad.compat.method_type import MethodType
 import sys
 
 
@@ -103,7 +103,7 @@ class TranslatableModelBase(ModelBase):
             # If this isn't a subclass of TranslatableModel, don't do anything special.
             return super_new(cls, name, bases, attrs)
         new_model = super_new(cls, name, bases, attrs)
-        if not isinstance(new_model.objects, TranslationManager):
+        if not new_model._meta.abstract and not isinstance(new_model.objects, TranslationManager):
             raise ImproperlyConfigured(
                 "The default manager on a TranslatableModel must be a "
                 "TranslationManager instance or an instance of a subclass of "
@@ -126,7 +126,7 @@ class TranslatableModelBase(ModelBase):
                     concrete_model = concrete_model._meta.proxy_for_model
 
         found = False
-        for relation in concrete_model.__dict__.keys():
+        for relation in list(concrete_model.__dict__.keys()):
             try:
                 obj = getattr(new_model, relation)
             except AttributeError:
@@ -156,8 +156,7 @@ class TranslatableModelBase(ModelBase):
         
         if not isinstance(opts.get_field_by_name, SmartGetFieldByName):
             smart_get_field_by_name = SmartGetFieldByName(opts.get_field_by_name)
-            opts.get_field_by_name = MethodType(smart_get_field_by_name , opts,
-                                                opts.__class__)
+            opts.get_field_by_name = MethodType(smart_get_field_by_name , opts)
         
         return new_model
     
@@ -165,12 +164,11 @@ class TranslatableModelBase(ModelBase):
 class NoTranslation(object):
     pass
 
-class TranslatableModel(models.Model):
+
+class TranslatableModel(TranslatableModelBase('Base', (models.Model,), {'__module__': __name__})):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
     """
-    __metaclass__ = TranslatableModelBase
-    
     # change the default manager to the translation manager
     objects = TranslationManager()
     
