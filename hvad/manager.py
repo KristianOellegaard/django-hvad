@@ -333,14 +333,14 @@ class TranslationQueryset(QuerySet):
                 obj.save(force_insert=True, using=self.db)
                 transaction.savepoint_commit(sid, using=self.db)
                 return obj, True
-            except IntegrityError, e:
+            except IntegrityError:
                 transaction.savepoint_rollback(sid, using=self.db)
                 exc_info = sys.exc_info()
                 try:
                     return self.get(**lookup), False
                 except self.model.DoesNotExist:
                     # Re-raise the IntegrityError with its original traceback.
-                    raise exc_info[1], None, exc_info[2]
+                    raise exc_info[1]
 
     def filter(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
