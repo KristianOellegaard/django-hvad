@@ -28,7 +28,7 @@ Python and Django.
 Notes on Django versions
 ************************
 
-django-hvad is tested on python 2.6 and 2.7 with django 1.3.1, 1.4.5 and 1.5.1.
+django-hvad is tested on python 2.6 and 2.7 with Django 1.3.1, 1.4.5 and 1.5.1.
 
 
 ***************
