@@ -28,9 +28,7 @@ Python and Django.
 Notes on Django versions
 ************************
 
-django-hvad is tested on python 2.6 and 2.7 with django 1.2.7, 1.3.1 and 1.4.
-These should all work as expected, but for django 1.2.x you need you need to
-install django-cbv to use the class based views.
+django-hvad is tested on Python 2.6 and 2.7 with Django 1.3.1, 1.4.5 and 1.5.1.
 
 
 ***************
