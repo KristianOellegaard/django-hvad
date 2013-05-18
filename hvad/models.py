@@ -103,14 +103,14 @@ class TranslatableModelBase(ModelBase):
             # If this isn't a subclass of TranslatableModel, don't do anything special.
             return super_new(cls, name, bases, attrs)
         new_model = super_new(cls, name, bases, attrs)
-        if not isinstance(new_model.objects, TranslationManager):
+        opts = new_model._meta
+        if not opts.abstract and not isinstance(new_model.objects, TranslationManager):
             raise ImproperlyConfigured(
                 "The default manager on a TranslatableModel must be a "
                 "TranslationManager instance or an instance of a subclass of "
                 "TranslationManager, the default manager of %r is not." %
                 new_model)
         
-        opts = new_model._meta
         if opts.abstract:
             return new_model
         
