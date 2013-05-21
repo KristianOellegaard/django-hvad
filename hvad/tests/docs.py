@@ -44,19 +44,20 @@ class DocumentationTests(TestCase):
     """
     def test_docs_build(self):
         from sphinx.application import Sphinx
-        nullout = StringIO()
         with TemporaryDirectory() as OUT_DIR:
-            app = Sphinx(
-                DOCS_DIR,
-                DOCS_DIR,
-                OUT_DIR,
-                OUT_DIR,
-                'html',
-                warningiserror=True,
-                status=nullout,
-            )
-            try:
-                app.build()
-            except Exception:
-                e = sys.exc_info()[1]
-                self.fail('%s\n%s' % (e, nullout.getvalue()))
+            with open(os.path.join(OUT_DIR, 'log'), 'w') as fobj:
+                app = Sphinx(
+                    DOCS_DIR,
+                    DOCS_DIR,
+                    OUT_DIR,
+                    OUT_DIR,
+                    'html',
+                    warningiserror=True,
+                    status=fobj,
+                )
+                try:
+                    app.build()
+                except Exception:
+                    e = sys.exc_info()[1]
+                    fobj.seek(0)
+                    self.fail('%s\n%s' % (e, fobj.read()))

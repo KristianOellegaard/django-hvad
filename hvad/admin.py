@@ -18,7 +18,7 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from hvad.compat.force_unicode import force_unicode
-from hvad.compat.urlencode import urlencode
+from hvad.compat.urls import urlencode
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 import django
 from hvad.utils import get_cached_translation, get_translation

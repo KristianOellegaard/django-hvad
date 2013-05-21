@@ -1,7 +1,6 @@
 from hvad.compat.string_io import StringIO
 from hvad.compat.string_types import string_types
-from hvad.compat.urlencode import urlencode
-from hvad.compat.urlparse import urlparse, unquote
+from hvad.compat.urls import urlencode, urlparse, unquote
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import SimpleCookie

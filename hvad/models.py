@@ -309,7 +309,7 @@ class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
 
         # *Sigh*, OK, any available langauge?
         try:
-            any_language = translation_dict.values()[0]
+            any_language = list(translation_dict.values())[0]
         except IndexError:
             # OK, can't say we didn't try!
             return default
