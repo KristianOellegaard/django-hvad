@@ -188,7 +188,7 @@ class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
         
         # filter out all the translated fields (including 'master' and 'language_code')
         primary_key_names = ('pk', self._meta.pk.name)
-        for key in kwargs.keys():
+        for key in list(kwargs.keys()):
             if key in self._translated_field_names:
                 if not key in primary_key_names:
                     # we exclude the pk of the shared model
@@ -202,7 +202,7 @@ class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
         # there was at least one of the translated fields (or a language_code) 
         # in kwargs. We need to do magic.
         # extract all the shared fields (including the pk)
-        for key in kwargs.keys():
+        for key in list(kwargs.keys()):
             if key in self._shared_field_names:
                 skwargs[key] = kwargs.pop(key)
         # do the regular init minus the translated fields
