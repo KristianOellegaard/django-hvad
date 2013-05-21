@@ -45,7 +45,7 @@ class DocumentationTests(TestCase):
     def test_docs_build(self):
         from sphinx.application import Sphinx
         with TemporaryDirectory() as OUT_DIR:
-            with open(os.path.join(OUT_DIR, 'log'), 'r+') as fobj:
+            with open(os.path.join(OUT_DIR, 'log'), 'w+') as fobj:
                 app = Sphinx(
                     DOCS_DIR,
                     DOCS_DIR,
