@@ -6,6 +6,10 @@ Changelog
 
 .. glossary::
     :sorted:
+    0.3.0
+        django-hvad is now django 1.5 compatible. Dropped support for django 1.2.
+
+        In next release, the old 'nani' module will be removed.
 
     0.2.0
         The package is now called 'hvad'. Old imports should result in an import error.
