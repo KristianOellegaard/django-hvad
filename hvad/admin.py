@@ -6,21 +6,21 @@ from django.contrib.admin.util import (flatten_fieldsets, unquote,
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
-from django.forms.formsets import formset_factory
-from django.forms.models import ModelForm, BaseModelFormSet, BaseInlineFormSet, model_to_dict
+from django.forms.models import model_to_dict
 from django.forms.util import ErrorList
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import TemplateDoesNotExist
 from django.template.context import RequestContext
 from django.template.loader import find_template
-from django.utils.encoding import iri_to_uri, force_unicode
+from django.utils.encoding import iri_to_uri
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
+from hvad.compat.force_unicode import force_unicode
+from hvad.compat.urls import urlencode
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 import django
-import urllib
 from hvad.utils import get_cached_translation, get_translation
 from hvad.manager import FALLBACK_LANGUAGES
 
@@ -54,7 +54,7 @@ class InlineModelForm(TranslatableModelForm):
                 # Dirty hack that swaps the id from the translation id, to the master id
                 # This is necessary, because we in this case get the untranslated instance,
                 # and thereafter get the correct translation on save.
-                if object_data.has_key("id"):
+                if "id" in object_data:
                     object_data["id"] = trans.master.id
         if initial is not None:
             object_data.update(initial)
@@ -105,7 +105,7 @@ class TranslatableModelAdminMixin(object):
             get.update({'language': key})
             url = '%s://%s%s?%s' % (request.is_secure() and 'https' or 'http',
                                     request.get_host(), request.path,
-                                    urllib.urlencode(get))
+                                    urlencode(get))
             if language == key:
                 status = 'current'
             elif key in available_languages:

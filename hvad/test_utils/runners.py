@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.test.simple import DjangoTestSuiteRunner
-from django.utils.unittest.suite import TestSuite
+from django.utils.unittest import TestSuite
 import operator
 import time
 

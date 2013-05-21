@@ -41,11 +41,11 @@
             if (typeof SelectFilter != "undefined"){
                 $(".selectfilter").each(function(index, value){
                   var namearr = value.name.split('-');
-                  SelectFilter.init(value.id, namearr[namearr.length-1], false, "{{ STATIC_URL }}");
+                  SelectFilter.init(value.id, namearr[namearr.length-1], false, "{{ STATIC_URL }}admin/");
                 });
                 $(".selectfilterstacked").each(function(index, value){
                   var namearr = value.name.split('-');
-                  SelectFilter.init(value.id, namearr[namearr.length-1], true, "{{ STATIC_URL }}");
+                  SelectFilter.init(value.id, namearr[namearr.length-1], true, "{{ STATIC_URL }}admin/");
                 });
             }
         }
