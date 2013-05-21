@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
 from django.utils.translation import get_language
+from hvad.compat.metaclasses import with_metaclass
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
 from hvad.utils import SmartGetFieldByName
@@ -165,7 +166,7 @@ class NoTranslation(object):
     pass
 
 
-class TranslatableModel(TranslatableModelBase('Base', (models.Model,), {'__module__': __name__})):
+class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
     """

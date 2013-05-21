@@ -6,6 +6,7 @@ from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions
 from django.forms.util import ErrorList
 from django.forms.widgets import media_property
 from django.utils.translation import get_language
+from hvad.compat.metaclasses import with_metaclass
 from hvad.models import TranslatableModel
 from hvad.utils import get_cached_translation, get_translation, combine
 
@@ -95,7 +96,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             fields.update(tfields)
             
             # make sure opts.fields doesn't specify an invalid field
-            none_model_fields = [k for k, v in fields.iteritems() if not v]
+            none_model_fields = [k for k, v in fields.items() if not v]
             missing_fields = set(none_model_fields) - \
                              set(declared_fields.keys())
             if missing_fields:
@@ -123,9 +124,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
         return new_class
 
 
-class TranslatableModelForm(ModelForm):
-    __metaclass__ = TranslatableModelFormMetaclass
-
+class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, ModelForm)):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
                  empty_permitted=False, instance=None):
