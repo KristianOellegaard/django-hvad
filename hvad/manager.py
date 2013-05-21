@@ -697,7 +697,7 @@ class FallbackQueryset(QuerySet):
                 # get the next "chunk" of results
                 for i in range(CHUNK_SIZE):
                     try:
-                        instance = base_iter.next()
+                        instance = next(base_iter)
                         base_result_objects.append(instance)
                     except StopIteration:
                         reached_end = True

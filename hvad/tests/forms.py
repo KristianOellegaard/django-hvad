@@ -120,13 +120,13 @@ class FormTests(NaniTestCase):
     def test_no_language_code_in_fields(self):
         with LanguageOverride("en"):
             form = NormalForm()
-            self.assertFalse(form.fields.has_key("language_code"))
+            self.assertFalse("language_code" in form.fields)
 
             form = NormalMediaForm()
-            self.assertFalse(form.fields.has_key("language_code"))
+            self.assertFalse("language_code" in form.fields)
 
             form = NormalFormExclude()
-            self.assertFalse(form.fields.has_key("language_code"))
+            self.assertFalse("language_code" in form.fields)
 
     def test_form_wrong_field_in_class(self):
         with LanguageOverride("en"):            
