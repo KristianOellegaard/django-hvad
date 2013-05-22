@@ -1,11 +1,16 @@
 from distutils.version import LooseVersion
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
-from django.contrib.admin.util import (flatten_fieldsets, unquote, 
-    get_deleted_objects)
+from django.contrib.admin.util import (
+    flatten_fieldsets,
+    unquote, 
+    get_deleted_objects,
+    label_for_field,
+)
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
+from django.db.models.fields import FieldDoesNotExist
 from django.forms.formsets import formset_factory
 from django.forms.models import ModelForm, BaseModelFormSet, BaseInlineFormSet, model_to_dict
 from django.forms.util import ErrorList
@@ -125,6 +130,16 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     change_form_template = 'admin/hvad/change_form.html'
     
     deletion_not_allowed_template = 'admin/hvad/deletion_not_allowed.html'
+
+    # We make use of a NEW attribute here.
+    # This is just like list_display except that it accepts translated fields.
+    # To do so prepend hvad translated fields with "hvad__" like so:
+    #       hvad_list_display = ['hvad__mytranslatedfield', 'normalfield']
+    # Just like in list_display the fields are listed in the way they are defined.
+    hvad_list_display = []
+ 
+    # Here we identify the string that will be used to identify translated fields.
+    hvad_field_prefix = 'hvad__'
     
     def get_urls(self):
         from django.conf.urls.defaults import patterns, url
@@ -350,6 +365,31 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 pass
         else: # pragma: no cover
             pass
+
+    def _wrap_hvad(self, model_field):
+        """
+        Returns a wrapper that knows how to represent a translated field.
+        """
+        model_field = model_field.split('__')[1]
+        translation_model = self.model._meta.translations_model
+        try:
+            field = translation_model._meta.get_field(model_field)
+        except FieldDoesNotExist as e:
+            raise e
+        def hvad_for_admin(obj):
+            return obj.lazy_translation_getter(model_field, obj.pk)
+        hvad_for_admin.short_description = label_for_field(model_field, translation_model)
+        return hvad_for_admin
+ 
+    def get_list_display(self, request):
+        """
+        Return a sequence containing the fields to be displayed on the
+        changelist by wrapping the fields in self.hvad_list_display that starts with the prefix defined in
+        hvad_field_prefix.
+        """
+        fields = [self._wrap_hvad(field_name) if field_name.startswith(self.hvad_field_prefix) else field_name 
+                    for field_name in self.hvad_list_display]
+        return fields
 
 class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin):
     form = InlineModelForm
