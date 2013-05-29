@@ -23,18 +23,18 @@ class BaseAdminTests(object):
 class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
 
     def test_lazy_translation_getter(self):
-        translated_field_value = u"rød grød med fløde"
+        danish_string = u"rød grød med fløde"
         slovenian_string = u'pozdravčki čćžđš'
         normal = Normal.objects.language("da").create(
             shared_field = "shared field",
-            translated_field = translated_field_value,
+            translated_field = danish_string,
         )
         normal_si = Normal.objects.get(pk=normal.pk).translate('sl')
         normal_si.translated_field = slovenian_string
         normal_si.save()
         
         english_string = u'English test string'
-        default = Normal.objects.language("en").create(
+        Normal.objects.language("en").create(
             shared_field = "shared field",
             translated_field = english_string,
         )
@@ -43,13 +43,13 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         default_si.save()
 
         Other.objects.create(normal=normal)
-        self.assertEqual(normal.lazy_translation_getter("translated_field"), translated_field_value)
+        self.assertEqual(normal.lazy_translation_getter("translated_field"), danish_string)
 
         with LanguageOverride('da'):
             n2 =  Normal.objects.get(pk=normal.pk)
             self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-            self.assertEqual(n2.lazy_translation_getter("translated_field"), translated_field_value)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), translated_field_value)
+            self.assertEqual(n2.lazy_translation_getter("translated_field"), danish_string)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), danish_string)
 
         with LanguageOverride('sl'):
             n2 =  Normal.objects.get(pk=normal.pk)
@@ -61,10 +61,13 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         with LanguageOverride('jp'):
             n2 = Normal.objects.get(pk=normal.pk)
             self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-            self.assertEqual(n2.lazy_translation_getter("translated_field"), english_string)
+            value = n2.lazy_translation_getter("translated_field")
+            # since we didn't configure fallbacks, this could be any of th above.
+            possible_values = [english_string, slovenian_string, danish_string]
+            self.assertTrue(value in possible_values, "%s not in %r" % (value, possible_values))
             # This should work because when 'jp' isn't found, it will then try
             # the default language, which is en, in this case.
-            self.assertEqual(n2.safe_translation_getter("translated_field"), english_string)
+            self.assertEqual(n2.safe_translation_getter("translated_field"), value)
 
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
@@ -160,7 +163,7 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 url = reverse('admin:app_normal_change', args=(obj.pk,))
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
-                self.assertTrue('en' in response.content)
+                self.assertTrue('en' in response.content.decode('utf-8'))
     
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'

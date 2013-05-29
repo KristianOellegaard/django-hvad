@@ -1,13 +1,12 @@
-from StringIO import StringIO
+from hvad.compat.string_io import StringIO
+from hvad.compat.string_types import string_types
+from hvad.compat.urls import urlencode, urlparse, unquote
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import SimpleCookie
 from django.test.client import (FakePayload, MULTIPART_CONTENT, encode_multipart, 
     BOUNDARY, CONTENT_TYPE_RE)
 from django.utils.encoding import smart_str
-from urllib import urlencode
-from urlparse import urlparse
-import urllib
 
 
 class RequestFactory(object):
@@ -60,9 +59,9 @@ class RequestFactory(object):
     def _get_path(self, parsed):
         # If there are parameters, add them
         if parsed[3]:
-            return urllib.unquote(parsed[2] + ";" + parsed[3])
+            return unquote(parsed[2] + ";" + parsed[3])
         else:
-            return urllib.unquote(parsed[2])
+            return unquote(parsed[2])
 
     def get(self, path, data={}, **extra):
         "Construct a GET request"
@@ -144,7 +143,7 @@ class RequestFactory(object):
         # Make `data` into a querystring only if it's not already a string. If
         # it is a string, we'll assume that the caller has already encoded it.
         query_string = None
-        if not isinstance(data, basestring):
+        if not isinstance(data, string_types):
             query_string = urlencode(data, doseq=True)
 
         parsed = urlparse(path)

@@ -6,6 +6,7 @@ Changelog
 
 .. glossary::
     :sorted:
+
     0.3.0
         django-hvad is now django 1.5 compatible. Dropped support for django 1.2.
 

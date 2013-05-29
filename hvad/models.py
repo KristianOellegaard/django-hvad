@@ -4,10 +4,11 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.signals import post_save
 from django.utils.translation import get_language
+from hvad.compat.metaclasses import with_metaclass
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
 from hvad.utils import SmartGetFieldByName
-from types import MethodType
+from hvad.compat.method_type import MethodType
 import sys
 
 
@@ -126,7 +127,7 @@ class TranslatableModelBase(ModelBase):
                     concrete_model = concrete_model._meta.proxy_for_model
 
         found = False
-        for relation in concrete_model.__dict__.keys():
+        for relation in list(concrete_model.__dict__.keys()):
             try:
                 obj = getattr(new_model, relation)
             except AttributeError:
@@ -156,8 +157,7 @@ class TranslatableModelBase(ModelBase):
         
         if not isinstance(opts.get_field_by_name, SmartGetFieldByName):
             smart_get_field_by_name = SmartGetFieldByName(opts.get_field_by_name)
-            opts.get_field_by_name = MethodType(smart_get_field_by_name , opts,
-                                                opts.__class__)
+            opts.get_field_by_name = MethodType(smart_get_field_by_name , opts)
         
         return new_model
     
@@ -165,12 +165,11 @@ class TranslatableModelBase(ModelBase):
 class NoTranslation(object):
     pass
 
-class TranslatableModel(models.Model):
+
+class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
     """
-    __metaclass__ = TranslatableModelBase
-    
     # change the default manager to the translation manager
     objects = TranslationManager()
     
@@ -189,7 +188,7 @@ class TranslatableModel(models.Model):
         
         # filter out all the translated fields (including 'master' and 'language_code')
         primary_key_names = ('pk', self._meta.pk.name)
-        for key in kwargs.keys():
+        for key in list(kwargs.keys()):
             if key in self._translated_field_names:
                 if not key in primary_key_names:
                     # we exclude the pk of the shared model
@@ -203,7 +202,7 @@ class TranslatableModel(models.Model):
         # there was at least one of the translated fields (or a language_code) 
         # in kwargs. We need to do magic.
         # extract all the shared fields (including the pk)
-        for key in kwargs.keys():
+        for key in list(kwargs.keys()):
             if key in self._shared_field_names:
                 skwargs[key] = kwargs.pop(key)
         # do the regular init minus the translated fields
@@ -310,7 +309,7 @@ class TranslatableModel(models.Model):
 
         # *Sigh*, OK, any available langauge?
         try:
-            any_language = translation_dict.values()[0]
+            any_language = list(translation_dict.values())[0]
         except IndexError:
             # OK, can't say we didn't try!
             return default

@@ -1,8 +1,6 @@
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
-from django.db.models.loading import get_models
-from django.db.models.fields.related import RelatedObject
 
 def combine(trans, klass):
     """
