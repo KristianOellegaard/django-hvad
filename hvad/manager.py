@@ -227,6 +227,21 @@ class TranslationQueryset(QuerySet):
         accessor = self.shared_model._meta.translations_accessor
         # update using the real manager
         return self._real_manager.filter(**{'%s__in' % accessor:qs})
+
+    def _scan_for_language_where_node(self, children):
+        found = False
+        for node in children:
+            try:
+                field_name = node[0].field.name
+            except TypeError:
+                if node.children:
+                    found = self._scan_for_language_where_node(node.children)
+            else:
+                found = field_name == 'language_code'
+
+            if found:
+                # No need to continue
+                return True
     
     #===========================================================================
     # Queryset/Manager API 
@@ -288,14 +303,7 @@ class TranslationQueryset(QuerySet):
                 qs = self.language(language_code)
                 found = True
         else:
-            for where in qs.query.where.children:
-                if where.children:
-                    for child in where.children:
-                        if child[0].field.name == 'language_code':
-                            found = True
-                            break
-                if found:
-                    break
+            found = self._scan_for_language_where_node(qs.query.where.children)
         if not found:
             qs = self.language()
         # self.iterator already combines! Isn't that nice?
