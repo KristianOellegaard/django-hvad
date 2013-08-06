@@ -202,6 +202,15 @@ class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
             self.assertEqual(got.shared_field, "shared")
             self.assertEqual(got.translated_field, "English")
             self.assertEqual(got.language_code, "en")
+
+    def test_filtered_get(self):
+        obj = Normal(shared_field='field_1')
+        obj.translate('en')
+        obj.translated_field = 'field_2'
+        obj.save()
+        qs = Normal.objects.language('en') | Normal.objects.language('de')
+        found = qs.filter(shared_field='field_1').get(pk=obj.pk)
+        self.assertEqual(found.pk, obj.pk)
     
     def test_safe_translation_getter(self):
         untranslated = Normal.objects.untranslated().get(pk=1)
