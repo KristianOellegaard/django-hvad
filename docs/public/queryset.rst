@@ -4,6 +4,9 @@ Queryset API
 
 .. _TranslationQueryset-public:
 
+.. note::
+    You can select a custom queryset to use on your manager, by defining the attribute queryset_class on the manager class.
+
 *******************
 TranslationQueryset
 *******************
