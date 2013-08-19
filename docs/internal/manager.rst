@@ -12,6 +12,10 @@ This module is where most of the functionality is implemented.
     ``settings.LANGUAGES``, could possibly become a setting on it's own at some
     point.
 
+.. data:: queryset_class
+
+    Defautls to ``TranslationQueryset``. Overwrite to use your custom queryset class. 
+
 
 ***************
 FieldTranslator
