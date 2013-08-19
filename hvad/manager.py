@@ -590,10 +590,12 @@ class TranslationManager(models.Manager):
     # API 
     #===========================================================================
 
+    queryset_class = TranslationQueryset
+
     def using_translations(self):
         if not hasattr(self, '_real_manager'):
             self.contribute_real_manager()
-        qs = TranslationQueryset(self.translations_model, using=self.db, real=self._real_manager)
+        qs = self.queryset_class(self.translations_model, using=self.db, real=self._real_manager)
         if hasattr(self, 'core_filters'):
             qs = qs._next_is_sticky().filter(**(self.core_filters))
         return qs
