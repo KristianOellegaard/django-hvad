@@ -1,8 +1,11 @@
 from collections import defaultdict
 from django.conf import settings
 from django.db import models, transaction, IntegrityError
-from django.db.models.query import (QuerySet, ValuesQuerySet, DateQuerySet, 
-    CHUNK_SIZE)
+from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
+try:
+    from django.db.models.query import CHUNK_SIZE
+except ImportError:
+    CHUNK_SIZE = 100
 from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
