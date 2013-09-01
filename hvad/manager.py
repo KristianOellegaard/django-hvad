@@ -1,4 +1,5 @@
 from collections import defaultdict
+import django
 from django.conf import settings
 from django.db import models, transaction, IntegrityError
 from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
@@ -15,6 +16,7 @@ import logging
 import sys
 
 logger = logging.getLogger(__name__)
+DJANGO_VERSION = django.get_version()
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -451,8 +453,13 @@ class TranslationQueryset(QuerySet):
                 related_model_keys.append(query_key)  # Select the related model
                 related_model_keys.append('%s__%s' % (query_key, model._meta.translations_accessor))  # and its translation model
 
-                # We need to force this to be a LEFT OUTER join, so we explicitly add the join:
-                related_model_explicit_joins.append((field.model._meta.db_table, model._meta.db_table, bits[0] + "_id", 'id'))
+                # We need to force this to be a LEFT OUTER join, so we explicitly add the join.
+                # Django 1.6 changes the footprint of the Query.join method. See https://code.djangoproject.com/ticket/19385
+                if DJANGO_VERSION < '1.6':
+                    join_data = (field.model._meta.db_table, model._meta.db_table, bits[0] + "_id", 'id')
+                else:
+                    join_data = (field, (field.model._meta.db_table, model._meta.db_table, ((bits[0] + "_id", 'id'),)))
+                related_model_explicit_joins.append(join_data)
                 # And we are going to force the query to treat the language join as one-to-one,
                 # so we need to filter for the desired language:
                 related_model_extra_filters.append(('%s__%s__language_code' % (query_key, model._meta.translations_accessor), self._language_code))
@@ -468,7 +475,12 @@ class TranslationQueryset(QuerySet):
         obj = self._clone()
         obj.query.get_compiler(obj.db).fill_related_selections()  # seems to be necessary; not sure why
         for j in related_model_explicit_joins:
-            obj.query.join(j, outer_if_first=True)
+            if DJANGO_VERSION >= '1.6':
+                kwargs = {'join_field': j[0]}
+                j = j[1]
+            else:
+                kwargs = {}
+            obj.query.join(j, outer_if_first=True, **kwargs)
         for f in related_model_extra_filters:
             f1 = {f[0]: f[1]}
             f2 = {f[0]: None}  # Allow select_related() to fetch objects with a relation set to NULL
