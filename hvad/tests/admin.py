@@ -406,9 +406,10 @@ class AdminNoFixturesTests(NaniTestCase, BaseAdminTests):
             elif lang == "ja":
                 self.assertEqual(status, 'available')
                 
-        with self.assertNumQueries(0) and LanguageOverride('en'):
-            normaladmin.get_language_tabs(request, [])
-    
+        with self.assertNumQueries(0):
+            with LanguageOverride('en'):
+                normaladmin.get_language_tabs(request, [])
+
     def test_get_change_form_base_template(self):
         normaladmin = self._get_admin(Normal)
         template = normaladmin.get_change_form_base_template()
