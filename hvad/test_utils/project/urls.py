@@ -1,4 +1,8 @@
-from django.conf.urls.defaults import patterns, include, url
+try:
+    # Django 1.3
+    from django.conf.urls.defaults import patterns, include, url
+except:
+    from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from hvad.test_utils.project.app.views import NormalUpdateView
 
