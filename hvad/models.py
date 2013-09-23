@@ -286,7 +286,7 @@ class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
             return stuff
 
         # get all translations
-        translations = self._meta.translations_model.objects.filter(master__pk=self.pk)
+        translations = getattr(self, self._meta.translations_accessor).all()
 
         # make them a nice dict
         translation_dict = {}
