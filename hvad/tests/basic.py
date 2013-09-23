@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+import django
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
@@ -12,6 +13,10 @@ from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin,
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.project.app.models import Normal, MultipleFields, Boolean
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
+
+
+DJANGO_VERSION = django.get_version()
+
 
 class InvalidModel2(object):
     objects = TranslationManager()
@@ -325,11 +330,13 @@ class TableNameTest(NaniTestCase):
 
 class GetOrCreateTest(NaniTestCase):
     def test_create_new_translatable_instance(self):
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(3 if DJANGO_VERSION < '1.6' else 5):
             """
             1: get
-            2: create shared
-            3: create translation
+            2a: savepoint (django >= 1.6)
+            2b: create shared
+            3a: create translation
+            3b: release savepoint (django >= 1.6)
             """
             en, created = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
@@ -345,11 +352,13 @@ class GetOrCreateTest(NaniTestCase):
             shared_field="shared",
             translated_field='English',
         )
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(3 if DJANGO_VERSION < '1.6' else 5):
             """
             1: get
-            2: create shared
-            3: create translation
+            2a: savepoint (django >= 1.6)
+            2b: create shared
+            3a: create translation
+            3b: release savepoint (django >= 1.6)
             """
             ja, created = Normal.objects.language('ja').get_or_create(
                 shared_field="shared",
