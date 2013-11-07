@@ -33,6 +33,66 @@ def get_translation_aware_manager(model):
     manager.model = model
     return manager
 
+def get_translation_aware_custom_manager(model):
+    """
+    Creates a translation-aware manager for a given model. The new manager
+    is built from model's default manager, with Manager or TranslationManager
+    bases replaced with TranslationAwareManager. This allows the translation-aware
+    manager to retain all custom functions.
+    If the default manager has not been customized (therefore, is Manager or
+    TranslationManager), a regular TranslationAwareManager is returned.
+
+    Also, the new translation-aware manager uses a translation-aware queryset built
+    on the model's default manager queryset_class setting. If not set, it will
+    default to the regular TranslationAwareQueryset.
+
+    Two calls with the same model will return the same class object, so introspection
+    functions work as intended.
+
+    NOTE: methods of the model's default manager and its queryset may not user super().
+    """
+    from django.db.models import Manager
+    from hvad.manager import (TranslationManager, TranslationAwareManager,
+                              TranslationQueryset, TranslationAwareQueryset)
+    try:
+        manager = model._translation_aware_default_manager
+    except AttributeError:
+        default_manager = model._default_manager.__class__
+        if issubclass(TranslationManager, default_manager): # Not the other way around
+            # Manager was not customized, use regular translation-aware manager
+            manager_class = TranslationAwareManager
+        else:
+            # Manager was customized, build a translation-aware customized manager
+            bases = [TranslationAwareManager if issubclass(TranslationManager, b) else b
+                     for b in default_manager.__bases__]
+            try:
+                manager_class = type('TranslationAware' + default_manager.__name__,
+                                    tuple(bases), {
+                                        k:v for k,v in default_manager.__dict__.items()
+                                        if k not in ('get_queryset', 'get_query_set')
+                                    })
+            except TypeError as e:
+                if 'duplicate base class' in e.message:
+                    raise WrongManager('The default manager of the model may not '
+                                       'inherit both TranslationManager and Manager when '
+                                       'using get_translation_aware_manager. '
+                                       'Manager %r from model %r looks like it does.' %
+                                       (default_manager.__name__, model._meta.object_name))
+                raise
+
+            try:
+                qs_class = model._default_manager.translation_aware_queryset_class
+            except AttributeError:
+                queryset_class = getattr(model._default_manager, 'queryset_class',
+                                         model._default_manager.get_queryset().__class__)
+                qs_class = TranslationAwareQueryset._build_from_unaware(queryset_class)
+                model._default_manager.translation_aware_queryset_class = qs_class
+            manager_class.queryset_class = qs_class
+        manager = manager_class()
+        manager.model = model
+        model._translation_aware_default_manager = manager
+    return manager
+
 class SmartGetFieldByName(object):
     """
     Get field by name from a shared model or raise a smart exception to help the

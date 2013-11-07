@@ -1,4 +1,5 @@
 from django.db import models
+from hvad.manager import TranslationManager, TranslationQueryset
 from hvad.models import TranslatableModel, TranslatedFields
 
 
@@ -29,7 +30,25 @@ class NormalProxyProxy(NormalProxy):
     class Meta:
         proxy = True
 
-    
+class CustomManagerProxyQueryset(TranslationQueryset):
+    def having_translated_field(self, value):
+        return self.filter(translated_field=value)
+
+class CustomManagerProxyManager(TranslationManager):
+    queryset_class = CustomManagerProxyQueryset
+
+    def having_translated_field(self, value):
+        return self.filter(translated_field=value)
+
+class CustomManagerProxy(Normal):
+    objects = CustomManagerProxyManager()
+
+    def __unicode__(self):
+        return self.safe_translation_getter('translated_field', self.shared_field)
+
+    class Meta:
+        proxy = True
+
 class Related(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='rel1', null=True)
     
@@ -57,7 +76,21 @@ class Standard(models.Model):
 
 class Other(models.Model):
     normal = models.ForeignKey(Normal, related_name='others')
-    
+
+class CustomManagerStandardProxyQueryset(models.query.QuerySet):
+    def having_normal_translated_field(self, value):
+        return self.filter(normal__translated_field=value)
+
+class CustomManagerStandardProxyManager(models.Manager):
+    def having_normal_translated_field(self, value):
+        return self.filter(normal__translated_field=value)
+    def get_queryset(self):
+        return CustomManagerStandardProxyQueryset()
+
+class CustomManagerStandardProxy(Standard):
+    objects = CustomManagerStandardProxyManager()
+    class Meta:
+        proxy = True
 
 class LimitedChoice(models.Model):
     choice_fk = models.ForeignKey(

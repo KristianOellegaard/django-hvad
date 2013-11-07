@@ -621,6 +621,27 @@ class TranslationManager(models.Manager):
     def untranslated(self):
         return self._fallback_manager.get_query_set()
 
+    def any_language(self):
+        """ Returns a translation-aware queryset.
+        Resulting class is cached.
+        Queryset construction may be overriden by setting translation_aware_queryset_class
+
+        NOTE: methods of self.queryset_class using super() must not be called on the
+        resulting class. Which also means it must not have an __init__. If you need to use
+        super(), a workaround is to define your method in a mixin and inherit it.
+        """
+        try:
+            qs_class = self.translation_aware_queryset_class
+        except AttributeError:
+            qs_class = TranslationAwareQueryset._build_from_unaware(self.queryset_class)
+            self.translation_aware_queryset_class = qs_class
+        else:
+            if not issubclass(qs_class, TranslationAwareQueryset):
+                raise TypeError('Overriden translation_aware_queryset_class on %s'
+                                ' must subclass TranslationAwareQueryset'
+                                % str(self.__class__))
+        return qs_class(self.model, using=self.db)
+
     #===========================================================================
     # Internals
     #===========================================================================
@@ -918,14 +939,33 @@ class TranslationAwareQueryset(QuerySet):
     def _exclude_extra(self, extra_filters):
         qs = super(TranslationAwareQueryset, self).exclude(extra_filters)
         return super(TranslationAwareQueryset, qs)
-    
+
+    @staticmethod
+    def _build_from_unaware(queryset_class):
+        """ Builds a translation aware queryset from an unaware queryset.
+        It is built on-the-fly by stealing its dict and inheritance list, replacing
+        TranslationQueryset with TranslationAwareQueryset.
+
+        NOTE: methods of queryset_class using super() must not be called on the
+        resulting class. Which also means it must not have an __init__. If you need to use
+        super(), a workaround is to define your method in a mixin and inherit it.
+        """
+        if issubclass(TranslationQueryset, queryset_class):
+            return TranslationAwareQueryset
+        name = 'TranslationAware' + queryset_class.__name__
+        bases = [TranslationAwareQueryset if issubclass(TranslationQueryset, b) else b
+                 for b in queryset_class.__bases__]
+        dict_ = dict(queryset_class.__dict__)
+        return type(name, tuple(bases), dict_)
 
 class TranslationAwareManager(models.Manager):
+    queryset_class = TranslationAwareQueryset
+
     def language(self, language_code=None):
         return self.get_query_set().language(language_code)
         
     def get_query_set(self):
-        qs = TranslationAwareQueryset(self.model, using=self.db)
+        qs = self.queryset_class(self.model, using=self.db)
         return qs
 
 
