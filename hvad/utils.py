@@ -28,7 +28,7 @@ def get_translation(instance, language_code=None):
     return accessor.get(language_code=language_code)
 
 def get_translation_aware_manager(model):
-    from nani.manager import TranslationAwareManager
+    from hvad.manager import TranslationAwareManager
     manager = TranslationAwareManager()
     manager.model = model
     return manager
@@ -51,7 +51,7 @@ class SmartGetFieldByName(object):
                                    "an untranslated model, you must use a "
                                    "translation aware manager, you can get one "
                                    "using "
-                                   "nani.utils.get_translation_aware_manager." %
+                                   "hvad.utils.get_translation_aware_manager." %
                                    name)
             raise
 

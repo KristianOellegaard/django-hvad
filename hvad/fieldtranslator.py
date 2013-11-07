@@ -12,7 +12,7 @@ def _build_model_info(model):
     """
     Builds the model information dictinary for get_model_info
     """
-    from nani.models import BaseTranslationModel, TranslatableModel
+    from hvad.models import BaseTranslationModel, TranslatableModel
     info = {}
     if issubclass(model, BaseTranslationModel):
         info['type'] = TRANSLATIONS
