@@ -21,7 +21,7 @@ class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
         """
         if "slug" in self.kwargs:
             return {self.slug_field: self.kwargs["slug"]}
-        return {'pk': self.kwargs['object_id']}
+        return {'pk': self.kwargs[self.pk_url_kwarg]}
 
     def get_form_class(self):
         language = self._language(self.request)
