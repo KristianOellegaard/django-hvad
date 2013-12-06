@@ -271,7 +271,7 @@ class DeleteLanguageCodeTest(NaniTestCase, OneSingleTranslatedNormalMixin):
 class DescriptorTests(NaniTestCase):
     def test_translated_attribute_set(self):
         # 'MyModel' should return the default field value, in case there is no translation
-        from nani.models import TranslatedFields
+        from hvad.models import TranslatedFields
         from django.db import models
         
         DEFAULT = 'world'
@@ -297,7 +297,7 @@ class DescriptorTests(NaniTestCase):
 
 class TableNameTest(NaniTestCase):
     def test_table_name_separator(self):
-        from nani.models import TranslatedFields
+        from hvad.models import TranslatedFields
         from django.db import models
         from django.conf import settings
         sep = getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
@@ -308,7 +308,7 @@ class TableNameTest(NaniTestCase):
         self.assertEqual(MyModel.translations.related.model._meta.db_table, 'tests_mymodel%stranslation' % sep)
 
     def test_table_name_override(self):
-        from nani.models import TranslatedFields
+        from hvad.models import TranslatedFields
         from django.db import models
         with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
             class MyOtherModel(TranslatableModel):
@@ -318,7 +318,7 @@ class TableNameTest(NaniTestCase):
             self.assertEqual(MyOtherModel.translations.related.model._meta.db_table, 'tests_myothermodelO_Otranslation')
 
     def test_table_name_from_meta(self):
-        from nani.models import TranslatedFields
+        from hvad.models import TranslatedFields
         from django.db import models
         class MyNamedModel(TranslatableModel):
             translations = TranslatedFields(

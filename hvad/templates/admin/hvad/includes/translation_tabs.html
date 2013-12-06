@@ -1,5 +1,5 @@
 {% load i18n %}
-<div class="nani-language-tabs">
+<div class="hvad-language-tabs nani-language-tabs">
 <a name="{{ inline_admin_formset.opts.verbose_name|slugify }}"></a>
     {% for url,name,code,status in language_tabs %}
        {% if status == 'current' %}

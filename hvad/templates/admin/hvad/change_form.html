@@ -4,7 +4,7 @@
 {% block extrahead %}
 {{ block.super }}
 <style type="text/css">
-.nani-language-tabs span {
+.hvad-language-tabs span, .nani-language-tabs span {
     display: inline-block;
     padding: 5px 15px;
     border: 1px solid #ccc;
@@ -14,14 +14,14 @@
     top: 1px;
     font-weight: bold;
 }
-.nani-language-tabs span.current {
+.hvad-language-tabs span.current, .nani-language-tabs span.current {
     border-bottom: 1px solid #fff;
 }
-.nani-language-tabs span.empty {
+.hvad-language-tabs span.empty, .nani-language-tabs span.empty {
     opacity: 0.7;
     font-weight: normal;
 }
-.nani-language-tabs a.deletelink {
+.hvad-language-tabs a.deletelink, .nani-language-tabs a.deletelink {
     right: -17px;
     bottom: 4px;
     position: relative;
@@ -31,7 +31,7 @@
 
 {% block object-tools %}
 {{ block.super }}
-<div class="nani-language-tabs">
+<div class="hvad-language-tabs nani-language-tabs">
 	{% for url,name,code,status in language_tabs %}
 	   {% if status == 'current' %}
            <input type="hidden" class="language_button selected" name="{{ code }}" />

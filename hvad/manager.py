@@ -414,7 +414,7 @@ class TranslationQueryset(QuerySet):
     def dates(self, field_name, kind=None, order='ASC'):
         field_name = self.field_translator.get(field_name)
         if int(django.get_version().split('.')[1][0]) <= 2:
-            from nani.compat.date import DateQuerySet
+            from hvad.compat.date import DateQuerySet
             return self._clone(klass=DateQuerySet, setup=True,
                 _field_name=field_name, _kind=kind, _order=order)
         return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
@@ -671,7 +671,7 @@ class FallbackQueryset(QuerySet):
         """
         The logic for this method was taken from django-polymorphic by Bert
         Constantin (https://github.com/bconstantin/django_polymorphic) and was
-        slightly altered to fit the needs of django-nani.
+        slightly altered to fit the needs of django-hvad.
         """
         # get the primary keys of the shared model results
         base_ids = [obj.pk for obj in base_results]
@@ -709,7 +709,7 @@ class FallbackQueryset(QuerySet):
         """
         The logic for this method was taken from django-polymorphic by Bert
         Constantin (https://github.com/bconstantin/django_polymorphic) and was
-        slightly altered to fit the needs of django-nani.
+        slightly altered to fit the needs of django-hvad.
         """
         base_iter = super(FallbackQueryset, self).iterator()
 
