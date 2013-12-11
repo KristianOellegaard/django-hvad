@@ -50,6 +50,11 @@ class SimpleRelated(TranslatableModel):
     )
 
 
+class SimpleRelatedProxy(SimpleRelated):
+    class Meta:
+        proxy = True
+
+
 class Many(models.Model):
     name = models.CharField(max_length=128)
     normals = models.ManyToManyField(Normal, related_name="manyrels")

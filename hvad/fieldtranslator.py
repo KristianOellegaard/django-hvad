@@ -41,13 +41,12 @@ def get_model_info(model):
     return MODEL_INFO[model]
 
 def _get_model_from_field(starting_model, fieldname):
-    # TODO: m2m handling
     field, model, direct, _ = starting_model._meta.get_field_by_name(fieldname)
-    if model:
-        return model
-    elif direct:
+    if direct and field.rel:        # field is on model, and is a relationship, follow it
         return field.rel.to
-    else:
+    elif direct and not field.rel:  # field is on model, and is not a relationship, stay there
+        return starting_model
+    else:                           # field it not on model, it is a related model pointing here, go there
         return field.model
 
 def translate(querykey, starting_model):
