@@ -29,6 +29,21 @@ class FilterTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
         self.assertEqual(obj2.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
 
+    def test_any_language_filter(self):
+        qs = Normal.objects.any_language().filter(translated_field__contains='English')
+        self.assertEqual(qs.count(), 2)
+        obj1, obj2 = qs
+        self.assertEqual(obj1.shared_field, DOUBLE_NORMAL[1]['shared_field'])
+        self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
+        qs = Normal.objects.any_language().filter(translated_field__contains=u'日本語')
+        self.assertEqual(qs.count(), 2)
+        obj1, obj2 = qs
+        self.assertEqual(obj1.shared_field, DOUBLE_NORMAL[1]['shared_field'])
+        self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
+        qs = Normal.objects.any_language().filter(translated_field__contains='1')
+        self.assertEqual(qs.count(), 1)
+        obj1 = qs[0]
+        self.assertEqual(obj1.shared_field, DOUBLE_NORMAL[1]['shared_field'])
 
 class IterTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_simple_iter(self):

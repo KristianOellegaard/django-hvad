@@ -21,3 +21,4 @@ from hvad.tests.views import ViewsTest
 from hvad.tests.limit_choices_to import LimitChoicesToTests
 from hvad.tests.serialization import PicklingTest
 from hvad.tests.proxy import ProxyTests
+from hvad.tests.custom_managers import CustomManagersTests, CustomManagersRelationTests
