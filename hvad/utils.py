@@ -67,10 +67,10 @@ def get_translation_aware_custom_manager(model):
                      for b in default_manager.__bases__]
             try:
                 manager_class = type('TranslationAware' + default_manager.__name__,
-                                    tuple(bases), {
-                                        k:v for k,v in default_manager.__dict__.items()
+                                    tuple(bases), dict(
+                                        (k,v) for (k,v) in default_manager.__dict__.items()
                                         if k not in ('get_queryset', 'get_query_set')
-                                    })
+                                    ))
             except TypeError as e:
                 if 'duplicate base class' in e.message:
                     raise WrongManager('The default manager of the model may not '
@@ -83,8 +83,13 @@ def get_translation_aware_custom_manager(model):
             try:
                 qs_class = model._default_manager.translation_aware_queryset_class
             except AttributeError:
-                queryset_class = getattr(model._default_manager, 'queryset_class',
-                                         model._default_manager.get_queryset().__class__)
+                try:
+                    queryset_class = model._default_manager.queryset_class
+                except AttributeError:
+                    try: # fallback to old name for Django < 1.6
+                        queryset_class = model._default_manager.get_queryset().__class__
+                    except AttributeError:
+                        queryset_class = model._default_manager.get_query_set().__class__
                 qs_class = TranslationAwareQueryset._build_from_unaware(queryset_class)
                 model._default_manager.translation_aware_queryset_class = qs_class
             manager_class.queryset_class = qs_class

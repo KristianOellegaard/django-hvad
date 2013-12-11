@@ -69,6 +69,16 @@ class CustomManagersRelationTests(NaniTestCase, TwoNormalOneStandardMixin):
     def test_standard_queryset(self):
         """ On models without a custom manager, we should have regular aware stuff"""
         en = Normal.objects.language('en').get(pk=1)
+
+        # First test regular translation aware manager as a control test
+        from hvad.utils import get_translation_aware_manager
+        manager = get_translation_aware_manager(Standard)
+        qs = manager.all().filter(normal__translated_field=en.translated_field)
+        self.assertEqual(len(qs), 1)
+        obj = qs[0]
+        self.assertEqual(obj.normal.shared_field, en.shared_field)
+        self.assertEqual(obj.normal.translated_field, en.translated_field)
+
         from hvad.utils import get_translation_aware_custom_manager
         manager = get_translation_aware_custom_manager(Standard)
         qs = manager.all().filter(normal__translated_field=en.translated_field)
