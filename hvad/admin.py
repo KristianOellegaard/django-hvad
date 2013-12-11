@@ -311,7 +311,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         obj = super(TranslatableAdmin, self).get_object(request, object_id)
         if obj:
             return obj
-        queryset = self.model.objects.untranslated()
+        queryset = self.model._default_manager.untranslated()
         model = self.model
         try:
             object_id = model._meta.pk.to_python(object_id)
