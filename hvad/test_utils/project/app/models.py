@@ -1,4 +1,5 @@
 from django.db import models
+from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
 
 
@@ -112,3 +113,17 @@ class Boolean(TranslatableModel):
     translations = TranslatedFields(
         translated_flag = models.BooleanField()
     )
+
+
+class AutoPopulated(TranslatableModel):
+    slug = models.SlugField(max_length=255, blank=True)
+    translations = TranslatedFields(
+        translated_name = models.CharField(max_length=255)
+    )
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.translated_name[:125])
+        super(AutoPopulated, self).save(*args, **kwargs)
+
+

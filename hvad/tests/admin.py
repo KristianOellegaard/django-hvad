@@ -13,7 +13,7 @@ from hvad.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin,
 from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.context_managers import SettingsOverride
-from hvad.test_utils.project.app.models import Normal, SimpleRelated, Other
+from hvad.test_utils.project.app.models import Normal, SimpleRelated, Other, AutoPopulated
 
 class BaseAdminTests(object):
     def _get_admin(self, model):
@@ -154,6 +154,30 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 obj = Normal.objects.language('en')[0]
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
+
+    def test_admin_auto_populated(self):
+        """
+        This only works if we create the translation attribute before saving
+        the instance. Otherwise the overridden save() method can't access the
+        translated field during the initial save(), and it crashes.
+        """
+
+        with LanguageOverride('en'):
+            with self.login_user_context(username='admin', password='admin'):
+                danish_string = u"rød grød med fløde"
+                url = reverse('admin:app_autopopulated_add')
+                data = {
+                    'translated_name': danish_string,
+                }
+                response = self.client.post(url, data)
+                if response.status_code != 302:
+                    self.assertEqual(response.status_code, 302,
+                        "Response was unexpectedly not a redirect: %s" %
+                        response.context['adminform'].form.errors)
+                self.assertEqual(AutoPopulated.objects.count(), 1)
+                obj = AutoPopulated.objects.language('en')[0]
+                self.assertEqual(obj.translated_name, danish_string)
+                self.assertEqual(obj.slug, "rd-grd-med-flde")
     
     def test_admin_change_form_title(self):
         with LanguageOverride('en'):

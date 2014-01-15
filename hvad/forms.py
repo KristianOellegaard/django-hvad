@@ -2,7 +2,7 @@ from django.core.exceptions import FieldError
 from django.forms.forms import get_declared_fields
 from django.forms.formsets import formset_factory
 from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 
-    fields_for_model, model_to_dict, save_instance, BaseInlineFormSet, BaseModelFormSet)
+    fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet)
 from django.forms.util import ErrorList
 from django.forms.widgets import media_property
 from django.utils.translation import get_language
@@ -156,9 +156,15 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, Model
         else:
             fail_message = 'changed'
             new = False
-        super(TranslatableModelForm, self).save(True)
+
+        if self.errors:
+            opts = instance._meta
+            raise ValueError("The %s could not be %s because the data didn't"
+                             " validate." % (opts.object_name, fail_message))
+
         trans_model = self.instance._meta.translations_model
         language_code = self.cleaned_data.get('language_code', get_language())
+
         if not new:
             trans = get_cached_translation(self.instance)
             if not trans or trans.language_code != language_code:
@@ -169,21 +175,27 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, Model
         else:
             trans = trans_model()
 
+        trans = construct_instance(self, trans, self._meta.fields)
         trans.language_code = language_code
         trans.master = self.instance
-        trans = save_instance(self, trans, self._meta.fields, fail_message,
-                              commit, construct=True)
-        return combine(trans, self.Meta.model)
+        self.instance = combine(trans, self.Meta.model)
+
+        super(TranslatableModelForm, self).save(commit=commit)
+        return self.instance
         
     def _post_clean(self):
         if self.instance.pk:
             try:
-                trans = trans = get_translation(self.instance, self.instance.language_code)
+                # Don't use self.instance.language_code here! That will fail if
+                # the instance is not translated into the current language. If
+                # it succeeded, then the instance would already be translated,
+                # and there'd be no point combining it with the same
+                # translation again.
+                trans = get_translation(self.instance, self.language)
                 trans.master = self.instance
                 self.instance = combine(trans, self.Meta.model)
             except self.instance._meta.translations_model.DoesNotExist:
-                language_code = self.cleaned_data.get('language_code', get_language())
-                self.instance = self.instance.translate(language_code)
+                self.instance = self.instance.translate(self.language)
         return super(TranslatableModelForm, self)._post_clean()
 
 

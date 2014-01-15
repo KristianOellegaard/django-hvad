@@ -1,5 +1,5 @@
 from django.contrib import admin
-from hvad.test_utils.project.app.models import Normal, SimpleRelated, LimitedChoice
+from hvad.test_utils.project.app.models import Normal, SimpleRelated, LimitedChoice, AutoPopulated
 from hvad.admin import TranslatableAdmin, TranslatableTabularInline
 
 class SimpleRelatedInline(TranslatableTabularInline):
@@ -11,4 +11,5 @@ class NormalAdmin(TranslatableAdmin):
 admin.site.register(Normal, NormalAdmin)
 admin.site.register(SimpleRelated, TranslatableAdmin)
 admin.site.register(LimitedChoice)
+admin.site.register(AutoPopulated, TranslatableAdmin)
 
