@@ -103,9 +103,7 @@ class TranslatableModelAdminMixin(object):
         language = self._language(request)
         for key, name in settings.LANGUAGES:
             get.update({'language': key})
-            url = '%s://%s%s?%s' % (request.is_secure() and 'https' or 'http',
-                                    request.get_host(), request.path,
-                                    urlencode(get))
+            url = '%s?%s' % (request.path, urlencode(get))
             if language == key:
                 status = 'current'
             elif key in available_languages:
