@@ -174,7 +174,7 @@ TranslationQueryset
         the initial class, the class from :attr:`override_classes` and
         :class:`TranslationQueryset`. Otherwise returns the class given.
     
-    .. method:: _get_shared_query_set(self)
+    .. method:: _get_shared_queryset(self)
     
         Returns a clone of this queryset but for the shared model. Does so by
         using :attr:`_real_manager` and filtering over this queryset. Returns a
@@ -257,7 +257,7 @@ TranslationQueryset
 
     .. method:: delete(self)
     
-        Deletes the :term:`Shared Model` using :meth:`_get_shared_query_set`.
+        Deletes the :term:`Shared Model` using :meth:`_get_shared_queryset`.
     
     .. method:: delete_translations(self)
     
@@ -271,7 +271,7 @@ TranslationQueryset
         two dictionaries holding only the shared or translated fields
         respectively. If translated fields are given, calls the superclass with
         the translated fields. If shared fields are given, uses
-        :meth:`_get_shared_query_set` to update the shared fields.
+        :meth:`_get_shared_queryset` to update the shared fields.
         
         If both shared and translated fields are updated, two queries are
         executed, if only one of the two are given, one query is executed.
@@ -356,14 +356,14 @@ TranslationManager
 
     .. method:: language(self, language_code=None)
     
-        Calls :meth:`get_query_set` to get a queryset and calls
+        Calls :meth:`get_queryset` to get a queryset and calls
         :meth:`TranslationQueryset.language` on that queryset.
     
     .. method:: untranslated(self)
     
         Returns an instance of :class:`FallbackQueryset` for this manager.
         
-    .. method:: get_query_set(self)
+    .. method:: get_queryset(self)
     
         Returns an instance of :class:`TranslationQueryset` for this manager.
         The queryset returned will have the *master* relation to the
@@ -433,9 +433,9 @@ TranslationFallbackManager
     .. method:: use_fallbacks(self, *fallbacks)
     
         Proxies to :meth:`FallbackQueryset.use_fallbacks` by calling
-        :meth:`get_query_set` first.
+        :meth:`get_queryset` first.
 
-    .. method:: get_query_set(self)
+    .. method:: get_queryset(self)
     
         Returns an instance of :class:`FallbackQueryset` for this manager.
 
@@ -599,6 +599,6 @@ TranslationAwareManager
 
 .. class:: TranslationAwareManager
 
-    .. method:: get_query_set(self)
+    .. method:: get_queryset(self)
 
         Returns an instance of :class:`TranslationAwareQueryset`.
