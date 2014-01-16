@@ -224,7 +224,7 @@ class TranslationQueryset(QuerySet):
                 return type(value.__name__, (value, klass, TranslationQueryset,), {})
         return klass
     
-    def _get_shared_query_set(self):
+    def _get_shared_queryset(self):
         qs = super(TranslationQueryset, self)._clone()
         qs.__class__ = QuerySet
         # un-select-related the 'master' relation
@@ -383,7 +383,7 @@ class TranslationQueryset(QuerySet):
         raise NotImplementedError()
 
     def delete(self):
-        qs = self._get_shared_query_set()
+        qs = self._get_shared_queryset()
         qs.delete()
     delete.alters_data = True
     
@@ -398,7 +398,7 @@ class TranslationQueryset(QuerySet):
         if translated:
             count += super(TranslationQueryset, self).update(**translated)
         if shared:
-            shared_qs = self._get_shared_query_set()
+            shared_qs = self._get_shared_queryset()
             count += shared_qs.update(**shared)
         return count
     update.alters_data = True
@@ -619,7 +619,7 @@ class TranslationManager(models.Manager):
         return self.using_translations().language(language_code)
 
     def untranslated(self):
-        return self._fallback_manager.get_query_set()
+        return self._fallback_manager.get_queryset()
 
     #===========================================================================
     # Internals
@@ -632,7 +632,7 @@ class TranslationManager(models.Manager):
         """
         return self.model._meta.translations_model
 
-    #def get_query_set(self):
+    #def get_queryset(self):
     #    """
     #    Make sure that querysets inherit the methods on this manager (chaining)
     #    """
@@ -764,11 +764,12 @@ class TranslationFallbackManager(models.Manager):
     using `use_fallbacks()` to enable per object language fallback.
     """
     def use_fallbacks(self, *fallbacks):
-        return self.get_query_set().use_fallbacks(*fallbacks)
+        return self.get_queryset().use_fallbacks(*fallbacks)
     
-    def get_query_set(self):
+    def get_queryset(self):
         qs = FallbackQueryset(self.model, using=self.db)
         return qs
+    get_query_set = get_queryset        # old name for Django < 1.6
 
 
 #===============================================================================
@@ -922,11 +923,12 @@ class TranslationAwareQueryset(QuerySet):
 
 class TranslationAwareManager(models.Manager):
     def language(self, language_code=None):
-        return self.get_query_set().language(language_code)
+        return self.get_queryset().language(language_code)
         
-    def get_query_set(self):
+    def get_queryset(self):
         qs = TranslationAwareQueryset(self.model, using=self.db)
         return qs
+    get_query_set = get_queryset        # old name for Django < 1.6
 
 
 #===============================================================================
