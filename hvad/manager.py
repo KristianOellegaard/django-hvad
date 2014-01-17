@@ -182,7 +182,7 @@ class TranslationQueryset(QuerySet):
         for child in q.children:
             if isinstance(child, Q):
                 newq = self._recurse_q(child)
-                newchildren.append(self._recurse_q(newq))
+                newchildren.append(newq)
             else:
                 key, value = child
                 newchildren.append((self.field_translator.get(key), value))
@@ -814,15 +814,15 @@ class TranslationAwareQueryset(QuerySet):
         language_joins = []
         for child in q.children:
             if isinstance(child, Q):
-                newq = self._recurse_q(child)
-                newchildren.append(self._recurse_q(newq))
+                newq, langjoins = self._recurse_q(child)
+                newchildren.append(newq)
             else:
                 key, value = child
                 newkey, langjoins =translate(key, self.model)
                 newchildren.append((newkey, value))
-                for langjoin in langjoins:
-                    if langjoin not in language_joins:
-                        language_joins.append(langjoin)
+            for langjoin in langjoins:
+                if langjoin not in language_joins:
+                    language_joins.append(langjoin)
         q.children = newchildren
         return q, language_joins
     
