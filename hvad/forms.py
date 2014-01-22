@@ -3,7 +3,7 @@ from django.forms.forms import get_declared_fields
 from django.forms.formsets import formset_factory
 from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 
     fields_for_model, model_to_dict, save_instance, BaseInlineFormSet, BaseModelFormSet)
-from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.forms.widgets import media_property
 from django.utils.translation import get_language
 from hvad.compat.metaclasses import with_metaclass

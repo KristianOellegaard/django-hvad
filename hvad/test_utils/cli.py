@@ -43,7 +43,7 @@ def configure(**extra):
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
             'django.middleware.common.CommonMiddleware',
-            'django.middleware.doc.XViewMiddleware',
+            'django.contrib.admindocs.middleware.XViewMiddleware',
             'django.middleware.csrf.CsrfViewMiddleware',
         ],
         INSTALLED_APPS = [
