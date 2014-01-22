@@ -316,7 +316,7 @@ class AdminEditTests(NaniTestCase, BaseAdminTests, TwoTranslatedNormalMixin,
         request = self.request_factory.get(url)
         normaladmin = self._get_admin(Normal)
         with LanguageOverride('en'):
-            queryset = normaladmin.queryset(request)
+            queryset = normaladmin.get_queryset(request)
             self.assertEqual(queryset.count(), 2)
 
 
@@ -491,6 +491,7 @@ class TranslatableInlineAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin)
                 class ExampleInlineForm(InlineModelForm):
                     class Meta:
                         model = SimpleRelated
+                        exclude = []
                 form = ExampleInlineForm(instance=instance)
 
                 self.assertTrue(form.initial["id"] == instance.id)

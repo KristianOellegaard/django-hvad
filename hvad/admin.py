@@ -1,13 +1,13 @@
 from distutils.version import LooseVersion
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
-from django.contrib.admin.util import (flatten_fieldsets, unquote, 
+from django.contrib.admin.utils import (flatten_fieldsets, unquote,
     get_deleted_objects)
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
 from django.forms.models import model_to_dict
-from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import TemplateDoesNotExist
@@ -139,7 +139,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 return self.admin_site.admin_view(view)(*args, **kwargs)
             return update_wrapper(wrapper, view)
 
-        info = self.model._meta.app_label, self.model._meta.module_name
+        info = self.model._meta.app_label, self.model._meta.model_name
 
         urlpatterns = patterns('',
             url(r'^(.+)/delete-translation/(.+)/$',
@@ -153,11 +153,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        
-        if self.declared_fieldsets:
-            fields = flatten_fieldsets(self.declared_fieldsets)
+        if 'fields' in kwargs:
+            fields = kwargs.pop('fields')
         else:
-            fields = None
+            fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         if self.exclude is None:
             exclude = []
         else:
@@ -199,7 +198,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def response_change(self, request, obj):
         redirect = super(TranslatableAdmin, self).response_change(request, obj)
         uri = iri_to_uri(request.path)
-        app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
+        app_label, model_name = self.model._meta.app_label, self.model._meta.model_name
         if redirect['Location'] in (uri, "../add/", reverse('admin:%s_%s_add' % (app_label, model_name))):
             if self.query_language_key in request.GET:
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
@@ -207,7 +206,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         return redirect
     
     @csrf_protect_m
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete_translation(self, request, object_id, language_code):
         "The 'delete translation' admin view for this model."
         opts = self.model._meta
@@ -260,7 +259,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
             if not self.has_change_permission(request, None):
                 return HttpResponseRedirect(reverse('admin:index'))
-            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
+            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.model_name)))
 
         object_name = '%s Translation' % force_unicode(opts.verbose_name)
 
@@ -324,7 +323,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         setattr(obj, model._meta.translations_cache, new_translation)
         return obj
 
-    def queryset(self, request):
+    def get_queryset(self, request):
         language = self._language(request)
         languages = [language,]
         for lang in FALLBACK_LANGUAGES:
@@ -363,10 +362,10 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
     def get_formset(self, request, obj=None, **kwargs):
         """Returns a BaseInlineFormSet class for use in admin add/change views."""
-        if self.declared_fieldsets:
-            fields = flatten_fieldsets(self.declared_fieldsets)
+        if 'fields' in kwargs:
+            fields = kwargs.pop('fields')
         else:
-            fields = None
+            fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         if self.exclude is None:
             exclude = []
         else:
@@ -377,7 +376,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         # default
         exclude = exclude or None
         defaults = {
-            "form": self.get_form(request, obj),
+            "form": self.get_form(request, obj, fields=fields),
             #"formset": self.formset,
             "fk_name": self.fk_name,
             "fields": fields,
@@ -401,7 +400,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
                 return self.admin_site.admin_view(view)(*args, **kwargs)
             return update_wrapper(wrapper, view)
 
-        info = self.model._meta.app_label, self.model._meta.module_name
+        info = self.model._meta.app_label, self.model._meta.model_name
 
         urlpatterns = patterns('',
             url(r'^(.+)/delete-translation/(.+)/$',
@@ -415,10 +414,10 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        if self.declared_fieldsets:
-            fields = flatten_fieldsets(self.declared_fieldsets)
+        if 'fields' in kwargs:
+            fields = kwargs.pop('fields')
         else:
-            fields = None
+            fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         if self.exclude is None:
             exclude = []
         else:
@@ -452,7 +451,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
     """
 # Should be added
     @csrf_protect_m
-    @transaction.commit_on_success
+    @transaction.atomic
     def delete_translation(self, request, object_id, language_code):
         "The 'delete translation' admin view for this model."
         opts = self.model._meta
@@ -505,7 +504,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
             if not self.has_change_permission(request, None):
                 return HttpResponseRedirect(reverse('admin:index'))
-            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
+            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.model_name)))
 
         object_name = '%s Translation' % force_unicode(opts.verbose_name)
 
@@ -549,7 +548,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
     def delete_model_translation(self, request, obj):
         obj.delete()
     """
-    def queryset(self, request):
+    def get_queryset(self, request):
         language = self._language(request)
         qs = self.model._default_manager.all()#.language(language)
         # TODO: this should be handled by some parameter to the ChangeList.

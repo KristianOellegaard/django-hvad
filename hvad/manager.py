@@ -97,7 +97,7 @@ class TranslationQueryset(QuerySet):
         DateQuerySet: DatesMixin,
     }
     
-    def __init__(self, model=None, query=None, using=None, real=None):
+    def __init__(self, model=None, query=None, using=None, hints=None, real=None):
         self._local_field_names = None
         self._field_translator = None
         self._real_manager = real
@@ -480,7 +480,7 @@ class TranslationQueryset(QuerySet):
                 j = j[1]
             else:
                 kwargs = {}
-            obj.query.join(j, outer_if_first=True, **kwargs)
+            obj.query.join(j, nullable=True, **kwargs)
         for f in related_model_extra_filters:
             f1 = {f[0]: f[1]}
             f2 = {f[0]: None}  # Allow select_related() to fetch objects with a relation set to NULL
@@ -619,7 +619,7 @@ class TranslationManager(models.Manager):
         return self.using_translations().language(language_code)
 
     def untranslated(self):
-        return self._fallback_manager.get_query_set()
+        return self._fallback_manager.get_queryset()
 
     #===========================================================================
     # Internals
@@ -632,7 +632,7 @@ class TranslationManager(models.Manager):
         """
         return self.model._meta.translations_model
 
-    #def get_query_set(self):
+    #def get_queryset(self):
     #    """
     #    Make sure that querysets inherit the methods on this manager (chaining)
     #    """
@@ -764,9 +764,9 @@ class TranslationFallbackManager(models.Manager):
     using `use_fallbacks()` to enable per object language fallback.
     """
     def use_fallbacks(self, *fallbacks):
-        return self.get_query_set().use_fallbacks(*fallbacks)
+        return self.get_queryset().use_fallbacks(*fallbacks)
     
-    def get_query_set(self):
+    def get_queryset(self):
         qs = FallbackQueryset(self.model, using=self.db)
         return qs
 
@@ -922,9 +922,9 @@ class TranslationAwareQueryset(QuerySet):
 
 class TranslationAwareManager(models.Manager):
     def language(self, language_code=None):
-        return self.get_query_set().language(language_code)
+        return self.get_queryset().language(language_code)
         
-    def get_query_set(self):
+    def get_queryset(self):
         qs = TranslationAwareQueryset(self.model, using=self.db)
         return qs
 
