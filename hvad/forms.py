@@ -1,17 +1,20 @@
 import django
-from django.core.exceptions import FieldError
+from django.conf import settings
+from django.core.exceptions import FieldError, ValidationError
+from django.forms.fields import CharField
 from django.forms.forms import get_declared_fields
 from django.forms.formsets import formset_factory
 from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 
-fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet)
+    fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet,
+    inlineformset_factory)
 if django.VERSION >= (1, 7):
     from django.forms.utils import ErrorList
 else:
     from django.forms.util import ErrorList
-from django.forms.widgets import media_property
-from django.utils.translation import get_language
+from django.forms.widgets import Select, media_property
+from django.utils.translation import get_language, ugettext as _
 from hvad.compat.metaclasses import with_metaclass
-from hvad.models import TranslatableModel
+from hvad.models import TranslatableModel, BaseTranslationModel
 from hvad.utils import get_cached_translation, get_translation, combine
 
 
@@ -162,7 +165,7 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, Model
             new = False
 
         if self.errors:
-            opts = instance._meta
+            opts = self.instance._meta
             raise ValueError("The %s could not be %s because the data didn't"
                              " validate." % (opts.object_name, fail_message))
 
@@ -291,3 +294,108 @@ def translatable_inlineformset_factory(language, parent_model, model, form=Trans
     FormSet = translatable_modelformset_factory(language, model, **kwargs)
     FormSet.fk = fk
     return FormSet
+
+
+class BaseTranslationFormSet(BaseInlineFormSet):
+    """A kind of inline formset for working with an instance's translations.
+    It keeps track of the real object and combine()s it to the translations
+    for validation and saving purposes.
+    It can delete translations, but will refuse to delete the last one.
+    """
+    def __init__(self, *args, **kwargs):
+        super(BaseTranslationFormSet, self).__init__(*args, **kwargs)
+        self.queryset = self.order_translations(self.queryset)
+
+    def order_translations(self, qs):
+        return qs.order_by('language_code')
+
+    def clean(self):
+        super(BaseTranslationFormSet, self).clean()
+
+        # Trigger combined instance validation
+        master = self.instance
+        stashed = get_cached_translation(master)
+
+        for form in self.forms:
+            form.instance.master = master
+            combined = combine(form.instance, master.__class__)
+            try:
+                if django.VERSION >= (1, 6):
+                    combined.full_clean(exclude=form._get_validation_exclusions(),
+                                        validate_unique=form._validate_unique)
+                else:
+                    combined.full_clean(exclude=form._get_validation_exclusions())
+            except ValidationError as e:
+                form._update_errors(e)
+
+        if stashed is None:
+            delattr(master, master._meta.translations_cache)
+        else:
+            setattr(master, master._meta.translations_cache, stashed)
+
+        # Validate that at least one translation exists
+        forms_to_delete = self.deleted_forms
+        valid = [((form.instance and form.instance.pk is not None) or
+                  (form.is_valid() and form.has_changed()))
+                 and not form in forms_to_delete for form in self.forms]
+        if valid.count(True) < 1:
+            raise ValidationError(_('At least one translation must be provided'),
+                                  code='notranslation')
+
+    def _save_translation(self, form, commit=True):
+        obj = form.save(commit=False)
+        assert isinstance(obj, BaseTranslationModel)
+
+        if commit:
+            # We need to trigger custom save actions on the combined model
+            master = self.instance
+            stashed = get_cached_translation(master)
+            obj.master = master
+            combined = combine(obj, master.__class__)
+            combined.save()
+            if hasattr(combined, 'save_m2m'):   # cannot happen, but feature
+                combined.save_m2m()             # could be added, be ready
+            if stashed is None:
+                delattr(master, master._meta.translations_cache)
+            else:
+                setattr(master, master._meta.translations_cache, stashed)
+        return obj
+
+    def save_new(self, form, commit=True):
+        return self._save_translation(form, commit)
+
+    def save_existing(self, form, instance, commit=True):
+        return self._save_translation(form, commit)
+
+    def add_fields(self, form, index):
+        super(BaseTranslationFormSet, self).add_fields(form, index)
+        # Add the language code automagically
+        if not 'language_code' in form.fields:
+            form.fields['language_code'] = CharField(
+                required=True, initial=form.instance.language_code,
+                widget=Select(choices=(('', '--'),)+settings.LANGUAGES)
+            )
+            # Add language_code to self._meta.fields so it is included in validation stage
+            try:
+                form._meta.fields.append('language_code')
+            except AttributeError:
+                form._meta.fields += ('language_code',)
+
+        # Remove the master foreignkey, we have this from self.instance already
+        if 'master' in form.fields:
+            del form.fields['master']
+
+def translationformset_factory(model, **kwargs):
+    """ Works as a regular inlineformset_factory except for:
+    - it is set up to work on the given model's translations table
+    - it uses a BaseTranslationFormSet to handle combine() and language_code
+
+    Basic use: MyModelTranslationsFormSet = translationformset_factory(MyModel)
+    """
+    defaults = {
+        'formset': BaseTranslationFormSet,
+        'fk_name': 'master',
+    }
+    defaults.update(kwargs)
+    return inlineformset_factory(model, model._meta.translations_model, **defaults)
+
