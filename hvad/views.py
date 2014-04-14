@@ -34,7 +34,7 @@ class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
                 return self.model._default_manager.language(language)
 
     def _get_object(self, queryset=None):
-        if not queryset:
+        if queryset is None:
             queryset = self.get_queryset()
         model = self.model
         try:
