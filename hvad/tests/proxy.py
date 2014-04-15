@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from hvad.test_utils.testcase import NaniTestCase
-from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy
+from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy, RelatedProxy
 
 
 class ProxyTests(NaniTestCase):
@@ -9,7 +9,7 @@ class ProxyTests(NaniTestCase):
         self.assertEqual(NormalProxy.objects.language('en').count(), 0)
 
         # creation
-        Normal.objects.language('en').create(shared_field='SHARED', translated_field='English')
+        normal = Normal.objects.language('en').create(shared_field='SHARED', translated_field='English')
         self.assertEqual(NormalProxy.objects.language('en').count(), 1)
 
         NormalProxy.objects.language('en').create(shared_field='SHARED2', translated_field='English2')
@@ -22,6 +22,14 @@ class ProxyTests(NaniTestCase):
         self.assertEqual(NormalProxy.objects.filter(shared_field__startswith='SHARED').count(), 2)
         self.assertEqual(NormalProxy.objects.language('en').filter(translated_field__startswith='English').count(), 2)
         self.assertEqual(NormalProxy.objects.language('en').filter(translated_field='English').count(), 1)
+
+        # select_related
+        RelatedProxy.objects.language('en').create(normal=normal)
+            # does it work?
+        self.assertEqual(RelatedProxy.objects.language('en').select_related('normal').count(), 1)
+            # does it actually cache stuff?
+        normal_cache = RelatedProxy._meta.get_field('normal').get_cache_name()
+        self.assertTrue(isinstance(getattr(RelatedProxy.objects.language('en').select_related('normal').get(), normal_cache), Normal))
 
     def test_proxy_proxy(self):
         self.assertEqual(NormalProxyProxy.objects.language('en').count(), 0)

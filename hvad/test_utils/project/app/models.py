@@ -38,6 +38,9 @@ class Related(TranslatableModel):
         translated_to_translated = models.ForeignKey(Normal, related_name='rel4', null=True),
     )
 
+class RelatedProxy(Related):
+    class Meta:
+        proxy = True
 
 class SimpleRelated(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='simplerel')
