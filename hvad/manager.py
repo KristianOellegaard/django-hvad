@@ -442,8 +442,14 @@ class TranslationQueryset(QuerySet):
                 query_key = 'master__%s' % query_key
             except models.FieldDoesNotExist:
                 field, model, direct, _ = self.model._meta.get_field_by_name(bits[0])
-            if not model:
-                model = field.rel.to if direct else field.model
+
+            if direct:  # field is on model
+                if field.rel:    # field is a foreign key, follow it
+                    model = field.rel.to
+                else:            # field is a regular field
+                    raise AssertionError('Cannot select_related: %s is a regular field' % query_key)
+            else:       # field is a m2m or reverse fk, follow it
+                model = field.model
 
             if hasattr(model._meta, 'translations_accessor'):  # if issubclass(model, TranslatableModel):
                 # This is a relation to a translated model,
