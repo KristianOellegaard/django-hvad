@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from hvad.test_utils.testcase import NaniTestCase
-from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy, RelatedProxy
+from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy, RelatedProxy, SimpleRelatedProxy
 
 
 class ProxyTests(NaniTestCase):
@@ -37,6 +37,22 @@ class ProxyTests(NaniTestCase):
         # creation
         NormalProxyProxy.objects.language('en').create(shared_field='SHARED', translated_field='English')
         self.assertEqual(NormalProxyProxy.objects.language('en').count(), 1)
+
+    def test_proxy_simple_relation(self):
+        self.assertEqual(NormalProxy.objects.count(), 0)
+        self.assertEqual(NormalProxy.objects.language('en').count(), 0)
+
+        NormalProxy.objects.language('en').create(shared_field='SHARED', translated_field='English')
+        normal = NormalProxy.objects.get(shared_field='SHARED')
+        SimpleRelatedProxy.objects.language('en').create(normal=normal, translated_field='RelatedEnglish')
+
+        from hvad.utils import get_translation_aware_manager
+        srp_manager = get_translation_aware_manager(SimpleRelatedProxy)
+        qs = srp_manager.language('en').filter(normal__translated_field='English')
+        self.assertEqual(qs.count(), 1)
+        np_manager = get_translation_aware_manager(NormalProxy)
+        qs = np_manager.language('en').filter(simplerel__translated_field='RelatedEnglish')
+        self.assertEqual(qs.count(), 1)
 
     def test_translation_queryset(self):
         NormalProxy.objects.language('en').create(shared_field='SHARED2', translated_field='English2')
