@@ -43,7 +43,7 @@ class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
             obj = None
         if obj:
             return obj
-        queryset = self.model.objects.untranslated()
+        queryset = self.model._default_manager.untranslated()
         try:
             obj = queryset.get(**self.filter_kwargs())
         except model.DoesNotExist:
