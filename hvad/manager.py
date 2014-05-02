@@ -16,7 +16,6 @@ import logging
 import sys
 
 logger = logging.getLogger(__name__)
-DJANGO_VERSION = django.get_version()
 
 # maybe there should be an extra settings for this
 FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
@@ -224,7 +223,7 @@ class TranslationQueryset(QuerySet):
                 return type(value.__name__, (value, klass, TranslationQueryset,), {})
         return klass
     
-    def _get_shared_query_set(self):
+    def _get_shared_queryset(self):
         qs = super(TranslationQueryset, self)._clone()
         qs.__class__ = QuerySet
         # un-select-related the 'master' relation
@@ -383,7 +382,7 @@ class TranslationQueryset(QuerySet):
         raise NotImplementedError()
 
     def delete(self):
-        qs = self._get_shared_query_set()
+        qs = self._get_shared_queryset()
         qs.delete()
     delete.alters_data = True
     
@@ -398,7 +397,7 @@ class TranslationQueryset(QuerySet):
         if translated:
             count += super(TranslationQueryset, self).update(**translated)
         if shared:
-            shared_qs = self._get_shared_query_set()
+            shared_qs = self._get_shared_queryset()
             count += shared_qs.update(**shared)
         return count
     update.alters_data = True
@@ -413,7 +412,7 @@ class TranslationQueryset(QuerySet):
 
     def dates(self, field_name, kind=None, order='ASC'):
         field_name = self.field_translator.get(field_name)
-        if int(django.get_version().split('.')[1][0]) <= 2:
+        if django.VERSION <= (1, 2):
             from hvad.compat.date import DateQuerySet
             return self._clone(klass=DateQuerySet, setup=True,
                 _field_name=field_name, _kind=kind, _order=order)
@@ -461,7 +460,7 @@ class TranslationQueryset(QuerySet):
 
                 # We need to force this to be a LEFT OUTER join, so we explicitly add the join.
                 # Django 1.6 changes the footprint of the Query.join method. See https://code.djangoproject.com/ticket/19385
-                if DJANGO_VERSION < '1.6':
+                if django.VERSION < (1, 6):
                     join_data = (field.model._meta.db_table, model._meta.db_table, bits[0] + "_id", 'id')
                 else:
                     join_data = (field, (field.model._meta.db_table, model._meta.db_table, ((bits[0] + "_id", 'id'),)))
@@ -481,7 +480,7 @@ class TranslationQueryset(QuerySet):
         obj = self._clone()
         obj.query.get_compiler(obj.db).fill_related_selections()  # seems to be necessary; not sure why
         for j in related_model_explicit_joins:
-            if DJANGO_VERSION >= '1.6':
+            if django.VERSION >= (1, 6):
                 kwargs = {'join_field': j[0]}
                 j = j[1]
             else:
@@ -625,7 +624,10 @@ class TranslationManager(models.Manager):
         return self.using_translations().language(language_code)
 
     def untranslated(self):
-        return self._fallback_manager.get_query_set()
+        if django.VERSION >= (1, 6):
+            return self._fallback_manager.get_queryset()
+        else:
+            return self._fallback_manager.get_query_set()
 
     #===========================================================================
     # Internals
@@ -638,7 +640,7 @@ class TranslationManager(models.Manager):
         """
         return self.model._meta.translations_model
 
-    #def get_query_set(self):
+    #def get_queryset(self):
     #    """
     #    Make sure that querysets inherit the methods on this manager (chaining)
     #    """
@@ -770,11 +772,15 @@ class TranslationFallbackManager(models.Manager):
     using `use_fallbacks()` to enable per object language fallback.
     """
     def use_fallbacks(self, *fallbacks):
-        return self.get_query_set().use_fallbacks(*fallbacks)
-    
-    def get_query_set(self):
+        if django.VERSION >= (1, 6):
+            return self.get_queryset().use_fallbacks(*fallbacks)
+        else:
+            return self.get_query_set().use_fallbacks(*fallbacks)
+
+    def get_queryset(self):
         qs = FallbackQueryset(self.model, using=self.db)
         return qs
+    get_query_set = get_queryset        # old name for Django < 1.6
 
 
 #===============================================================================
@@ -928,11 +934,15 @@ class TranslationAwareQueryset(QuerySet):
 
 class TranslationAwareManager(models.Manager):
     def language(self, language_code=None):
-        return self.get_query_set().language(language_code)
-        
-    def get_query_set(self):
+        if django.VERSION >= (1, 6):
+            return self.get_queryset().language(language_code)
+        else:
+            return self.get_query_set().language(language_code)
+
+    def get_queryset(self):
         qs = TranslationAwareQueryset(self.model, using=self.db)
         return qs
+    get_query_set = get_queryset        # old name for Django < 1.6
 
 
 #===============================================================================
