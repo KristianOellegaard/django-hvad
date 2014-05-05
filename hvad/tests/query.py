@@ -3,7 +3,7 @@ from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.testcase import NaniTestCase
-from hvad.test_utils.project.app.models import Normal, AggregateModel
+from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 
@@ -291,20 +291,104 @@ class ExcludeTests(NaniTestCase):
         self.assertEqual(qs.count(), 0)
 
 
-class ComplexFilterTests(NaniTestCase):
-    def test_defer(self):
-        SHARED = 'shared'
-        TRANS_EN = 'English'
-        TRANS_JA = u'日本語'
-        en = Normal.objects.language('en').create(
-            shared_field=SHARED,
-            translated_field=TRANS_EN,
-        )
-        ja = en
-        ja.translate('ja')
-        ja.translated_field = TRANS_JA
-        ja.save()
+class ComplexFilterTests(NaniTestCase, TwoTranslatedNormalMixin):
+    def test_qobject_filter(self):
+        shared_contains_one = Q(shared_field__contains='1')
+        shared_contains_two = Q(shared_field__contains='2')
 
-        qs = Normal.objects.language('en').complex_filter({})
+        qs = Normal.objects.language('en').filter(shared_contains_two)
         self.assertEqual(qs.count(), 1)
-        self.assertRaises(NotImplementedError, Normal.objects.language('en').complex_filter, Q(shared_field=SHARED))
+        obj = qs[0]
+        self.assertEqual(obj.shared_field, DOUBLE_NORMAL[2]['shared_field'])
+        self.assertEqual(obj.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
+
+        qs = (Normal.objects.language('ja').filter(Q(shared_contains_one | shared_contains_two))
+                                           .order_by('shared_field'))
+        self.assertEqual(qs.count(), 2)
+        obj = qs[0]
+        self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
+        self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
+        obj = qs[1]
+        self.assertEqual(obj.shared_field, DOUBLE_NORMAL[2]['shared_field'])
+        self.assertEqual(obj.translated_field, DOUBLE_NORMAL[2]['translated_field_ja'])
+
+    def test_aware_qobject_filter(self):
+        STANDARD={1: u'normal1', 2: u'normal2'}
+        Standard.objects.create(
+            normal_field=STANDARD[1],
+            normal=Normal.objects.untranslated().get(
+                shared_field=DOUBLE_NORMAL[1]['shared_field']
+            )
+        )
+        Standard.objects.create(
+            normal_field=STANDARD[2],
+            normal=Normal.objects.untranslated().get(
+                shared_field=DOUBLE_NORMAL[2]['shared_field']
+            )
+        )
+
+        from hvad.utils import get_translation_aware_manager
+        manager = get_translation_aware_manager(Standard)
+
+        normal_one = Q(normal_field=STANDARD[1])
+        normal_two = Q(normal_field=STANDARD[2])
+        shared_one = Q(normal__shared_field=DOUBLE_NORMAL[1]['shared_field'])
+        shared_two = Q(normal__shared_field=DOUBLE_NORMAL[2]['shared_field'])
+        translated_one_en = Q(normal__translated_field=DOUBLE_NORMAL[1]['translated_field_en'])
+        translated_two_en = Q(normal__translated_field=DOUBLE_NORMAL[2]['translated_field_en'])
+
+        # control group test
+        with LanguageOverride('en'):
+            qs = manager.filter(shared_one)
+            self.assertEqual(qs.count(), 1)
+            obj = qs[0]
+            self.assertEqual(obj.normal_field, STANDARD[1])
+
+            # basic Q object test
+            qs = manager.filter(translated_one_en)
+            self.assertEqual(qs.count(), 1)
+            obj = qs[0]
+            self.assertEqual(obj.normal_field, STANDARD[1])
+
+            # test various intersection combinations
+            # use a spurious Q to test the logic of recursion along the way
+            qs = manager.filter(Q(normal_one & shared_one & translated_one_en))
+            self.assertEqual(qs.count(), 1)
+            obj = qs[0]
+            self.assertEqual(obj.normal_field, STANDARD[1])
+
+            qs = manager.filter(Q(normal_one & translated_two_en))
+            self.assertEqual(qs.count(), 0)
+            qs = manager.filter(Q(shared_one & translated_two_en))
+            self.assertEqual(qs.count(), 0)
+            qs = manager.filter(Q(translated_one_en & translated_two_en))
+            self.assertEqual(qs.count(), 0)
+
+            # test various union combinations
+            qs = manager.filter(Q(normal_one | translated_one_en))
+            self.assertEqual(qs.count(), 2)
+            qs = manager.filter(Q(shared_one | translated_one_en))
+            self.assertEqual(qs.count(), 2)
+
+            qs = manager.filter(Q(normal_one | translated_two_en))
+            self.assertEqual(qs.count(), 3)
+            qs = manager.filter(Q(shared_one | translated_two_en))
+            self.assertEqual(qs.count(), 3)
+
+            qs = manager.filter(Q(translated_one_en | translated_two_en))
+            self.assertEqual(qs.count(), 2)
+
+            # misc more complex combinations
+            qs = manager.filter(Q(normal_one & (translated_one_en | translated_two_en)))
+            self.assertEqual(qs.count(), 1)
+            qs = manager.filter(Q(normal_two & (translated_one_en | translated_two_en)))
+            self.assertEqual(qs.count(), 1)
+            qs = manager.filter(shared_one & ~translated_one_en)
+            self.assertEqual(qs.count(), 0)
+            qs = manager.filter(shared_one & ~translated_two_en)
+            self.assertEqual(qs.count(), 1)
+
+    def test_defer(self):
+        qs = Normal.objects.language('en').complex_filter({})
+        self.assertEqual(qs.count(), 2)
+        self.assertRaises(NotImplementedError, Normal.objects.language('en').complex_filter, Q(shared_field=DOUBLE_NORMAL[1]['shared_field']))

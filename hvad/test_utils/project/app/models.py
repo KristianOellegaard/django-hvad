@@ -39,6 +39,9 @@ class Related(TranslatableModel):
         translated_to_translated = models.ForeignKey(Normal, related_name='rel4', null=True),
     )
 
+class RelatedProxy(Related):
+    class Meta:
+        proxy = True
 
 class SimpleRelated(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='simplerel')
@@ -46,6 +49,11 @@ class SimpleRelated(TranslatableModel):
     translated_fields = TranslatedFields(
         translated_field = models.CharField(max_length=255),
     )
+
+
+class SimpleRelatedProxy(SimpleRelated):
+    class Meta:
+        proxy = True
 
 
 class Many(models.Model):

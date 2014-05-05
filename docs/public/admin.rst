@@ -17,7 +17,8 @@ all_translations
 .. method:: all_translations(obj)
 
     A method that can be used in :attr:`list_display` and shows a list of
-    languages in which this object is available.
+    languages in which this object is available. Entries are linked to their
+    corresponding admin page.
 
 
 ***********************************************************

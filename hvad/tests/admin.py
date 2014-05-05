@@ -83,12 +83,14 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
             shared_field="shared",
         )
         with LanguageOverride('en'):
-            self.assertEqual(myadmin.all_translations(obj), "<strong>en</strong>")
-        
+            self.assertTrue(myadmin.all_translations(obj).find("<strong>") != -1)
+            # Entries should be linked to the corresponding translation page
+            self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
+
         with LanguageOverride('ja'):
-            self.assertEqual(myadmin.all_translations(obj), "en")
-            
-        # An unsaved object, shouldnt have any translations
+            self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
+
+        # An unsaved object, shouldn't have any translations
         
         obj = Normal()
         self.assertEqual(myadmin.all_translations(obj), "")
@@ -188,6 +190,24 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue('en' in response.content.decode('utf-8'))
+
+    def test_admin_change_form_language_tabs_urls(self):
+        with LanguageOverride('en'):
+            with self.login_user_context(username='admin', password='admin'):
+                obj = Normal.objects.language('en').create(
+                    shared_field="shared",
+                    translated_field='English',
+                )
+                get_url = reverse('admin:app_normal_change', args=(obj.pk,))
+                response = self.client.get(get_url)
+                self.assertEqual(response.status_code, 200)
+                tabs = response.context['language_tabs']
+
+                from hvad.compat.urls import urlencode
+                for actual_tab_url, name, key, status in tabs:
+                    expected_tab_url = '%s?%s' % (get_url,
+                        urlencode({'language': key}))
+                    self.assertEqual(expected_tab_url, actual_tab_url)
     
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'

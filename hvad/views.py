@@ -34,7 +34,7 @@ class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
                 return self.model._default_manager.language(language)
 
     def _get_object(self, queryset=None):
-        if not queryset:
+        if queryset is None:
             queryset = self.get_queryset()
         model = self.model
         try:
@@ -43,7 +43,7 @@ class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
             obj = None
         if obj:
             return obj
-        queryset = self.model.objects.untranslated()
+        queryset = self.model._default_manager.untranslated()
         try:
             obj = queryset.get(**self.filter_kwargs())
         except model.DoesNotExist:

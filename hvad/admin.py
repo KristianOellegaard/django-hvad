@@ -1,8 +1,10 @@
 from distutils.version import LooseVersion
+import functools
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
 from django.contrib.admin.util import (flatten_fieldsets, unquote, 
     get_deleted_objects)
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
@@ -81,11 +83,11 @@ class TranslatableModelAdminMixin(object):
             languages = []
             current_language = get_language()
             for language in obj.get_available_languages():
+                entry = '<a href="%s">%s</a>' % (self.get_url(obj, lang=language), language)
                 if language == current_language:
-                    languages.append(u'<strong>%s</strong>' % language)
-                else:
-                    languages.append(language)
-            return u' '.join(languages)
+                    entry = u'<strong>%s</strong>' % entry
+                languages.append(entry)
+            return u', '.join(languages)
         else:
             return ''
     all_translations.allow_tags = True
@@ -103,9 +105,7 @@ class TranslatableModelAdminMixin(object):
         language = self._language(request)
         for key, name in settings.LANGUAGES:
             get.update({'language': key})
-            url = '%s://%s%s?%s' % (request.is_secure() and 'https' or 'http',
-                                    request.get_host(), request.path,
-                                    urlencode(get))
+            url = '%s?%s' % (request.path, urlencode(get))
             if language == key:
                 status = 'current'
             elif key in available_languages:
@@ -126,6 +126,20 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     
     deletion_not_allowed_template = 'admin/hvad/deletion_not_allowed.html'
     
+    def __init__(self, *args, **kwargs):
+        super(TranslatableAdmin, self).__init__(*args, **kwargs)
+        self.reverse = functools.partial(reverse, current_app=self.admin_site.name)
+
+
+    def get_url(self, obj, lang=None, get={}):
+        ct = ContentType.objects.get_for_model(self.model)
+        info = ct.app_label, ct.model
+        if lang:
+            get.update({self.query_language_key: lang})
+        url = '%s?%s' % (self.reverse('admin:%s_%s_change' % info, args=(obj.id,)), urlencode(get))
+        return url
+
+
     def get_urls(self):
         try:
             from django.conf.urls import patterns, url
@@ -200,7 +214,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         redirect = super(TranslatableAdmin, self).response_change(request, obj)
         uri = iri_to_uri(request.path)
         app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
-        if redirect['Location'] in (uri, "../add/", reverse('admin:%s_%s_add' % (app_label, model_name))):
+        if redirect['Location'] in (uri, "../add/", self.reverse('admin:%s_%s_add' % (app_label, model_name))):
             if self.query_language_key in request.GET:
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
                     self.query_language_key, request.GET[self.query_language_key])
@@ -259,8 +273,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             )
 
             if not self.has_change_permission(request, None):
-                return HttpResponseRedirect(reverse('admin:index'))
-            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
+                return HttpResponseRedirect(self.reverse('admin:index'))
+            return HttpResponseRedirect(self.reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
 
         object_name = '%s Translation' % force_unicode(opts.verbose_name)
 
@@ -331,9 +345,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         except (model.DoesNotExist, ValidationError, ValueError):
             pass
 
-        queryset = self.model.objects.untranslated()
+        queryset = self.model._default_manager.untranslated()
         try:
-            object_id = model._meta.pk.to_python(object_id)
             obj = queryset.get(pk=object_id)
         except (model.DoesNotExist, ValidationError):
             return None
