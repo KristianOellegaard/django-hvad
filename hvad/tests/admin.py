@@ -83,12 +83,14 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
             shared_field="shared",
         )
         with LanguageOverride('en'):
-            self.assertEqual(myadmin.all_translations(obj), "<strong>en</strong>")
-        
+            self.assertTrue(myadmin.all_translations(obj).find("<strong>") != -1)
+            # Entries should be linked to the corresponding translation page
+            self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
+
         with LanguageOverride('ja'):
-            self.assertEqual(myadmin.all_translations(obj), "en")
-            
-        # An unsaved object, shouldnt have any translations
+            self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
+
+        # An unsaved object, shouldn't have any translations
         
         obj = Normal()
         self.assertEqual(myadmin.all_translations(obj), "")
