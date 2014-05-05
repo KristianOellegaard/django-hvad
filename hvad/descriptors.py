@@ -1,5 +1,8 @@
+import django
 from django.utils.translation import get_language
 from hvad.utils import get_translation
+if django.VERSION >= (1, 7):
+    from django.apps import registry
 
 class BaseDescriptor(object):
     """
@@ -37,6 +40,8 @@ class TranslatedAttribute(BaseDescriptor):
         
     def __get__(self, instance, instance_type=None):
         if not instance:
+            if django.VERSION >= (1, 7) and not registry.apps.ready:
+                raise AttributeError('Attribute not available until registry is ready.')
             # Don't raise an attribute error so we can use it in admin.
             return self.opts.translations_model._meta.get_field_by_name(
                                                     self.name)[0].default

@@ -284,16 +284,16 @@ class DeleteLanguageCodeTest(NaniTestCase, OneSingleTranslatedNormalMixin):
                               
 class DescriptorTests(NaniTestCase):
     def test_translated_attribute_set(self):
-        # 'MyModel' should return the default field value, in case there is no translation
+        # 'MyDescriptorTestModel' should return the default field value, in case there is no translation
         from hvad.models import TranslatedFields
         from django.db import models
         
         DEFAULT = 'world'
-        class MyModel(TranslatableModel):
+        class MyDescriptorTestModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(default=DEFAULT, max_length=128)
             )
-        self.assertEqual(MyModel.hello, DEFAULT)
+        self.assertEqual(MyDescriptorTestModel.hello, DEFAULT)
     
     def test_translated_attribute_delete(self):    
         # Its not possible to delete the charfield, which should result in an AttributeError
@@ -315,31 +315,31 @@ class TableNameTest(NaniTestCase):
         from django.db import models
         from django.conf import settings
         sep = getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
-        class MyModel(TranslatableModel):
+        class MyTableNameTestModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(max_length=128)
             )
-        self.assertEqual(MyModel.translations.related.model._meta.db_table, 'tests_mymodel%stranslation' % sep)
+        self.assertTrue(MyTableNameTestModel.translations.related.model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
 
     def test_table_name_override(self):
         from hvad.models import TranslatedFields
         from django.db import models
         with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
-            class MyOtherModel(TranslatableModel):
+            class MyOtherTableNameTestModel(TranslatableModel):
                 translations = TranslatedFields(
                     hello = models.CharField(max_length=128)
                 )
-            self.assertEqual(MyOtherModel.translations.related.model._meta.db_table, 'tests_myothermodelO_Otranslation')
+            self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
 
     def test_table_name_from_meta(self):
         from hvad.models import TranslatedFields
         from django.db import models
-        class MyNamedModel(TranslatableModel):
+        class MyTableNameTestNamedModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(max_length=128),
                 meta = {'db_table': 'tests_mymodel_i18n'},
             )
-        self.assertEqual(MyNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
+        self.assertEqual(MyTableNameTestNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
 
 
 class GetOrCreateTest(NaniTestCase):

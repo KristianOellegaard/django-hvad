@@ -109,9 +109,9 @@ class MultipleFields(TranslatableModel):
 
 
 class Boolean(TranslatableModel):
-    shared_flag = models.BooleanField()
+    shared_flag = models.BooleanField(default=False)
     translations = TranslatedFields(
-        translated_flag = models.BooleanField()
+        translated_flag = models.BooleanField(default=False)
     )
 
 

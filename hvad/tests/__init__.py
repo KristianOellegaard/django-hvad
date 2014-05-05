@@ -1,23 +1,25 @@
-from hvad.tests.admin import (NormalAdminTests, AdminEditTests, 
-    AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests,
-    TranslatableInlineAdminTests)
-from hvad.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest, CreateTest, GetTest, 
-    TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests, 
-    DefinitionTests, TableNameTest, GetOrCreateTest, BooleanTests)
-from hvad.tests.dates import LatestTests, DatesTests
-from hvad.tests.docs import DocumentationTests
-from hvad.tests.fallbacks import FallbackTests
-from hvad.tests.fieldtranslator import FieldtranslatorTests
-from hvad.tests.forms import FormTests
-from hvad.tests.ordering import OrderingTest
-from hvad.tests.query import (FilterTests, IterTests, UpdateTests, 
-    ValuesListTests, ValuesTests, DeleteTests, GetTranslationFromInstanceTests, 
-    AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
-from hvad.tests.related import (NormalToNormalFKTest, StandardToTransFKTest, 
-    TripleRelationTests, ManyToManyTest, ForwardDeclaringForeignKeyTests,
-    SelectRelatedTests)
-from hvad.tests.forms_inline import TestBasicInline
-from hvad.tests.views import ViewsTest
-from hvad.tests.limit_choices_to import LimitChoicesToTests
-from hvad.tests.serialization import PicklingTest
-from hvad.tests.proxy import ProxyTests
+import django
+if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner instead
+    from hvad.tests.admin import (NormalAdminTests, AdminEditTests,
+        AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests,
+        TranslatableInlineAdminTests)
+    from hvad.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest, CreateTest, GetTest,
+        TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests,
+        DefinitionTests, TableNameTest, GetOrCreateTest, BooleanTests)
+    from hvad.tests.dates import LatestTests, DatesTests
+    from hvad.tests.docs import DocumentationTests
+    from hvad.tests.fallbacks import FallbackTests
+    from hvad.tests.fieldtranslator import FieldtranslatorTests
+    from hvad.tests.forms import FormTests
+    from hvad.tests.ordering import OrderingTest
+    from hvad.tests.query import (FilterTests, IterTests, UpdateTests,
+        ValuesListTests, ValuesTests, DeleteTests, GetTranslationFromInstanceTests,
+        AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
+    from hvad.tests.related import (NormalToNormalFKTest, StandardToTransFKTest,
+        TripleRelationTests, ManyToManyTest, ForwardDeclaringForeignKeyTests,
+        SelectRelatedTests)
+    from hvad.tests.forms_inline import TestBasicInline
+    from hvad.tests.views import ViewsTest
+    from hvad.tests.limit_choices_to import LimitChoicesToTests
+    from hvad.tests.serialization import PicklingTest
+    from hvad.tests.proxy import ProxyTests
