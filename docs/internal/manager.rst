@@ -12,10 +12,6 @@ This module is where most of the functionality is implemented.
     ``settings.LANGUAGES``, could possibly become a setting on it's own at some
     point.
 
-.. data:: queryset_class
-
-    Defautls to ``TranslationQueryset``. Overwrite to use your custom queryset class. 
-
 
 ***************
 FieldTranslator
@@ -354,21 +350,31 @@ TranslationManager
     
         The :term:`Translations Model` for this manager.
 
+    .. attribute:: queryset_class
+
+        The QuerySet for this manager. Overwrite to use a custom queryset. Your custom
+        queryset class must inherit :class:`TranslationQueryset`. Defaults to
+        :class:`TranslationQueryset`.
+
     .. method:: language(self, language_code=None)
     
-        Calls :meth:`get_queryset` to get a queryset and calls
+        Instanciates a :class:`TranslationQueryset` from :attr:`queryset_class` and calls
         :meth:`TranslationQueryset.language` on that queryset.
     
     .. method:: untranslated(self)
     
-        Returns an instance of :class:`FallbackQueryset` for this manager.
+        Returns an instance of :class:`FallbackQueryset` for this manager. This type of
+        queryset will load translations on-demand, using fallbacks if current language is
+        not available. It can generate a lot a queries, use with caution.
+
+        This will not use any custom :attr:`queryset_class` defined on the manager.
         
     .. method:: get_queryset(self)
     
-        Returns an instance of :class:`TranslationQueryset` for this manager.
-        The queryset returned will have the *master* relation to the
-        :term:`Shared Model` marked to be selected when querying, using 
-        :meth:`select_related`.
+        Returns a vanilla, non-translating instance of Queryset for this manager.
+        Instances returned will not have translated fields, and attempts to access them
+        will result in an exception being raised. See :meth:`language` and :meth:`untranslated`
+        to access translated fields.
     
     .. method:: contribute_to_class(self, model, name)
     
