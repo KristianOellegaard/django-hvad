@@ -322,16 +322,35 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         obj.delete()
     
     def get_object(self, request, object_id):
-        obj = super(TranslatableAdmin, self).get_object(request, object_id)
-        if obj:
-            return obj
-        queryset = self.model._default_manager.untranslated()
+        """
+        Returns an instance matching the primary key provided. ``None``  is
+        returned if no match is found (or the object_id failed validation
+        against the primary key field).
+        """
+
+        # get_object should not use our own get_queryset, which adds fallbacks
+        # to the query, because it might return an object with a different
+        # translation than expected. So we use the superclass' get_queryset
+        # instead.
+
+        if hasattr(self, 'get_queryset'):
+            queryset = super(TranslatableAdmin, self).get_queryset(request)
+        else:
+            queryset = super(TranslatableAdmin, self).queryset(request)
+
         model = self.model
         try:
             object_id = model._meta.pk.to_python(object_id)
+            return queryset.get(pk=object_id)
+        except (model.DoesNotExist, ValidationError, ValueError):
+            pass
+
+        queryset = self.model._default_manager.untranslated()
+        try:
             obj = queryset.get(pk=object_id)
         except (model.DoesNotExist, ValidationError):
             return None
+
         new_translation = model._meta.translations_model()
         new_translation.language_code = self._language(request)
         new_translation.master = obj
