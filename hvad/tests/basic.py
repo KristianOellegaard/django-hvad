@@ -166,6 +166,20 @@ class CreateTest(NaniTestCase):
             self.assertEqual(en.translated_field, "English")
             self.assertEqual(en.language_code, "en")
 
+    def test_create_instance_untranslated(self):
+        with self.assertNumQueries(1):
+            with LanguageOverride('en'):
+                ut = Normal.objects.create(
+                    shared_field="shared",
+                )
+        self.assertEqual(ut.shared_field, "shared")
+        with self.assertNumQueries(1):
+            with self.assertRaises(AttributeError):
+                ut.translated_field
+        with self.assertNumQueries(1):
+            with self.assertRaises(AttributeError):
+                ut.language_code
+
 
 class TranslatedTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_translate(self):
