@@ -1,6 +1,5 @@
+from django.utils.translation import get_language
 from hvad.utils import get_translation
-
-class NULL:pass
 
 class BaseDescriptor(object):
     """
@@ -8,11 +7,20 @@ class BaseDescriptor(object):
     """
     def __init__(self, opts):
         self.opts = opts
+        self._NoTranslationError = type('NoTranslationError',
+                                        (AttributeError, opts.translations_model.DoesNotExist),
+                                        {})
     
     def translation(self, instance):
         cached = getattr(instance, self.opts.translations_cache, None)
-        if not cached:
-            cached = get_translation(instance)
+        if cached is None:
+            try:
+                cached = get_translation(instance)
+            except self.opts.translations_model.DoesNotExist:
+                raise self._NoTranslationError('Accessing a translated field requires that '
+                                               'the instance has a translation loaded, or a '
+                                               'valid translation in current language (%s) '
+                                               'loadable from the database' % get_language())
             setattr(instance, self.opts.translations_cache, cached)
         return cached
 
