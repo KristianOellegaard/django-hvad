@@ -34,7 +34,7 @@ Changelog
 
         Fixes:
 
-        - No more deprecation warnings when importing only from :module:`hvad`.
+        - No more deprecation warnings when importing only from :mod:`hvad`.
         - :class:`hvad.admin.TranslatableAdmin` now generates relative URLs instead
           of absolute ones, enabling it to work behind reverse proxies.
         - django-hvad does not depend on the default manager being named
