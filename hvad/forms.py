@@ -99,6 +99,12 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             fields = sfields
             fields.update(tfields)
             
+            # Add translated fields to the form to discern between translated
+            # and non-translated fields. This can be used to manipulate labels
+            # or other field attributes in __init__ of TranslatableModelForms. 
+            # For example: Prepend all translated fields with a globe icon
+            new_class.translated_fields = tfields
+            
             # make sure opts.fields doesn't specify an invalid field
             none_model_fields = [k for k, v in fields.items() if not v]
             missing_fields = set(none_model_fields) - \
