@@ -1,9 +1,17 @@
+import django
 from django.conf import settings
-from django.test.simple import DjangoTestSuiteRunner
-from django.utils.unittest import TestSuite
 import operator
 import time
 
+if django.VERSION >= (1, 6):
+    from django.test.runner import DiscoverRunner as DjangoRunner
+    try:
+        from unittest2 import TestSuite
+    except ImportError:
+        from unittest import TestSuite
+else:
+    from django.test.simple import DjangoTestSuiteRunner as DjangoRunner
+    from django.utils.unittest import TestSuite
 
 TIMINGS = {}
 
@@ -23,14 +31,14 @@ class TimingSuite(TestSuite):
         super(TimingSuite, self).addTest(test)
 
 
-class JenkinsTestRunner(DjangoTestSuiteRunner):
+class JenkinsTestRunner(DjangoRunner):
     def run_suite(self, suite, **kwargs):
         from xmlrunner import XMLTestRunner
         return XMLTestRunner(output=settings.JUNIT_OUTPUT_DIR).run(suite)
 
 
 
-class NormalTestRunner(DjangoTestSuiteRunner):
+class NormalTestRunner(DjangoRunner):
     def build_suite(self, test_labels, extra_tests=None, **kwargs):
         suite = super(NormalTestRunner, self).build_suite(test_labels, extra_tests, **kwargs)
         if settings.TIME_TESTS:

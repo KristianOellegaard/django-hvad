@@ -14,6 +14,7 @@ class NormalForm(TranslatableModelForm):
 class NormalMediaForm(TranslatableModelForm):
     class Meta:
         model = Normal
+        exclude = []
     class Media:
         css = {
             'all': ('layout.css',)
@@ -35,6 +36,7 @@ class FormTests(NaniTestCase):
         # Meta class for use below
         class Meta:
             model = NonTranslatableModel
+            exclude = []
         # Make sure we do indeed get an exception, if we try to initialise it
         self.assertRaises(TypeError,
             TranslatableModelFormMetaclass,

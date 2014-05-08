@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.core.exceptions import FieldError
 from django.db.models.fields import FieldDoesNotExist, DateField
-from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models.constants import LOOKUP_SEP
 from django.db.models.sql.datastructures import Date
 from django.db.models.sql.query import Query
 from hvad.manager import TranslationQueryset

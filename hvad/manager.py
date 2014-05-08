@@ -11,7 +11,6 @@ from django.db.models.query_utils import Q
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
 from hvad.utils import combine
-import django
 import logging
 import sys
 
@@ -96,14 +95,14 @@ class TranslationQueryset(QuerySet):
         DateQuerySet: DatesMixin,
     }
     
-    def __init__(self, model=None, query=None, using=None, real=None):
+    def __init__(self, *args, **kwargs):
         self._local_field_names = None
         self._field_translator = None
-        self._real_manager = real
+        self._real_manager = kwargs.pop('real', None)
         self._fallback_manager = None
         self._language_code = None
         self._forced_unique_fields = []  # Used for select_related
-        super(TranslationQueryset, self).__init__(model=model, query=query, using=using)
+        super(TranslationQueryset, self).__init__(*args, **kwargs)
 
         # After super(), make sure we retrieve the shared model:
         if not self.query.select_related:
@@ -236,8 +235,11 @@ class TranslationQueryset(QuerySet):
         found = False
         for node in children:
             try:
-                field_name = node[0].field.name
-            except TypeError:
+                if django.VERSION >= (1, 7):
+                    field_name = node.lhs.target.name
+                else:
+                    field_name = node[0].field.name
+            except (TypeError, AttributeError):
                 if node.children:
                     found = self._scan_for_language_where_node(node.children)
             else:
@@ -485,7 +487,7 @@ class TranslationQueryset(QuerySet):
                 j = j[1]
             else:
                 kwargs = {}
-            obj.query.join(j, outer_if_first=True, **kwargs)
+            obj.query.join(j, nullable=True, **kwargs)
         for f in related_model_extra_filters:
             f1 = {f[0]: f[1]}
             f2 = {f[0]: None}  # Allow select_related() to fetch objects with a relation set to NULL

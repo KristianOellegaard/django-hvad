@@ -18,7 +18,7 @@ def main(test_runner='hvad.test_utils.runners.NormalTestRunner', junit_output_di
             from django.test.utils import get_runner
             TestRunner = get_runner(settings)
         
-            test_runner = TestRunner(verbosity=verbosity, interactive=False, failfast=failfast)
+            test_runner = TestRunner(pattern='*.py', verbosity=verbosity, interactive=False, failfast=failfast)
             failures = test_runner.run_tests(test_labels)
     sys.exit(failures)
 
