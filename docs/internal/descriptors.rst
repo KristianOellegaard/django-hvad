@@ -4,11 +4,6 @@
 
 .. module:: hvad.descriptors
 
-.. class:: NULL
-
-    A pseudo type used internally to distinguish between ``None`` and no value
-    given. 
-
 
 **************
 BaseDescriptor
@@ -24,8 +19,13 @@ BaseDescriptor
 
     .. method:: translation(self, instance)
     
-        Get the cached translation object on an instance, or get it from the
-        database and cache it on the instance.
+        Get the cached translation object on an instance. If no translation is
+        cached yet, use the :func:`~django.utils.translation.get_language` function
+        to get the current language, load it from the database and cache it on the
+        instance.
+
+        If no translation is cached, and no translation exists for current language,
+        raise an :exc:`AttributeError`.
 
 
 *******************
@@ -48,8 +48,11 @@ TranslatedAttribute
     
         Gets the attribute from the translation object using
         :meth:`BaseDescriptor.translation`. If no instance is given (used from
-        the model instead of an instance) it returns the default value from the
-        field.
+        the model instead of an instance) it returns the field object itself,
+        allowing introspection of the model.
+
+        Starting from Django 1.7, calling :func:`getattr` on a translated field
+        before the App Registry is initialized raises an :exc:`AttributeError`.
 
     .. method:: __set__(self, instance, value)
     

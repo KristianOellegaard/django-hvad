@@ -80,11 +80,12 @@ Get the instance again and check that the fields are correct::
     >>> obj.description_author
     u'Jonas Obrist'
 
-.. note:: I use :meth:`hvad.manager.TranslationQueryset.language` here because
-          I'm in an interactive shell, which is not necessarily in English, in
-          your normal views, you can usually omit the call to that method, since
-          the environment should already be in a valid language when in a
-          request/response cycle.
+.. note:: I use :meth:`~hvad.manager.TranslationQueryset.language` here because
+          I'm in an interactive shell, which is not necessarily in English. In
+          your normal views, you can usually omit the language simply writing
+          `MyModel.objects.language().get(...)`. This will use
+          :func:`~django.utils.translation.get_language`
+          to get the language the environment is using at the time of the call.
 
 Let's get all Django applications which have a description written by
 ``'Jonas Obrist'`` (in English)::

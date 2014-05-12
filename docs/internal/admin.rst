@@ -44,8 +44,8 @@ TranslatableAdmin
     
     .. method:: all_translations(self, obj)
     
-        A helper method to be used in :attr:`list_display` to show available
-        langauges.
+        A helper method to be used in :attr:`~django.contrib.admin.ModelAdmin.list_display`
+        to show available languages.
     
     .. method:: render_change_form(self, request, context, add=False, change=False, form_url='', obj=None)
         
@@ -60,16 +60,17 @@ TranslatableAdmin
     
     .. method:: queryset(self, request)
         
-        Calls :meth:`hvad.manager.TranslationQueryset.language` with the current
-        language from :meth:`_language` on the queryset returned by the call to
-        the super class and returns that queryset.
+        Calls :meth:`~hvad.manager.TranslationManager.untranslated`
+        on the queryset returned by the call to the super class and returns that
+        queryset. This allows showing all objects, even if they have no
+        translation in current language, at the cost of more database queries.
     
     .. method:: _language(self, request)
     
         Returns the currently active language by trying to get the value from
         the GET parameters of the request using :attr:`query_language_key` or
         if that's not available, use
-        :func:`django.utils.translations.get_language`.
+        :func:`~django.utils.translation.get_language`.
 
     .. method:: get_language_tabs(self, request, available_languages)
     

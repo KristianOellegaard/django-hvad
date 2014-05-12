@@ -28,3 +28,15 @@ Glossary
         
     Translated Model
         A Django model that subclasses :class:`hvad.models.TranslatableModel`.
+
+    Translation Manager
+        A subclass of :class:`hvad.managers.TranslationManager`, which replaces
+        the default Django manager on Translated Model, allowing access to
+        translated fields. It will use :class:`hvad.managers.TranslationQueryset`
+        internally, or a custom subclass if so configured.
+
+    Translation-Aware Manager
+        A Django manager that operates on **untranslated** models, yet is aware of
+        translated models it meets when crossing relations. It makes it possible
+        to filter untranslatable models against a translated field of a related
+        model.

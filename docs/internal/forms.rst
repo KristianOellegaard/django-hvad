@@ -31,7 +31,7 @@ TranslatableModelForm
 
     .. attribute:: __metaclass__
     
-        :class:`TranslatableMOdelFormMetaclass`
+        :class:`TranslatableModelFormMetaclass`
 
     .. method:: __init__(self, data=None, files=None, auto_id='id_%s', prefix=None, initial=None, error_class=ErrorList, label_suffix=':', empty_permitted=False, instance=None)
     
@@ -49,3 +49,10 @@ TranslatableModelForm
         
         .. note:: Other than in a normal :class:`django.forms.ModelForm`, this
                   method creates two queries instead of one. 
+
+    .. method:: _post_clean(self)
+
+        Ensures the correct translation is loaded into **self.instance**.
+        It tries to load the language specified in the form's **language_code**
+        field from the database, and calls
+        :meth:`~hvad.models.TranslatableModel.translate` if it does not exist yet.

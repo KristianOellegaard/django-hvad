@@ -15,10 +15,10 @@ The :class:`hvad.models.TranslatableModelBase` metaclass scans all attributes
 on the model defined for instances of :class:`hvad.models.TranslatedFields`, and
 if it finds one, sets the respective options onto meta.
 
-:class:`hvad.models.TranslatedFields` both creates the
+:class:`~hvad.models.TranslatedFields` both creates the
 :term:`Translations Model` and makes a foreign key from that model to point to
 the :term:`Shared Model` which has the name of the attribute of the
-:class:`hvad.models.TranslatedFields` instance as related name.
+:class:`~hvad.models.TranslatedFields` instance as related name.
 
 In the database, two tables are created:
 
@@ -39,11 +39,11 @@ is that it queries the :term:`Translations Model` and selects the relation to
 the :term:`Shared Model`. This means that model instances can only be queried if
 they have a translation in the language queried in, unless an alternative 
 manager is used, for example by using
-:meth:`hvad.manager.FallbackManager.untranslated`.
+:meth:`~hvad.manager.TranslationManager.untranslated`.
 
 Due to the way the Django ORM works, this approach does not seem to be possible
 when querying from a :term:`Normal Model`, even when using 
-:func:`hvad.utils.get_translations_aware_manager` and therefore in that case we
+:func:`hvad.utils.get_translation_aware_manager` and therefore in that case we
 just add extra filters to limit the lookups to rows in the database where the
 :term:`Translations Model` row existist in a specific language, using
 ``<translations_accessor>__language_code=<current_language>``. This is
@@ -61,4 +61,4 @@ this we don't mean proper caching using the Django cache framework, but rather
 caching the instance of the :term:`Translations Model` on the instance of the
 :term:`Shared Model` for easier access. This is done by setting the instance of 
 the :term:`Translations Model` on the attribute defined by the
-:attr:`translations_cache` on the :term:`Shared Model`'s options (meta).
+:attr:`~hvad.models.TranslatableModel.translations_cache` on the :term:`Shared Model`'s options (meta).

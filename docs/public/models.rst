@@ -21,7 +21,7 @@ attribute on your model. That attribute will be the reversed ForeignKey from the
 
 If you want to customize your :term:`Translations Model` using directives on a
 inner :class:`Meta` class, you can do so by passing a dictionary holding the
-directives as the ``meta`` keyword to :class:`hvad.models.TranslatedFields`.
+directives as the ``meta`` keyword to :class:`~hvad.models.TranslatedFields`.
 
 A full example of a model with translations::
 
@@ -58,7 +58,7 @@ translate
 
 .. method:: translate(language_code)
 
-    Returns this model instance for the language specified.
+    Prepares a new translation for this instance for the language specified.
     
     .. warning:: This does **not** check if this language already exists in the
                  database and assumes it doesn't! If it already exists and you
@@ -79,9 +79,9 @@ safe_translation_getter
     value for this field.
     
     This method is useful to safely get a value in methods such as
-    :meth:`__unicode__`.
+    :meth:`~django.db.models.Model.__unicode__`.
     
-    .. note:: This method does not perform any database queries.
+    .. note:: This method never performs any database queries.
     
 Example usage::
 
@@ -96,13 +96,12 @@ Example usage::
             
 .. method:: lazy_translation_getter(name, default=None)
 
-    Returns the value of the field specified by ``name`` even thought it's not available on
-    this instance in the currently cached language. Returns the value specified in ``default`` if no
-    translation available on this instance or the translation does not have a
-    value for this field.
+    Tries to get the value of the field specified by ``name`` using
+    :meth:`safe_translation_getter`. If this fails, tries to load a translation
+    from the database. If none exists, returns the value specified in ``default``.
 
     This method is useful to get a value in methods such as
-    :meth:`__unicode__`.
+    :meth:`~django.db.models.Model.__unicode__`.
 
     .. note:: This method may perform database queries.
 

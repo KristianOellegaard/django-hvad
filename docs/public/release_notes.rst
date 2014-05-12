@@ -2,6 +2,63 @@
 Release Notes
 #############
 
+.. release 0.4
+
+*****************************
+0.4 - 2014-05-16
+*****************************
+
+New Python and Django versions supported:
+
+- django-hvad now supports Django 1.7 running on Python 2.7, 3.3 and 3.4.
+- django-hvad now supports Django 1.6 running on Python 2.7 and 3.3.
+
+New features:
+
+- :class:`~hvad.manager.TranslationManager`'s queryset class can now be overriden by
+  setting its :attr:`~hvad.manager.TranslationManager.queryset_class` attribute.
+- Proxy models can be used with django-hvad. This is a new feature, please
+  use with caution and report any issue on github.
+- :class:`~hvad.admin.TranslatableAdmin`'s list display now has direct links
+  to each available translation.
+- Instance's translated fields are now available to the model's
+  :meth:`~django.db.models.Model.save` method when saving a
+  :class:`hvad.forms.TranslatableModelForm`.
+
+Deprecation list:
+
+- Catching :exc:`~django.core.exceptions.ObjectDoesNotExist` when accessing
+  a translated field on an instance is deprecated. In case no translation
+  is loaded and none exists in database for current language, an :exc:`AttributeError`
+  is raised instead. For the transition, both are supported until next release.
+
+Fixes:
+
+- No more deprecation warnings when importing only from :mod:`hvad`.
+- :class:`~hvad.admin.TranslatableAdmin` now generates relative URLs instead
+    of absolute ones, enabling it to work behind reverse proxies.
+- django-hvad does not depend on the default manager being named
+    'objects' anymore.
+- Q objects now work properly with :class:`~hvad.manager.TranslationQueryset`.
+
+Removal of the old 'nani' aliases was postponed until next release.
+
+.. release-0.3
+
+*****************************
+0.3
+*****************************
+
+New Python and Django versions supported:
+
+- django-hvad now supports Django 1.5 running on Python 2.6 and 2.6.
+
+Deprecation list:
+
+. Dropped support for django 1.2.
+- In next release, the old 'nani' module will be removed.
+
+
 .. release-0.2
 
 *****************************

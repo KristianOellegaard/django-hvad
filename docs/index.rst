@@ -23,12 +23,17 @@ While django-hvad tries to be as simple to use as possible, it's still
 recommended that you only use it if you consider yourself to be very strong in
 Python and Django.
 
-
 ************************
 Notes on Django versions
 ************************
 
-django-hvad is tested on Python 2.6 and 2.7 with Django 1.3.1, 1.4.5 and 1.5.1.
+django-hvad is tested on the following configurations:
+
+- Django 1.3.7, running Python 2.6 or 2.7.
+- Django 1.4.12, running Python 2.6 or 2.7.
+- Django 1.5.7, running Python 2.6, 2.7 or 3.3.
+- Django 1.6.4, running Python 2.7 or 3.3.
+- Django 1.7.0, running Python 2.7, 3.3 or 3.4.
 
 
 ***************

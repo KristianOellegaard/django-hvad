@@ -116,7 +116,7 @@ TranslationQueryset
     
     .. method:: _translate_args_kwargs(self, *args, **kwargs)
     
-        Translates args (:class:`django.db.models.expressions.Q` objects) and
+        Translates args (:class:`~django.db.models.Q` objects) and
         kwargs (dictionary of query lookups and values) to be language aware, by
         prefixing fields on the :term:`Shared Model` with ``'master__'``. Uses
         :attr:`field_translator` for the kwargs and :meth:`_recurse_q` for the
@@ -130,27 +130,27 @@ TranslationQueryset
 
     .. method:: _recurse_q(self, q)
     
-        Recursively walks a :class:`django.db.models.expressions.Q` object and
+        Recursively walks a :class:`~django.db.models.Q` object and
         translates it's query lookups to be prefixed by ``'master__'`` if they
         access a field on :term:`Shared Model`.
         
-        Every :class:`django.db.models.expressions.Q` object has an attribute
-        :attr:`django.db.models.expressions.Q.children` which is either a list
-        of other :class:`django.db.models.expressions.Q` objects or a tuple
+        Every :class:`~django.db.models.Q` object has an attribute
+        :attr:`~django.db.models.Q.children` which is either a list
+        of other :class:`~django.db.models.Q` objects or a tuple
         where the key is the query lookup.
         
-        This method returns a new :class:`django.db.models.expressions.Q`
+        This method returns a new :class:`~django.db.models.Q`
         object.
     
     .. method:: _find_language_code(self, q)
     
-        Searches a :class:`django.db.models.expressions.Q` object for
+        Searches a :class:`~django.db.models.Q` object for
         language code lookups. If it finds a child
-        :class:`django.db.models.expressions.Q` object that defines a language
+        :class:`~django.db.models.Q` object that defines a language
         code, it returns that language code if it's not ``None``. Used in
         :meth:`get` to ensure a language code is defined.
         
-        For more information about :class:`django.db.models.expressions.Q`
+        For more information about :class:`~django.db.models.Q`
         objects, see :meth:`_recurse_q`.
         
         Returns the language code if one was found or ``None``.
@@ -182,7 +182,7 @@ TranslationQueryset
         :attr:`_language_code` and filters by the language code.
         
         If no language code is given,
-        :func:`django.utils.translations.get_language` is called to get the
+        :func:`~django.utils.translation.get_language` is called to get the
         current language.
         
         Returns a queryset.
@@ -191,7 +191,7 @@ TranslationQueryset
     
         Creates a new instance using the kwargs given. If :attr:`_language_code`
         is not set and language_code is not in kwargs, it uses
-        :func:`django.utils.translations.get_language` to get the current
+        :func:`~django.utils.translation.get_language` to get the current
         language and injects that into kwargs.
         
         This causes two queries as opposed to the one by the normal queryset.
@@ -207,12 +207,12 @@ TranslationQueryset
         If a language code is given in the kwargs, it calls :meth:`language`
         using the language code provided. If none is given in kwargs, it uses
         :meth:`_find_language_code` on the
-        :class:`django.db.models.expressions.Q` objects given in args. If no
+        :class:`~django.db.models.Q` objects given in args. If no
         args were given or they don't contain a language code, it searches the
         :class:`django.db.models.sql.where.WhereNode` objects on the current
         queryset for language codes. If none was found, it calls
         :meth:`language` without an argument, which in turn uses 
-        :func:`django.utils.translations.get_language` to enforce a language to
+        :func:`~django.utils.translation.get_language` to enforce a language to
         be used in this queryset.
         
         Returns a (combined) instance if one can be found for the filters given,
@@ -277,7 +277,7 @@ TranslationQueryset
 
     .. method:: values(self, *fields)
     
-        Translates fields using :meth:`_translated_fieldnames` and calls the
+        Translates fields using :meth:`_translate_fieldnames` and calls the
         superclass.
 
     .. method:: values_list(self, *fields, **kwargs)
@@ -305,7 +305,7 @@ TranslationQueryset
 
     .. method:: order_by(self, *field_names)
     
-        Translates fields using :meth:`_translated_fieldnames` and calls the
+        Translates fields using :meth:`_translate_fieldnames` and calls the
         superclass.
     
     .. method:: reverse(self)
@@ -464,25 +464,25 @@ TranslationAwareQueryset
         Translates *args* and *kwargs* into translation aware *args* and
         *kwargs* using :func:`hvad.fieldtranslator.translate` by iterating over
         the *kwargs* dictionary and translating it's keys and recursing over the
-        :class:`django.db.models.expressions.Q` objects in *args* using 
+        :class:`~django.db.models.Q` objects in *args* using
         :meth:`_recurse_q`. 
         
         Returns a triple of *newargs*, *newkwargs* and *extra_filters* where
         *newargs* and *newkwargs* are the translated versions of *args* and
         *kwargs* and *extra_filters* is a
-        :class:`django.db.models.expressions.Q` object to use to filter for the
+        :class:`~django.db.models.Q` object to use to filter for the
         current language. 
 
     .. method:: _recurse_q(self, q)
     
         Recursively translate the keys in the
-        :class:`django.db.models.expressions.Q` object given using 
+        :class:`~django.db.models.Q` object given using
         :func:`hvad.fieldtranslator.translate`. For more information about
-        :class:`django.db.models.expressions.Q`, see
+        :class:`~django.db.models.Q`, see
         :meth:`TranslationQueryset._recurse_q`.
         
         Returns a tuple of *q* and *language_joins* where *q* is the translated
-        :class:`django.db.models.expressions.Q` object and *language_joins* is
+        :class:`~django.db.models.Q` object and *language_joins* is
         a list of extra language join filters to be applied using the current
         language.
     
@@ -496,14 +496,14 @@ TranslationAwareQueryset
         
         Returns a tuple of *newfields* and *extra_filters* where *newfields* is
         a list of translated fieldnames and *extra_filters* is a
-        :class:`django.db.models.expressions.Q` object to be used to filter for
+        :class:`~django.db.models.Q` object to be used to filter for
         language joins. 
 
     .. method:: language(self, language_code=None)
     
         Sets the :attr:`_language_code` attribute either to the language given
         with *language_code* or by getting the current language from
-        :func:`django.utils.translations.get_language`. Unlike
+        :func:`~django.utils.translation.get_language`. Unlike
         :meth:`TranslationQueryset.language`, this does not actually filter by
         the language yet as this happens in :meth:`_filter_extra`.
     
@@ -534,7 +534,7 @@ TranslationAwareQueryset
         translate that fieldname. Calls :meth:`_filter_extra` with the
         *extra_filters* returned by :func:`hvad.fieldtranslator.translate` if it
         was used, otherwise with an empty
-        :class:`django.db.models.expressions.Q` object.
+        :class:`~django.db.models.Q` object.
 
     .. method:: in_bulk(self, id_list)
     
@@ -542,15 +542,15 @@ TranslationAwareQueryset
 
     .. method:: values(self, *fields)
     
-        Calls :meth:`_translated_fieldnames` to translated the fields. Then
+        Calls :meth:`_translate_fieldnames` to translated the fields. Then
         calls :meth:`_filter_extra` with the *extra_filters* returned by
-        :meth:`_translated_fieldnames`.
+        :meth:`_translate_fieldnames`.
 
     .. method:: values_list(self, *fields, **kwargs)
     
-        Calls :meth:`_translated_fieldnames` to translated the fields. Then
+        Calls :meth:`_translate_fieldnames` to translated the fields. Then
         calls :meth:`_filter_extra` with the *extra_filters* returned by
-        :meth:`_translated_fieldnames`.
+        :meth:`_translate_fieldnames`.
 
     .. method:: dates(self, field_name, kind, order='ASC')
     
@@ -571,9 +571,9 @@ TranslationAwareQueryset
 
     .. method:: order_by(self, *field_names)
     
-        Calls :meth:`_translated_fieldnames` to translated the fields. Then
+        Calls :meth:`_translate_fieldnames` to translated the fields. Then
         calls :meth:`_filter_extra` with the *extra_filters* returned by
-        :meth:`_translated_fieldnames`.
+        :meth:`_translate_fieldnames`.
     
     .. method:: reverse(self)
     
@@ -593,7 +593,7 @@ TranslationAwareQueryset
     
     .. method:: _filter_extra(self, extra_filters)
     
-        Filters this queryset by the :class:`django.db.models.expressions.Q`
+        Filters this queryset by the :class:`~django.db.models.Q`
         object provided in *extra_filters* and returns a queryset from the
         superclass, so that the methods that call this method can directely
         access methods on the superclass to reduce boilerplate code.

@@ -5,18 +5,19 @@ Queryset API
 .. _TranslationQueryset-public:
 
 .. note::
-    You can select a custom queryset to use on your manager, by defining the attribute queryset_class on the manager class.
+    You can select a custom queryset to use on your manager, by defining the attribute
+    :attr:`~hvad.manager.TranslationManager.queryset_class` on the manager class.
 
 *******************
 TranslationQueryset
 *******************
 
-This is the queryset used by the :class:`hvad.manager.TranslationManager`.
+This is the default queryset used by the :class:`~hvad.manager.TranslationManager`.
 
 Performance consideration
 =========================
 
-While most methods on :class:`hvad.manager.TranslationQueryset` querysets run
+While most methods on :class:`~hvad.manager.TranslationQueryset` querysets run
 using the same amount of queries as if they were untranslated, they all do
 slightly more complex queries (one extra join).
 
@@ -102,8 +103,9 @@ FallbackQueryset
 
 This is a queryset returned by :ref:`TranslationQueryset.untranslated-public`,
 which can be used both to get the untranslated parts of models only or to use
-fallbacks. By default, only the untranslated parts of models are retrieved from
-the database.
+fallbacks. Only the untranslated parts of models are retrieved from
+the database, and accessing translated field will trigger an additional query
+for each instance.
 
 .. warning:: You may not use any translated fields in any method on this
              queryset class.

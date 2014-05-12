@@ -6,7 +6,7 @@ Changelog
 
 .. glossary::
 
-    0.4.0
+    0.4.0 (2014-05-16)
         New Python and Django versions supported:
 
         - django-hvad now supports Django 1.7 running on Python 2.7, 3.3 and 3.4.
@@ -14,20 +14,22 @@ Changelog
 
         New features:
 
-        - :class:`hvad.manager.TranslationManager`'s queryset class can now be overriden by
-          setting its :attr:`queryset_class` attribute.
-        - Proxy models can be used with django-hvad.
-        - :class:`hvad.admin.TranslatableAdmin`'s list display now has direct links
+        - :class:`~hvad.manager.TranslationManager`'s queryset class can now be overriden by
+          setting its :attr:`~hvad.manager.TranslationManager.queryset_class` attribute.
+        - Proxy models can be used with django-hvad. This is a new feature, please
+          use with caution and report any issue on github.
+        - :class:`~hvad.admin.TranslatableAdmin`'s list display now has direct links
           to each available translation.
         - Instance's translated fields are now available to the model's
-          :meth:`save` method when saving a :class:`hvad.forms.TranslatableModelForm`.
+          :meth:`~django.db.models.Model.save` method when saving a
+          :class:`~hvad.forms.TranslatableModelForm`.
         - Accessing a translated field on an untranslated instance will now
           raise an :exc:`AttributeError` with a helpful message instead of
           letting the error bubble up from the ORM.
 
         Deprecation list:
 
-        - Catching :exc:`django.core.exceptions.ObjectDoesNotExist` when accessing
+        - Catching :exc:`~django.core.exceptions.ObjectDoesNotExist` when accessing
           a translated field on an instance is deprecated. In case no translation
           is loaded and none exists in database for current language, an :exc:`AttributeError`
           is raised instead. For the transition, both are supported until next release.
@@ -35,13 +37,13 @@ Changelog
         Fixes:
 
         - No more deprecation warnings when importing only from :mod:`hvad`.
-        - :class:`hvad.admin.TranslatableAdmin` now generates relative URLs instead
+        - :class:`~hvad.admin.TranslatableAdmin` now generates relative URLs instead
           of absolute ones, enabling it to work behind reverse proxies.
         - django-hvad does not depend on the default manager being named
           'objects' anymore.
-        - Q objects now work properly with :class:`hvad.manager.TranslationQueryset`.
+        - Q objects now work properly with :class:`~hvad.manager.TranslationQueryset`.
 
-        Removal of the old 'nani' aliases was postponed until next release.
+        Removal of the old :mod:`nani` aliases was postponed until next release.
 
     0.3.0
         django-hvad is now django 1.5 compatible. Dropped support for django 1.2.
