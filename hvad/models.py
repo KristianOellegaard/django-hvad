@@ -11,6 +11,8 @@ from hvad.utils import SmartGetFieldByName
 from hvad.compat.method_type import MethodType
 import sys
 
+# maybe there should be an extra settings for this
+FALLBACK_LANGUAGES = tuple( code for code, name in settings.LANGUAGES )
 
 def create_translations_model(model, related_name, meta, **fields):
     """
@@ -288,34 +290,26 @@ class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
         # get all translations
         translations = getattr(self, self._meta.translations_accessor).all()
 
-        # make them a nice dict
-        translation_dict = {}
-        for translation in translations:
-            translation_dict[translation.language_code] = translation
-
-        # see if we have the right language
-        correct_language = translation_dict.get(get_language())
-        if correct_language:
-            # CACHE IT!
-            setattr(self, self._meta.translations_cache, correct_language)
-            return getattr(correct_language, name, default)
-
-        # Nope? Ok, let's try the default language for the installation
-        default_language = translation_dict.get(settings.LANGUAGE_CODE)
-        if default_language:
-            # CACHE IT!
-            setattr(self, self._meta.translations_cache, default_language)
-            return getattr(default_language, name, default)
-
-        # *Sigh*, OK, any available langauge?
-        try:
-            any_language = list(translation_dict.values())[0]
-        except IndexError:
-            # OK, can't say we didn't try!
+        # if no translation exists, bail out now
+        if len(translations) == 0:
             return default
 
-        setattr(self, self._meta.translations_cache, any_language)
-        return getattr(any_language, name, default)
+        # organize translations into a nice dict
+        translation_dict = dict((t.language_code, t) for t in translations)
+
+        # see if we have the right language, or any language in fallbacks
+        for code in (get_language(), settings.LANGUAGE_CODE) + FALLBACK_LANGUAGES:
+            try:
+                translation = translation_dict[code]
+            except KeyError:
+                continue
+            break
+        else:
+            # none of the fallbacks was found, pick an arbitrary translation
+            translation = translation_dict.popitem()[1]
+
+        setattr(self, self._meta.translations_cache, translation)
+        return getattr(translation, name, default)
 
     def get_available_languages(self):
         manager = self._meta.translations_model.objects
