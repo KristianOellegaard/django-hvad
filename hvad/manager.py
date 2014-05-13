@@ -381,7 +381,11 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).latest(field_name)
 
     def in_bulk(self, id_list):
-        raise NotImplementedError()
+        if not id_list:
+            return {}
+        qs = self.filter(pk__in=id_list)
+        qs.query.clear_ordering(force_empty=True)
+        return dict([(obj._get_pk_val(), obj) for obj in qs.iterator()])
 
     def delete(self):
         qs = self._get_shared_queryset()
@@ -877,7 +881,11 @@ class TranslationAwareQueryset(QuerySet):
         return self._filter_extra(extra_filters).latest(field_name)
 
     def in_bulk(self, id_list):
-        raise NotImplementedError()
+        if not id_list:
+            return {}
+        qs = self.filter(pk__in=id_list)
+        qs.query.clear_ordering(force_empty=True)
+        return dict([(obj._get_pk_val(), obj) for obj in qs.iterator()])
 
     def values(self, *fields):
         fields, extra_filters = self._translate_fieldnames(fields)
