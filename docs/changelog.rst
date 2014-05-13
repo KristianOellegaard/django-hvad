@@ -6,7 +6,7 @@ Changelog
 
 .. glossary::
 
-    0.4.0 (2014-05-16)
+    0.4.0
         New Python and Django versions supported:
 
         - django-hvad now supports Django 1.7 running on Python 2.7, 3.3 and 3.4.
