@@ -119,6 +119,28 @@ class FormTests(NaniTestCase):
                 self.assertEqual(obj.translated_field, TRANSLATED)
                 self.assertNotEqual(obj.pk, None)
 
+    def test_normal_model_form_save_nocommit(self):
+        with LanguageOverride('en'):
+            SHARED = 'Shared'
+            TRANSLATED = 'English'
+            data = {
+                'shared_field': SHARED,
+                'translated_field': TRANSLATED,
+                'language_code': 'en'
+            }
+            form = NormalForm(data)
+            # tested a non-translated ModelForm, and that takes 7 queries.
+            with self.assertNumQueries(0):
+                obj = form.save(commit=False)
+                self.assertEqual(obj.shared_field, SHARED)
+                self.assertEqual(obj.translated_field, TRANSLATED)
+                self.assertEqual(obj.pk, None)
+            with self.assertNumQueries(2):
+                obj.save()
+                self.assertEqual(obj.shared_field, SHARED)
+                self.assertEqual(obj.translated_field, TRANSLATED)
+                self.assertNotEqual(obj.pk, None)
+
     def test_no_language_code_in_fields(self):
         with LanguageOverride("en"):
             form = NormalForm()
