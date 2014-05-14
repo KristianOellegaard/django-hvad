@@ -356,6 +356,10 @@ class TranslationQueryset(QuerySet):
                     # Re-raise the IntegrityError with its original traceback.
                     raise exc_info[1]
 
+    if django.VERSION >= (1, 7):
+        def update_or_create(self, defaults=None, **kwargs):
+            raise NotImplementedError()
+
     def filter(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
