@@ -111,22 +111,30 @@ class NormalAdminTests(NaniTestCase, BaseAdminTests, SuperuserMixin):
         
         obj = Normal.objects.language("en").create(
             shared_field="shared",
+            translated_field="translated_en",
         )
         with LanguageOverride('en'):
             self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
             self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
-            
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'en')
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, obj.translated_field)
+
         with LanguageOverride('ja'):
             self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
             self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
-            
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'ja')
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
+
         # Check what happens if there is no translations at all
         obj = Normal.objects.untranslated().create(
             shared_field="shared",
         )
-        self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
-        self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
-        
+        with LanguageOverride('ja'):
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'ja')
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
+
             
     def test_get_object_nonexisting(self):
         # In case the object doesnt exist, it should return None

@@ -349,19 +349,20 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     
     def get_object(self, request, object_id):
         obj = super(TranslatableAdmin, self).get_object(request, object_id)
-        if obj:
-            return obj
-        queryset = self.model._default_manager.untranslated()
-        model = self.model
-        try:
-            object_id = model._meta.pk.to_python(object_id)
-            obj = queryset.get(pk=object_id)
-        except (model.DoesNotExist, ValidationError):
+        if obj is None: # object was not in queryset, bail out
             return None
-        new_translation = model._meta.translations_model()
-        new_translation.language_code = self._language(request)
-        new_translation.master = obj
-        setattr(obj, model._meta.translations_cache, new_translation)
+
+        # object was in queryset - need to make sure we got the right translation
+        # we use getattr to trigger a load if instance exists but translation was
+        # not cached yet. Should not happen with current code, but is correct,
+        # future-proof behavior.
+        language_code = getattr(obj, 'language_code', None)
+        request_lang = self._language(request)
+        if language_code is None or language_code != request_lang:
+            # if language does not match that of request, we know request_lang
+            # does not exist, because it was the first language in the use_fallbacks
+            # list. We prepare it as a new translation.
+            obj.translate(request_lang)
         return obj
 
     def get_queryset(self, request):
