@@ -185,7 +185,35 @@ class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
             {'shared_field': DOUBLE_NORMAL[1]['shared_field']},
         ]
         self.assertEqual(values_list, check)
-        
+
+
+class InBulkTests(NaniTestCase, TwoTranslatedNormalMixin):
+    def setUp(self):
+        super(InBulkTests, self).setUp()
+        if hasattr(self, 'assertItemsEqual'):
+            # method was renamed in Python 3
+            self.assertCountEqual = self.assertItemsEqual
+
+    def test_in_bulk(self):
+        with self.assertNumQueries(1):
+            result = Normal.objects.language('en').in_bulk([1, 2])
+            self.assertCountEqual((1, 2), result)
+            self.assertEqual(result[1].shared_field, DOUBLE_NORMAL[1]['shared_field'])
+            self.assertEqual(result[1].translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
+            self.assertEqual(result[1].language_code, 'en')
+            self.assertEqual(result[2].shared_field, DOUBLE_NORMAL[2]['shared_field'])
+            self.assertEqual(result[2].translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
+            self.assertEqual(result[2].language_code, 'en')
+
+    def test_untranslated_in_bulk(self):
+        with LanguageOverride('ja'):
+            with self.assertNumQueries(2):
+                result = Normal.objects.untranslated().in_bulk([1])
+                self.assertCountEqual((1,), result)
+                self.assertEqual(result[1].shared_field, DOUBLE_NORMAL[1]['shared_field'])
+                self.assertEqual(result[1].translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
+                self.assertEqual(result[1].language_code, 'ja')
+
 
 class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_delete_all(self):
@@ -268,7 +296,6 @@ class NotImplementedTests(NaniTestCase):
         baseqs = Normal.objects.language('en')
         
         self.assertRaises(NotImplementedError, baseqs.defer, 'shared_field')
-        self.assertRaises(NotImplementedError, baseqs.in_bulk, [1,2,3,4])
         self.assertRaises(NotImplementedError, baseqs.annotate)
         self.assertRaises(NotImplementedError, baseqs.only)
 
