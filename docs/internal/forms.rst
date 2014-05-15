@@ -56,3 +56,56 @@ TranslatableModelForm
         It tries to load the language specified in the form's **language_code**
         field from the database, and calls
         :meth:`~hvad.models.TranslatableModel.translate` if it does not exist yet.
+
+**********************
+BaseTranslationFormSet
+**********************
+
+.. class:: BaseTranslationFormSet(BaseInlineFormSet)
+
+    .. attribute:: instance
+
+        An instance of a :class:`~hvad.models.TranslatableModel` that the formset
+        works on the translations of. Its untranslatable fields will be used while
+        validating and saving the translations.
+
+    .. method:: order_translations(self, qs)
+
+        Is given a queryset over the :term:`Translations Model`, that it should
+        alter and return. This is used for adding **order_by** clause that will
+        define the order in which languages will show up in the formset.
+
+        Default implementation orders by **language_code**. If overriding this
+        method, the default implementation should not be called.
+
+    .. method:: clean(self)
+
+        Performs translation-specific cleaning of the form. Namely, it combines
+        each form's translation with :attr:`instance` then calls
+        :meth:`~django.db.models.Model.full_clean` on the full object.
+
+        It also ensures the last translation of an object cannot be deleted
+        (unless adding a new translation at the same time).
+
+    .. method:: _save_translation(self, form, commit=True)
+
+        Saves one of the formset's forms to the database. It is used by both
+        :meth:`save_new` and :meth:`save_existing`. It works by combining the
+        form's translation with :attr:`instance`'s untranslatable fields, then
+        saving the whole object, triggering any custom
+        :meth:`~django.db.models.Model.save` method or related signal handlers.
+
+    .. method:: save_new(self, form, commit=True)
+
+        Saves a new translation. Called from
+        :meth:`~django.forms.formsets.BaseInlineFormSet.save`.
+
+    .. method:: save_existing(self, form, instance, commit=True)
+
+        Saves an existing, updated translation. Called from
+        :meth:`~django.forms.formsets.BaseInlineFormSet.save`.
+
+    .. method:: add_fields(self, form, index)
+
+        Adds a **language_code** field if it is not defined on the translation
+        form.
