@@ -12,7 +12,7 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.fieldtranslator import FieldtranslatorTests
     from hvad.tests.forms import FormTests
     from hvad.tests.ordering import OrderingTest
-    from hvad.tests.query import (FilterTests, IterTests, UpdateTests,
+    from hvad.tests.query import (FilterTests, QueryCachingTests, IterTests, UpdateTests,
         ValuesListTests, ValuesTests, InBulkTests, DeleteTests, GetTranslationFromInstanceTests,
         AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
     from hvad.tests.related import (NormalToNormalFKTest, StandardToTransFKTest,

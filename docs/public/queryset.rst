@@ -46,9 +46,12 @@ language
 
 .. method:: language(language_code=None)
     
-    Sets the language for the queryset to either the language code defined or
-    the currently active language. This method should be used for all queries
-    for which you want to have access to all fields on your model.
+    Sets the language for the queryset to either the given language code or
+    the currently active language if None. Language resolution will be deferred
+    until the query is evaluated.
+
+    This filters out all instances that are not translated in the given language,
+    and makes translatable fields available on the query results.
 
 
 .. _TranslationQueryset.untranslated-public:

@@ -1,30 +1,39 @@
+import django
 from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
+if django.VERSION >= (1, 4):
+    from django.utils.encoding import python_2_unicode_compatible
+else: # older versions do not run on py3, so we know we are running py2
+    def python_2_unicode_compatible(klass):
+        klass.__unicode__ = klass.__str__
+        klass.__str__ = lambda self: self.__unicode__().encode('utf-8')
+        return klass
 
-
+@python_2_unicode_compatible
 class Normal(TranslatableModel):
     shared_field = models.CharField(max_length=255)
     translations = TranslatedFields(
         translated_field = models.CharField(max_length=255)
     )
-    
-    def __unicode__(self):
+
+    def __str__(self):
         return self.safe_translation_getter('translated_field', self.shared_field)
 
-
+@python_2_unicode_compatible
 class NormalProxy(Normal):
 
-    def __unicode__(self):
+    def __str__(self):
         return u'proxied %s' % self.safe_translation_getter('translated_field', self.shared_field)
 
     class Meta:
         proxy = True
 
 
+@python_2_unicode_compatible
 class NormalProxyProxy(NormalProxy):
 
-    def __unicode__(self):
+    def __str__(self):
         return u'proxied^2 %s' % self.safe_translation_getter('translated_field', self.shared_field)
 
     class Meta:

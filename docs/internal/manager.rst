@@ -58,6 +58,21 @@ ValuesMixin
         :meth:`_strip_master` on the key if the row is a dictionary.
 
 
+*********************
+SkipMasterSelectMixin
+*********************
+
+.. class:: SkipMasterSelectMixin
+
+    A mixin class for specialized querysets such as
+    :class:`~django.db.models.query.DateQuerySet` and
+    :class:`~django.db.models.query.DateTimeQuerySet` which forces
+    :class:`~hvad.manager.TranslationQueryset` not to add the related lookup
+    on the `master` field. This is required as those specialized querysets
+    use DISTINCT, and added the related lookup brings along all fields on the
+    :term:`Shared Model`, breaking the lookup.
+
+
 *******************
 TranslationQueryset
 *******************
@@ -176,13 +191,26 @@ TranslationQueryset
         using :attr:`_real_manager` and filtering over this queryset. Returns a
         queryset for the :term:`Shared Model`.
     
+    .. method:: _add_language_filter(self)
+
+        Apply the language filter to current query. Language is retrieved from
+        :attr:`_language_code`, or :func:`~django.utils.translation.get_language` if
+        None.
+
+        Applied filters include the base language filter on the language_code
+        field, as well as any related model translation set up by
+        :meth:`select_related`.
+
     .. method:: language(self, language_code=None)
     
         Specifies a language for this queryset. This sets the
-        :attr:`_language_code` and filters by the language code.
+        :attr:`_language_code`, but no filter are actually applied until
+        :meth:`_add_language_filter` is called. This allows for query-time
+        resolution of the None value. It is an error to call :meth:`language`
+        multiple times on the same queryset.
         
         If no language code is given,
-        :func:`~django.utils.translation.get_language` is called to get the
+        :func:`~django.utils.translation.get_language` will be called to get the
         current language.
         
         Returns a queryset.
@@ -210,14 +238,17 @@ TranslationQueryset
         :class:`~django.db.models.Q` objects given in args. If no
         args were given or they don't contain a language code, it searches the
         :class:`django.db.models.sql.where.WhereNode` objects on the current
-        queryset for language codes. If none was found, it calls
-        :meth:`language` without an argument, which in turn uses 
-        :func:`~django.utils.translation.get_language` to enforce a language to
-        be used in this queryset.
+        queryset for language codes. If none was found, it will use the language
+        of this queryset from :attr:`_language_code`, or the current language
+        as returned by :func:`~django.utils.translation.get_language` of that is None.
         
         Returns a (combined) instance if one can be found for the filters given,
         otherwise raises an appropriate exception depending on whether no or
         multiple objects were found.
+
+        .. warning:: It is an error to pass `language_code` in a Q object if a
+                     :meth:`select_related` clause was enabled on this queryset.
+                     Doing so will raise an :exc:`AssertionError`.
      
     .. method:: get_or_create(self, **kwargs)
     
@@ -335,7 +366,8 @@ TranslationQueryset
         itself to enable non-cascading deletion.
         
         Interestingly, implementing the combination here also works for
-        :meth:`get` and :meth:`__getitem__`.
+        :meth:`get` and :meth:`__getitem__`. This is because the former uses the
+        latter, which in turn fetches results from an iterator.
 
 
 ******************

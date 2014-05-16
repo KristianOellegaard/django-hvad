@@ -3,8 +3,11 @@ from django.core.exceptions import FieldError
 from hvad.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import NaniTestCase
-from hvad.test_utils.project.app.models import Normal
+from hvad.test_utils.project.app.models import Normal, SimpleRelated
+from hvad.test_utils.data import DOUBLE_NORMAL
+from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 from django.db import models
+from django import forms
 
 class NormalForm(TranslatableModelForm):
     class Meta:
@@ -25,7 +28,13 @@ class NormalFormExclude(TranslatableModelForm):
         model = Normal
         exclude = ['shared_field']
 
-class FormTests(NaniTestCase):
+class SimpleRelatedForm(TranslatableModelForm):
+    normal = forms.ModelChoiceField(queryset=Normal.objects.language())
+    class Meta:
+        model = SimpleRelated
+        fields = ['normal', 'translated_field']
+
+class FormTests(NaniTestCase, TwoTranslatedNormalMixin):
     
     def test_nontranslatablemodelform(self):
         # Make sure that TranslatableModelForm won't accept a regular model
@@ -162,3 +171,16 @@ class FormTests(NaniTestCase):
 
                 form = WrongForm()
             self.assertRaises(FieldError, create_wrong_form)
+
+    def test_simple_related_form(self):
+        with LanguageOverride('en'):
+            form = SimpleRelatedForm()
+            rendered = form['normal'].as_widget()
+            self.assertIn(DOUBLE_NORMAL[1]['translated_field_en'], rendered)
+            self.assertIn(DOUBLE_NORMAL[2]['translated_field_en'], rendered)
+
+        with LanguageOverride('ja'):
+            form = SimpleRelatedForm()
+            rendered = form['normal'].as_widget()
+            self.assertIn(DOUBLE_NORMAL[1]['translated_field_ja'], rendered)
+            self.assertIn(DOUBLE_NORMAL[2]['translated_field_ja'], rendered)
