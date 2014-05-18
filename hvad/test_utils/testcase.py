@@ -73,7 +73,7 @@ class NaniTestCase(TestCase):
     def setUp(self):
         if callable(getattr(self, 'create_fixtures', None)):
             self.create_fixtures()
-        
+
     @property
     def request_factory(self):
         if not hasattr(self, '_request_factory'):
@@ -89,3 +89,7 @@ class NaniTestCase(TestCase):
 
     def login_user_context(self, **kwargs):
         return UserLoginContext(self, **kwargs)
+
+# method was renamed from assertItemsEqual in Python 3
+if not hasattr(NaniTestCase, 'assertCountEqual'):
+    NaniTestCase.assertCountEqual = NaniTestCase.assertItemsEqual

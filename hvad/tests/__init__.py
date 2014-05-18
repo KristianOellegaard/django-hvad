@@ -18,7 +18,7 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.related import (NormalToNormalFKTest, StandardToTransFKTest,
         TripleRelationTests, ManyToManyTest, ForwardDeclaringForeignKeyTests,
         SelectRelatedTests)
-    from hvad.tests.forms_inline import TestBasicInline
+    from hvad.tests.forms_inline import TestBasicInline, TestTranslationsInline
     from hvad.tests.views import ViewsTest
     from hvad.tests.limit_choices_to import LimitChoicesToTests
     from hvad.tests.serialization import PicklingTest
