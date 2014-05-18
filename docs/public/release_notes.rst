@@ -5,8 +5,10 @@ Release Notes
 .. release 0.4
 
 *****************************
-0.4 - 2014-05-16
+0.4
 *****************************
+
+Released on May 19, 2014
 
 New Python and Django versions supported:
 
