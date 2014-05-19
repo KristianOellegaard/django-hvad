@@ -376,29 +376,56 @@ TranslationManager
 
     .. attribute:: queryset_class
 
-        The QuerySet for this manager. Overwrite to use a custom queryset. Your custom
+        The QuerySet for this manager, used by the :meth:`language` method.
+        Overwrite to use a custom queryset. Your custom
         queryset class must inherit :class:`TranslationQueryset`. Defaults to
         :class:`TranslationQueryset`.
+
+    .. attribute:: fallback_class
+
+        The QuerySet for this manager, used by the :meth:`untranslated` method.
+        Overwrite to use a custom queryset. Defaults to :class:`FallbackQueryset`.
+
+    .. attribute:: default_class
+
+        The QuerySet for this manager, used by the :meth:`get_queryset` method
+        and generally any query that does not invoke either :meth:`language` or
+        :meth:`untranslated`. Overwrite to use a custom queryset. Defaults to
+        :class:`~django.db.models.query.QuerySet`.
 
     .. method:: language(self, language_code=None)
     
         Instanciates a :class:`TranslationQueryset` from :attr:`queryset_class` and calls
-        :meth:`TranslationQueryset.language` on that queryset.
+        :meth:`TranslationQueryset.language` on that queryset. This type of queryset
+        will filter by language, returning only objects that have a translation
+        in the specified language. Translated fields will be available on the
+        objects, in the specified language.
+
+    .. method:: using_translations(self)
+
+        Functionally equivalent to calling :meth:`language` with no argument. This
+        method is deprecated and will be removed in the future.
     
     .. method:: untranslated(self)
     
-        Returns an instance of :class:`FallbackQueryset` for this manager. This type of
-        queryset will load translations on-demand, using fallbacks if current language is
+        Returns an instance of :class:`FallbackQueryset` for this manager, or any
+        custom queryset defined by :attr:`fallback_class`. This type of
+        queryset will load translations using fallbacks if current language is
         not available. It can generate a lot a queries, use with caution.
 
-        This will not use any custom :attr:`queryset_class` defined on the manager.
-        
     .. method:: get_queryset(self)
     
-        Returns a vanilla, non-translating instance of Queryset for this manager.
+        Returns a vanilla, non-translating queryset for this manager. It uses
+        the default :class:`~django.db.models.query.QuerySet` or any custom
+        queryset defined by :attr:`default_class`.
+
         Instances returned will not have translated fields, and attempts to access them
         will result in an exception being raised. See :meth:`language` and :meth:`untranslated`
         to access translated fields.
+
+        It is possible to override this behavior by setting :attr:`default_class`
+        to :class:`TranslationQueryset`, :class:`FallbackQueryset` or any queryset
+        that has a translation-aware implementation.
     
     .. method:: contribute_to_class(self, model, name)
     

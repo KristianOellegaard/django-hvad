@@ -26,10 +26,16 @@ New features:
   to use the current language now defers language resolution until the query is
   evaluated. It can now be used in form definitions directly, for instance for
   passing a custom queryset to :class:`~django.forms.ModelChoicefield`.
+- All queryset classes used by :class:`~hvad.manager.TranslationManager` can now
+  be customized thanks to the new :attr:`~hvad.manager.TranslationManager.fallback_class`
+  and :attr:`~hvad.manager.TranslationManager.default_class` attributes.
 
 Deprecation list:
 
 - The deprecated `nani` module was removed.
+- Method :meth:`~hvad.manager.TranslationManager.using_translations` is now deprecated.
+  It can be safely replaced by :meth:`~hvad.manager.TranslationManager.language`
+  with no arguments.
 - Setting `NANI_TABLE_NAME_SEPARATOR` was renamed to `HVAD_TABLE_NAME_SEPARATOR`.
   Using the old name will still work for now, but issue a deprecation warning,
   and get removed in next version.
