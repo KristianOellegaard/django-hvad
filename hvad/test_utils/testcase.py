@@ -6,6 +6,7 @@ from django.test import testcases
 from hvad.test_utils.context_managers import UserLoginContext
 from hvad.test_utils.request_factory import RequestFactory
 import sys
+import warnings
 
 
 class _AssertNumQueriesContext(object):
@@ -35,6 +36,29 @@ class _AssertNumQueriesContext(object):
                 executed, self.num
             )
         )
+
+class _AssertThrowsWarningContext(object):
+    def __init__(self, test_case, klass, number):
+        self.test_case = test_case
+        self.klass = klass
+        self.number = number
+        self.ctx = warnings.catch_warnings(record=True)
+
+    def __enter__(self):
+        self.warnings = self.ctx.__enter__()
+        warnings.simplefilter('always')
+
+    def __exit__(self, type, value, traceback):
+        self.ctx.__exit__(type, value, traceback)
+        self.test_case.assertEqual(
+            len(self.warnings), self.number, "%d warnings thrown, %d expected" % (
+                len(self.warnings), self.number
+            )
+        )
+        for warning in self.warnings:
+            self.test_case.assertTrue(issubclass(warning.category, self.klass),
+                                      '%s warning thrown, %s expected' %
+                                      (warning.category.__name__, self.klass.__name__))
 
 
 if hasattr(testcases.TestCase, 'assertNumQueries'):
@@ -89,6 +113,9 @@ class NaniTestCase(TestCase):
 
     def login_user_context(self, **kwargs):
         return UserLoginContext(self, **kwargs)
+
+    def assertThrowsWarning(self, klass, number=1):
+        return _AssertThrowsWarningContext(self, klass, number)
 
 # method was renamed from assertItemsEqual in Python 3
 if not hasattr(NaniTestCase, 'assertCountEqual'):
