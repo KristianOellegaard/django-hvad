@@ -1,3 +1,4 @@
+import django
 from hvad.test_utils.data import DATES_REVERSED, D3
 from hvad.test_utils.fixtures import DatesMixin
 from hvad.test_utils.testcase import NaniTestCase
@@ -22,3 +23,13 @@ class DatesTests(NaniTestCase, DatesMixin):
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "month")), 3)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day")), 3)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day").filter(shared_date__gt=d2011)), 2)
+
+class DatetimeTests(NaniTestCase, DatesMixin):
+    if django.VERSION >= (1, 6):
+        def test_object_datetimes(self):
+            d2011 = datetime.date(year=2011, month=1, day=1)
+            self.assertEqual(len(Date.objects.language('en').datetimes("shared_date", "year")), 2)
+            self.assertEqual(len(Date.objects.language('en').datetimes("shared_date", "month")), 3)
+            self.assertEqual(len(Date.objects.language('en').datetimes("shared_date", "day")), 3)
+            self.assertEqual(len(Date.objects.language('en').datetimes("shared_date", "day").filter(shared_date__gt=d2011)), 2)
+

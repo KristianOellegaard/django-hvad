@@ -3,6 +3,8 @@ import django
 from django.conf import settings
 from django.db import models, transaction, IntegrityError
 from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
+if django.VERSION >= (1, 6):
+    from django.db.models.query import DateTimeQuerySet
 try:
     from django.db.models.query import CHUNK_SIZE
 except ImportError:
@@ -72,6 +74,8 @@ class ValuesMixin(object):
 class DatesMixin(object):
     pass
 
+class DateTimesMixin(object):
+    pass
 
 #===============================================================================
 # Default 
@@ -94,7 +98,9 @@ class TranslationQueryset(QuerySet):
         ValuesQuerySet: ValuesMixin,
         DateQuerySet: DatesMixin,
     }
-    
+    if django.VERSION >= (1, 6):
+        override_classes[DateTimeQuerySet] = DateTimesMixin
+
     def __init__(self, *args, **kwargs):
         self._local_field_names = None
         self._field_translator = None
@@ -427,6 +433,11 @@ class TranslationQueryset(QuerySet):
             return self._clone(klass=DateQuerySet, setup=True,
                 _field_name=field_name, _kind=kind, _order=order)
         return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
+
+    if django.VERSION >= (1, 6):
+        def datetimes(self, field, *args, **kwargs):
+            field = self.field_translator.get(field)
+            return super(TranslationQueryset, self).datetimes(field, *args, **kwargs)
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
