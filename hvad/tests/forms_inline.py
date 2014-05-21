@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from django.forms import ModelForm
 from hvad.admin import TranslatableModelAdminMixin
 from hvad.forms import translatable_inlineformset_factory, translationformset_factory
 from hvad.test_utils.context_managers import LanguageOverride
@@ -55,6 +56,18 @@ class TestTranslationsInline(HvadTestCase):
             self.assertEqual(formset.forms[1].initial['language_code'], 'fr')
             self.assertEqual(formset.forms[1].initial['translated_field'], 'translated_test_fr')
             self.assertEqual(formset.forms[2].initial, {})
+
+        with self.assertNumQueries(1):
+            class Form(ModelForm):
+                class Meta:
+                    fields = ('translated_field',)
+            Formset = translationformset_factory(Normal, form=Form, extra=1)
+            formset = Formset(instance=self.object)
+            self.assertIn('translated_field', formset.forms[0].fields)
+            self.assertIn('language_code', formset.forms[0].fields)
+            self.assertIn('DELETE', formset.forms[0].fields)
+            self.assertIn('id', formset.forms[0].fields)
+            self.assertNotIn('master', formset.forms[0].fields)
 
     def test_create_translations(self):
         Formset = translationformset_factory(Normal, extra=1)

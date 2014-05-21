@@ -2,7 +2,7 @@ from collections import defaultdict
 import django
 from django.conf import settings
 from django.db import models, transaction, IntegrityError
-from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet, DateQuerySet
+from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
 if django.VERSION >= (1, 6):
     from django.db.models.query import DateTimeQuerySet
 try:

@@ -46,7 +46,7 @@ class QueryCachingTests(HvadTestCase, TwoTranslatedNormalMixin):
             for obj in qs: x += 1
             self.assertEqual(x, length)
         with self.assertNumQueries(0):
-            dummy = qs[0]
+            qs[0]
         with self.assertNumQueries(0):
             self.assertEqual(qs.exists(), length != 0)
         with self.assertNumQueries(0):
@@ -69,7 +69,7 @@ class QueryCachingTests(HvadTestCase, TwoTranslatedNormalMixin):
         import pickle
         with LanguageOverride('en'):
             qs = Normal.objects.language().filter(pk=1)
-            data = pickle.dumps(qs)
+            pickle.dumps(qs)
             self._try_all_cache_using_methods(qs, 1)
 
     def test_len_caches(self):
@@ -420,7 +420,7 @@ class NotImplementedTests(HvadTestCase):
     def test_defer(self):
         SHARED = 'shared'
         TRANS_EN = 'English'
-        en = Normal.objects.language('en').create(
+        Normal.objects.language('en').create(
             shared_field=SHARED,
             translated_field=TRANS_EN,
         )
@@ -492,7 +492,6 @@ class ComplexFilterTests(HvadTestCase, TwoTranslatedNormalMixin):
         normal_one = Q(normal_field=STANDARD[1])
         normal_two = Q(normal_field=STANDARD[2])
         shared_one = Q(normal__shared_field=DOUBLE_NORMAL[1]['shared_field'])
-        shared_two = Q(normal__shared_field=DOUBLE_NORMAL[2]['shared_field'])
         translated_one_en = Q(normal__translated_field=DOUBLE_NORMAL[1]['translated_field_en'])
         translated_two_en = Q(normal__translated_field=DOUBLE_NORMAL[2]['translated_field_en'])
 

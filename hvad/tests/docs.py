@@ -5,7 +5,6 @@ from django.test.testcases import TestCase
 from shutil import rmtree
 from tempfile import template, mkdtemp, _exists
 import os
-from hvad.compat.string_io import StringIO
 
 
 ROOT_DIR = os.path.join(os.path.dirname(__file__), '..', '..')

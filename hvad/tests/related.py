@@ -100,7 +100,6 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
                               normal__translated_field=en.translated_field)
     
     def test_lookup_by_non_existing_field(self):
-        en = Normal.objects.language('en').get(pk=1)
         with LanguageOverride('en'):
             if django.VERSION >= (1, 7):
                 self.assertRaises(TypeError, Standard.objects.get,

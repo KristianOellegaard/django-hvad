@@ -330,7 +330,7 @@ class TableNameTest(HvadTestCase):
                 self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
 
     if django.VERSION >= (1, 4):
-        def test_table_name_override(self):
+        def test_table_name_override_rename(self):
             with self.assertThrowsWarning(DeprecationWarning, 1):
                 with self.settings(NANI_TABLE_NAME_SEPARATOR='O_O'):
                     pass

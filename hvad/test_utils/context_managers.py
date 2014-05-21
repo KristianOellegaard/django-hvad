@@ -3,38 +3,9 @@
 This code was mostly taken from the django-cms
 (https://github.com/divio/django-cms) with permission by it's lead developer.
 """
-from django.conf import settings
 from django.utils.translation import get_language, activate
 from shutil import rmtree as _rmtree
 from tempfile import template, mkdtemp, _exists
-from hvad.compat.string_io import StringIO
-import sys
-
-class NULL:
-    pass
-
-
-class StdoutOverride(object):
-    """
-    This overrides Python's the standard output and redirrects it to a StringIO
-    object, so that on can test the output of the program.
-    
-    example:
-    lines = None
-    with StdoutOverride() as buffer:
-        # print stuff
-        lines = buffer.getvalue()
-    """
-    def __enter__(self):
-        self.buffer = StringIO()
-        sys.stdout = self.buffer
-        return self.buffer
-        
-    def __exit__(self, type, value, traceback):
-        self.buffer.close()
-        # Revert the stdout to the real one
-        sys.stdout = sys.__stdout__
-
 
 
 class LanguageOverride(object):
@@ -85,30 +56,3 @@ class UserLoginContext(object):
         
     def __exit__(self, exc, value, tb):
         self.testcase.client.logout()
-
-
-class ChangeModel(object):
-    """
-    Changes attributes on a model while within the context.
-    
-    These changes *ARE* saved to the database for the context!
-    """
-    def __init__(self, instance, **overrides):
-        self.instance = instance
-        self.overrides = overrides
-        
-    def __enter__(self):
-        self.old = {}
-        for key, value in self.overrides.items():
-            self.old[key] = getattr(self.instance, key, NULL)
-            setattr(self.instance, key, value)
-        self.instance.save()
-        
-    def __exit__(self, exc, value, tb):
-        for key in self.overrides.keys():
-            old_value = self.old[key]
-            if old_value is NULL:
-                delattr(self.instance, key)
-            else:
-                setattr(self.instance, key, old_value)
-        self.instance.save()

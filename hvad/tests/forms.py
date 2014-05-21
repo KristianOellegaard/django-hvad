@@ -168,8 +168,6 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
                     class Meta:
                         model = Normal
                         fields = ['a_field_that_doesnt_exist']
-
-                form = WrongForm()
             self.assertRaises(FieldError, create_wrong_form)
 
     def test_simple_related_form(self):

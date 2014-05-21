@@ -9,7 +9,7 @@ else:
     from django.contrib.admin.util import (flatten_fieldsets, unquote,
         get_deleted_objects)
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
 from django.forms.models import model_to_dict
