@@ -2,11 +2,11 @@
 from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
-class FilterTests(NaniTestCase, TwoTranslatedNormalMixin):
+class FilterTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_simple_filter(self):
         qs = Normal.objects.language('en').filter(shared_field__contains='2')
         self.assertEqual(qs.count(), 1)
@@ -39,7 +39,7 @@ class FilterTests(NaniTestCase, TwoTranslatedNormalMixin):
             self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
             self.assertEqual(obj2.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
 
-class QueryCachingTests(NaniTestCase, TwoTranslatedNormalMixin):
+class QueryCachingTests(HvadTestCase, TwoTranslatedNormalMixin):
     def _try_all_cache_using_methods(self, qs, length):
         with self.assertNumQueries(0):
             x = 0
@@ -85,7 +85,7 @@ class QueryCachingTests(NaniTestCase, TwoTranslatedNormalMixin):
             self._try_all_cache_using_methods(qs, 1)
 
 
-class IterTests(NaniTestCase, TwoTranslatedNormalMixin):
+class IterTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_simple_iter(self):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
@@ -117,7 +117,7 @@ class IterTests(NaniTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(obj.translated_field, DOUBLE_NORMAL[index]['translated_field_ja'])
 
 
-class UpdateTests(NaniTestCase, TwoTranslatedNormalMixin):
+class UpdateTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_update_shared(self):
         NEW_SHARED = 'new shared'
         n1 = Normal.objects.language('en').get(pk=1)
@@ -207,7 +207,7 @@ class UpdateTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(newja1.translated_field, ja1.translated_field)
         self.assertEqual(newja2.translated_field, ja2.translated_field)
 
-class ValuesListTests(NaniTestCase, TwoTranslatedNormalMixin):
+class ValuesListTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_values_list_translated(self):
         values = Normal.objects.language('en').values_list('translated_field', flat=True)
         values_list = list(values)
@@ -239,7 +239,7 @@ class ValuesListTests(NaniTestCase, TwoTranslatedNormalMixin):
         ]
         self.assertEqual(values_list, check)
 
-class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
+class ValuesTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_values_shared(self):
         values = Normal.objects.language('en').values('shared_field')
         values_list = list(values)
@@ -299,7 +299,7 @@ class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
         ]
         self.assertEqual(values_list, check)
 
-class InBulkTests(NaniTestCase, TwoTranslatedNormalMixin):
+class InBulkTests(HvadTestCase, TwoTranslatedNormalMixin):
     def setUp(self):
         super(InBulkTests, self).setUp()
         if hasattr(self, 'assertItemsEqual'):
@@ -337,7 +337,7 @@ class InBulkTests(NaniTestCase, TwoTranslatedNormalMixin):
             self.assertEqual(result[1].language_code, 'en')
 
 
-class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
+class DeleteTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_delete_all(self):
         Normal.objects.all().delete()
         self.assertEqual(Normal.objects.count(), 0)
@@ -366,7 +366,7 @@ class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(Normal.objects.language('en').count(), 0)
 
 
-class GetTranslationFromInstanceTests(NaniTestCase):
+class GetTranslationFromInstanceTests(HvadTestCase):
     def test_simple(self):
         # Create the instances
         SHARED = 'shared'
@@ -399,7 +399,7 @@ class GetTranslationFromInstanceTests(NaniTestCase):
         self.assertEqual(ja.translated_field, TRANS_JA)
 
 
-class AggregateTests(NaniTestCase):
+class AggregateTests(HvadTestCase):
     def test_aggregate(self):
         from django.db.models import Avg
 
@@ -416,7 +416,7 @@ class AggregateTests(NaniTestCase):
         self.assertEqual(AggregateModel.objects.language("en").aggregate(tnum=Avg("translated_number")), {'tnum': 10})
 
 
-class NotImplementedTests(NaniTestCase):
+class NotImplementedTests(HvadTestCase):
     def test_defer(self):
         SHARED = 'shared'
         TRANS_EN = 'English'
@@ -432,7 +432,7 @@ class NotImplementedTests(NaniTestCase):
         self.assertRaises(NotImplementedError, baseqs.only)
 
 
-class ExcludeTests(NaniTestCase):
+class ExcludeTests(HvadTestCase):
     def test_defer(self):
         SHARED = 'shared'
         TRANS_EN = 'English'
@@ -450,7 +450,7 @@ class ExcludeTests(NaniTestCase):
         self.assertEqual(qs.count(), 0)
 
 
-class ComplexFilterTests(NaniTestCase, TwoTranslatedNormalMixin):
+class ComplexFilterTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_qobject_filter(self):
         shared_contains_one = Q(shared_field__contains='1')
         shared_contains_two = Q(shared_field__contains='2')

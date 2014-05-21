@@ -16,7 +16,6 @@ setup(
         exclude = [
             'testproject',
             'testproject.app',
-            'nani.tests',
             'hvad.tests',
         ],
     ),

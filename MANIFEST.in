@@ -1,7 +1,6 @@
 include AUTHORS
 include LICENSE
 include README.rst
-recursive-include nani/templates *
 recursive-include hvad/templates *
 recursive-include hvad/locale *
 recursive-include docs *

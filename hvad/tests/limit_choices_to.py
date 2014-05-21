@@ -2,13 +2,13 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 from hvad.test_utils.project.app.models import LimitedChoice
 
 
-class LimitChoicesToTests(NaniTestCase, TwoTranslatedNormalMixin):
+class LimitChoicesToTests(HvadTestCase, TwoTranslatedNormalMixin):
     def create_fixtures(self):
         su = User(
             email='admin@admin.com',

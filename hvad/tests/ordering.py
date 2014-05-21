@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal
 
-class OrderingTest(NaniTestCase):
+class OrderingTest(HvadTestCase):
     def test_minus_order_by(self):
         a = Normal.objects.language('en').create(translated_field = "English",
                                                  shared_field="A")

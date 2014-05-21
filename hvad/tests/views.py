@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from django.core.urlresolvers import reverse
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.project.app.models import Normal
 from hvad.views import TranslatableUpdateView
 
-class ViewsTest(NaniTestCase):
+class ViewsTest(HvadTestCase):
     def setUp(self):
         with LanguageOverride("en"):
             self.object = Normal.objects.language().create(shared_field="test", translated_field="translated test")

@@ -32,4 +32,3 @@ This part of the documentation is grouped by file, not by topic.
     manager
     models
     utils
-    compat_date

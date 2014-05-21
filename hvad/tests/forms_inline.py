@@ -2,13 +2,13 @@
 from hvad.admin import TranslatableModelAdminMixin
 from hvad.forms import translatable_inlineformset_factory, translationformset_factory
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.project.app.models import Normal, Related
 from hvad.test_utils.forms import FormData
 
 
-class TestBasicInline(NaniTestCase):
+class TestBasicInline(HvadTestCase):
     def setUp(self):
         with LanguageOverride("en"):
             self.object = Normal.objects.language().create(shared_field="test", translated_field="translated test")
@@ -29,7 +29,7 @@ class TestBasicInline(NaniTestCase):
             self.assertTrue("translated_to_translated" in formset.forms[0].fields)
             self.assertFalse("language_code" in formset.forms[0].fields)
 
-class TestTranslationsInline(NaniTestCase):
+class TestTranslationsInline(HvadTestCase):
     def setUp(self):
         with LanguageOverride('en'):
             self.object = Normal.objects.language().create(

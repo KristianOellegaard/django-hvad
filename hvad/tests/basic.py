@@ -6,23 +6,20 @@ from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from hvad.manager import TranslationManager
 from hvad.models import TranslatableModelBase, TranslatableModel
-from hvad.test_utils.context_managers import LanguageOverride, SettingsOverride
+from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, MultipleFields, Boolean
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
-
-
-DJANGO_VERSION = django.get_version()
 
 
 class InvalidModel2(object):
     objects = TranslationManager()
 
 
-class DefinitionTests(NaniTestCase):
+class DefinitionTests(HvadTestCase):
     def test_invalid_manager(self):
         attrs = {
             'objects': Manager(),
@@ -50,7 +47,7 @@ class DefinitionTests(NaniTestCase):
         self.assertTrue(model._meta.abstract)
 
 
-class OptionsTest(NaniTestCase):
+class OptionsTest(HvadTestCase):
     def test_options(self):
         opts = Normal._meta
         self.assertTrue(hasattr(opts, 'translations_model'))
@@ -59,7 +56,7 @@ class OptionsTest(NaniTestCase):
         self.assertEqual(relmodel, opts.translations_model)
 
 
-class AlternateCreateTest(NaniTestCase):
+class AlternateCreateTest(HvadTestCase):
     def test_create_instance_simple(self):
         obj = NormalAlternate(language_code='en')
         obj.shared_field = "shared"
@@ -71,7 +68,7 @@ class AlternateCreateTest(NaniTestCase):
         self.assertEqual(en.language_code, "en")
     
 
-class CreateTest(NaniTestCase):
+class CreateTest(HvadTestCase):
     def test_create(self):
         with self.assertNumQueries(2):
             en = Normal.objects.language('en').create(
@@ -181,7 +178,7 @@ class CreateTest(NaniTestCase):
                 ut.language_code
 
 
-class TranslatedTest(NaniTestCase, OneSingleTranslatedNormalMixin):
+class TranslatedTest(HvadTestCase, OneSingleTranslatedNormalMixin):
     def test_translate(self):
         SHARED_EN = 'shared'
         TRANS_EN = 'English'
@@ -212,7 +209,7 @@ class TranslatedTest(NaniTestCase, OneSingleTranslatedNormalMixin):
             self.assertEqual(obj.translated_field, TRANS_JA)
         
 
-class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
+class GetTest(HvadTestCase, OneSingleTranslatedNormalMixin):
     def test_get(self):
         en = Normal.objects.language('en').get(pk=1)
         with self.assertNumQueries(1):
@@ -243,7 +240,7 @@ class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
         
 
 
-class GetByLanguageTest(NaniTestCase, TwoTranslatedNormalMixin):
+class GetByLanguageTest(HvadTestCase, TwoTranslatedNormalMixin):
     
     def test_args(self):
         with LanguageOverride('en'):
@@ -266,7 +263,7 @@ class GetByLanguageTest(NaniTestCase, TwoTranslatedNormalMixin):
             self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
 
 
-class BasicQueryTest(NaniTestCase, OneSingleTranslatedNormalMixin):
+class BasicQueryTest(HvadTestCase, OneSingleTranslatedNormalMixin):
     def test_basic(self):
         en = Normal.objects.language('en').get(pk=1)
         with self.assertNumQueries(1):
@@ -276,13 +273,13 @@ class BasicQueryTest(NaniTestCase, OneSingleTranslatedNormalMixin):
             self.assertEqual(queried.language_code, en.language_code)
 
 
-class DeleteLanguageCodeTest(NaniTestCase, OneSingleTranslatedNormalMixin):
+class DeleteLanguageCodeTest(HvadTestCase, OneSingleTranslatedNormalMixin):
     def test_delete_language_code(self):
         en = Normal.objects.language('en').get(pk=1)
         self.assertRaises(AttributeError, delattr, en, 'language_code')
 
                               
-class DescriptorTests(NaniTestCase):
+class DescriptorTests(HvadTestCase):
     def test_translated_attribute_set(self):
         # 'MyDescriptorTestModel' should return the default field value, in case there is no translation
         from hvad.models import TranslatedFields
@@ -309,27 +306,34 @@ class DescriptorTests(NaniTestCase):
         self.assertRaises(AttributeError, delattr, Normal(), 'language_code')
 
 
-class TableNameTest(NaniTestCase):
+class TableNameTest(HvadTestCase):
     def test_table_name_separator(self):
         from hvad.models import TranslatedFields
         from django.db import models
         from django.conf import settings
-        sep = getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
+        sep = getattr(settings, 'HVAD_TABLE_NAME_SEPARATOR', '_')
         class MyTableNameTestModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(max_length=128)
             )
         self.assertTrue(MyTableNameTestModel.translations.related.model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
 
-    def test_table_name_override(self):
-        from hvad.models import TranslatedFields
-        from django.db import models
-        with SettingsOverride(NANI_TABLE_NAME_SEPARATOR='O_O'):
-            class MyOtherTableNameTestModel(TranslatableModel):
-                translations = TranslatedFields(
-                    hello = models.CharField(max_length=128)
-                )
-            self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
+    if django.VERSION >= (1, 4):
+        def test_table_name_override(self):
+            from hvad.models import TranslatedFields
+            from django.db import models
+            with self.settings(HVAD_TABLE_NAME_SEPARATOR='O_O'):
+                class MyOtherTableNameTestModel(TranslatableModel):
+                    translations = TranslatedFields(
+                        hello = models.CharField(max_length=128)
+                    )
+                self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
+
+    if django.VERSION >= (1, 4):
+        def test_table_name_override(self):
+            with self.assertThrowsWarning(DeprecationWarning, 1):
+                with self.settings(NANI_TABLE_NAME_SEPARATOR='O_O'):
+                    pass
 
     def test_table_name_from_meta(self):
         from hvad.models import TranslatedFields
@@ -342,9 +346,9 @@ class TableNameTest(NaniTestCase):
         self.assertEqual(MyTableNameTestNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
 
 
-class GetOrCreateTest(NaniTestCase):
+class GetOrCreateTest(HvadTestCase):
     def test_create_new_translatable_instance(self):
-        with self.assertNumQueries(3 if DJANGO_VERSION < '1.6' else 5):
+        with self.assertNumQueries(3 if django.VERSION < (1, 6) else 5):
             """
             1: get
             2a: savepoint (django >= 1.6)
@@ -366,7 +370,7 @@ class GetOrCreateTest(NaniTestCase):
             shared_field="shared",
             translated_field='English',
         )
-        with self.assertNumQueries(3 if DJANGO_VERSION < '1.6' else 5):
+        with self.assertNumQueries(3 if django.VERSION < (1, 6) else 5):
             """
             1: get
             2a: savepoint (django >= 1.6)
@@ -480,7 +484,7 @@ class GetOrCreateTest(NaniTestCase):
         self.assertNotEqual(en.pk, ja.pk)
 
 
-class BooleanTests(NaniTestCase):
+class BooleanTests(HvadTestCase):
     def test_boolean_on_shared(self):
         Boolean.objects.language('en').create(shared_flag=True, translated_flag=False)
         en = Boolean.objects.language('en').get()

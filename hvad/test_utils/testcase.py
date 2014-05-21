@@ -93,7 +93,7 @@ else:
                 context.__exit__(*sys.exc_info())
 
 
-class NaniTestCase(TestCase):
+class HvadTestCase(TestCase):
     def setUp(self):
         if callable(getattr(self, 'create_fixtures', None)):
             self.create_fixtures()
@@ -118,5 +118,5 @@ class NaniTestCase(TestCase):
         return _AssertThrowsWarningContext(self, klass, number)
 
 # method was renamed from assertItemsEqual in Python 3
-if not hasattr(NaniTestCase, 'assertCountEqual'):
-    NaniTestCase.assertCountEqual = NaniTestCase.assertItemsEqual
+if not hasattr(HvadTestCase, 'assertCountEqual'):
+    HvadTestCase.assertCountEqual = HvadTestCase.assertItemsEqual

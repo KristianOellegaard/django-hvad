@@ -8,12 +8,12 @@ from hvad.models import (TranslatedFields, TranslatableModel)
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.utils import get_translation_aware_manager
 from hvad.test_utils.project.app.models import Normal, Related, SimpleRelated, Standard, Other
 
 
-class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):
+class NormalToNormalFKTest(HvadTestCase, OneSingleTranslatedNormalMixin):
     def test_relation(self):
         """
         'normal' (aka 'shared') relations are relations from the shared (or
@@ -36,7 +36,7 @@ class NormalToNormalFKTest(NaniTestCase, OneSingleTranslatedNormalMixin):
         
 
 
-class StandardToTransFKTest(NaniTestCase, TwoNormalOneStandardMixin):
+class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
     def test_relation(self):
         en = Normal.objects.language('en').get(pk=1)
         ja = Normal.objects.language('ja').get(pk=1)
@@ -179,7 +179,7 @@ class StandardToTransFKTest(NaniTestCase, TwoNormalOneStandardMixin):
                 self.assertTrue(obj in en.standards.all())
 
 
-class TripleRelationTests(NaniTestCase):
+class TripleRelationTests(HvadTestCase):
     def test_triple(self):
         normal = Normal.objects.language('en').create(shared_field='SHARED', translated_field='English')
         other = Other.objects.create(normal=normal)
@@ -210,7 +210,7 @@ class TripleRelationTests(NaniTestCase):
             self.assertEqual(obj.pk, standard.pk)
 
 
-class ManyToManyTest(NaniTestCase, TwoTranslatedNormalMixin):
+class ManyToManyTest(HvadTestCase, TwoTranslatedNormalMixin):
     def test_triple(self):
         normal1 = Normal.objects.language('en').get(pk=1)
         many = normal1.manyrels.create(name="many1")
@@ -227,7 +227,7 @@ class ManyToManyTest(NaniTestCase, TwoTranslatedNormalMixin):
             self.assertEqual([n.pk for n in normals], [n.pk for n in normals_plain])
 
 
-class ForwardDeclaringForeignKeyTests(NaniTestCase):
+class ForwardDeclaringForeignKeyTests(HvadTestCase):
     def test_issue_22(self):
         class ForwardRelated(TranslatableModel):
             shared_field = models.CharField(max_length=255)
@@ -256,7 +256,7 @@ class ForwardDeclaringForeignKeyTests(NaniTestCase):
             )
 
 
-class SelectRelatedTests(NaniTestCase, TwoTranslatedNormalMixin):
+class SelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
     def create_fixtures(self):
         super(SelectRelatedTests, self).create_fixtures()
         with LanguageOverride('en'):

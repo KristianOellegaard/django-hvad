@@ -2,9 +2,6 @@
 Welcome to the Django hvad documentation!
 #########################################
 
-.. warning:: The previously used ``nani`` package name is now deprecated,
-             please upgrade your code to use ``hvad``. 
-
 ******************
 About this project
 ******************
