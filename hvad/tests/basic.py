@@ -216,7 +216,7 @@ class GetTest(NaniTestCase, OneSingleTranslatedNormalMixin):
     def test_get(self):
         en = Normal.objects.language('en').get(pk=1)
         with self.assertNumQueries(1):
-            got = Normal.objects.using_translations().get(pk=en.pk, language_code='en')
+            got = Normal.objects.language('en').get(pk=en.pk)
         with self.assertNumQueries(0):
             self.assertEqual(got.shared_field, "shared")
             self.assertEqual(got.translated_field, "English")

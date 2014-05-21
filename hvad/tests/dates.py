@@ -20,6 +20,7 @@ class DatesTests(NaniTestCase, DatesMixin):
     def test_objects_dates(self):
         d2011 = datetime.date(year=2011, month=1, day=1)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "year")), 2)
+        self.assertEqual(len(Date.objects.language('en').dates("shared_date", "year").all()), 2)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "month")), 3)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day")), 3)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day").filter(shared_date__gt=d2011)), 2)

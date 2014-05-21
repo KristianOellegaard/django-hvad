@@ -6,7 +6,6 @@ from hvad.test_utils.testcase import NaniTestCase
 from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
-
 class FilterTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_simple_filter(self):
         qs = Normal.objects.language('en').filter(shared_field__contains='2')
@@ -29,6 +28,62 @@ class FilterTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
         self.assertEqual(obj2.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
 
+    def test_deferred_language_filter(self):
+        with LanguageOverride('ja'):
+            qs = Normal.objects.language().filter(translated_field__contains='English')
+        with LanguageOverride('en'):
+            self.assertEqual(qs.count(), 2)
+            obj1, obj2 = qs
+            self.assertEqual(obj1.shared_field, DOUBLE_NORMAL[1]['shared_field'])
+            self.assertEqual(obj1.translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
+            self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
+            self.assertEqual(obj2.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
+
+class QueryCachingTests(NaniTestCase, TwoTranslatedNormalMixin):
+    def _try_all_cache_using_methods(self, qs, length):
+        with self.assertNumQueries(0):
+            x = 0
+            for obj in qs: x += 1
+            self.assertEqual(x, length)
+        with self.assertNumQueries(0):
+            dummy = qs[0]
+        with self.assertNumQueries(0):
+            self.assertEqual(qs.exists(), length != 0)
+        with self.assertNumQueries(0):
+            self.assertEqual(qs.count(), length)
+        with self.assertNumQueries(0):
+            self.assertEqual(len(qs), length)
+        with self.assertNumQueries(0):
+            self.assertEqual(bool(qs), length != 0)
+
+    def test_iter_caches(self):
+        with LanguageOverride('en'):
+            index = 0
+            qs = Normal.objects.language().filter(pk=1)
+            for obj in qs:
+                index += 1
+            self.assertEqual(index, 1)
+            self._try_all_cache_using_methods(qs, 1)
+
+    def test_pickling_caches(self):
+        import pickle
+        with LanguageOverride('en'):
+            qs = Normal.objects.language().filter(pk=1)
+            data = pickle.dumps(qs)
+            self._try_all_cache_using_methods(qs, 1)
+
+    def test_len_caches(self):
+        with LanguageOverride('en'):
+            qs = Normal.objects.language().filter(pk=1)
+            self.assertEqual(len(qs), 1)
+            self._try_all_cache_using_methods(qs, 1)
+
+    def test_bool_caches(self):
+        with LanguageOverride('en'):
+            qs = Normal.objects.language().filter(pk=1)
+            self.assertTrue(qs)
+            self._try_all_cache_using_methods(qs, 1)
+
 
 class IterTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_simple_iter(self):
@@ -50,6 +105,17 @@ class IterTests(NaniTestCase, TwoTranslatedNormalMixin):
         # Make sure .all() only returns unique rows
         with LanguageOverride('en'):
             self.assertEqual(len(Normal.objects.all()), len(Normal.objects.untranslated()))
+
+    def test_iter_deferred_language(self):
+        with LanguageOverride('en'):
+            qs = Normal.objects.language()
+        with LanguageOverride('ja'):
+            index = 0
+            for obj in qs:
+                index += 1
+                self.assertEqual(obj.shared_field, DOUBLE_NORMAL[index]['shared_field'])
+                self.assertEqual(obj.translated_field, DOUBLE_NORMAL[index]['translated_field_ja'])
+
 
 class UpdateTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_update_shared(self):
@@ -115,7 +181,31 @@ class UpdateTests(NaniTestCase, TwoTranslatedNormalMixin):
         # check it didn't touch japanese translated fields
         self.assertEqual(newja1.translated_field, ja1.translated_field)
         self.assertEqual(newja2.translated_field, ja2.translated_field)
-        
+
+    def test_update_deferred_language(self):
+        NEW_TRANSLATED = 'new translated'
+        n1 = Normal.objects.language('en').get(pk=1)
+        n2 = Normal.objects.language('en').get(pk=2)
+        ja1 = Normal.objects.language('ja').get(pk=1)
+        ja2 = Normal.objects.language('ja').get(pk=2)
+        with LanguageOverride('ja'):
+            qs = Normal.objects.language()
+        with LanguageOverride('en'):
+            with self.assertNumQueries(1):
+                qs.update(translated_field=NEW_TRANSLATED)
+        new1 = Normal.objects.language('en').get(pk=1)
+        new2 = Normal.objects.language('en').get(pk=2)
+        self.assertEqual(new1.shared_field, n1.shared_field)
+        self.assertEqual(new2.shared_field, n2.shared_field)
+        self.assertEqual(new1.translated_field, NEW_TRANSLATED)
+        self.assertEqual(new2.translated_field, NEW_TRANSLATED)
+        # check it didn't touch japanese
+        newja1 = Normal.objects.language('ja').get(pk=1)
+        newja2 = Normal.objects.language('ja').get(pk=2)
+        self.assertEqual(newja1.shared_field, ja1.shared_field)
+        self.assertEqual(newja2.shared_field, ja2.shared_field)
+        self.assertEqual(newja1.translated_field, ja1.translated_field)
+        self.assertEqual(newja2.translated_field, ja2.translated_field)
 
 class ValuesListTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_values_list_translated(self):
@@ -136,7 +226,18 @@ class ValuesListTests(NaniTestCase, TwoTranslatedNormalMixin):
             (DOUBLE_NORMAL[2]['shared_field'], DOUBLE_NORMAL[2]['translated_field_en']),
         ]
         self.assertEqual(values_list, check)
-        
+
+    def test_values_list_deferred_language(self):
+        with LanguageOverride('ja'):
+            qs = Normal.objects.language()
+        with LanguageOverride('en'):
+            values = qs.values_list('shared_field', 'translated_field')
+            values_list = list(values)
+        check = [
+            (DOUBLE_NORMAL[1]['shared_field'], DOUBLE_NORMAL[1]['translated_field_en']),
+            (DOUBLE_NORMAL[2]['shared_field'], DOUBLE_NORMAL[2]['translated_field_en']),
+        ]
+        self.assertEqual(values_list, check)
 
 class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_values_shared(self):
@@ -186,6 +287,17 @@ class ValuesTests(NaniTestCase, TwoTranslatedNormalMixin):
         ]
         self.assertEqual(values_list, check)
 
+    def test_values_deferred_language(self):
+        with LanguageOverride('ja'):
+            qs = Normal.objects.language()
+        with LanguageOverride('en'):
+            values = qs.values('translated_field')
+            values_list = list(values)
+        check = [
+            {'translated_field': DOUBLE_NORMAL[1]['translated_field_en']},
+            {'translated_field': DOUBLE_NORMAL[2]['translated_field_en']},
+        ]
+        self.assertEqual(values_list, check)
 
 class InBulkTests(NaniTestCase, TwoTranslatedNormalMixin):
     def setUp(self):
@@ -214,6 +326,16 @@ class InBulkTests(NaniTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(result[1].translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
                 self.assertEqual(result[1].language_code, 'ja')
 
+    def test_in_bulk_deferred_language(self):
+        with LanguageOverride('ja'):
+            qs = Normal.objects.language()
+        with LanguageOverride('en'):
+            result = qs.in_bulk([1])
+            self.assertCountEqual((1,), result)
+            self.assertEqual(result[1].shared_field, DOUBLE_NORMAL[1]['shared_field'])
+            self.assertEqual(result[1].translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
+            self.assertEqual(result[1].language_code, 'en')
+
 
 class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
     def test_delete_all(self):
@@ -232,6 +354,16 @@ class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(Normal.objects.untranslated().count(), 2)
         self.assertEqual(Normal.objects._real_manager.count(), 2)
         self.assertEqual(Normal._meta.translations_model.objects.count(), 0)
+
+    def test_delete_translation_deferred_language(self):
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 4)
+        with LanguageOverride('ja'):
+            qs = Normal.objects.language()
+        with LanguageOverride('en'):
+            qs.delete_translations()
+
+        self.assertEqual(Normal.objects.language('ja').count(), 2)
+        self.assertEqual(Normal.objects.language('en').count(), 0)
 
 
 class GetTranslationFromInstanceTests(NaniTestCase):
