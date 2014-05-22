@@ -27,7 +27,7 @@ import sys, os
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.intersphinx']
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/2.6', None),
+    'python': ('http://docs.python.org/2.7', None),
     'django': ('http://readthedocs.org/docs/django/en/latest/', None),
 }
 

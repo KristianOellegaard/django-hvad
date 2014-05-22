@@ -2,10 +2,43 @@
 Release Notes
 #############
 
-.. release 0.4
+.. release 0.5.0
 
 *****************************
-0.4
+0.5.0
+*****************************
+
+.. note:: This version is being developed. If you feel like helping, or want the
+          very latest feature, you can install it from the `github
+          repository`_.
+
+New features:
+
+- New :func:`~hvad.forms.translationformset_factory` and its companion
+  :class:`~hvad.forms.BaseTranslationFormSet` allow building a formset to work
+  on an instance's translations. Please have at look at its detailed
+  :ref:`documentation <translationformset>`.
+- Django 1.6+'s new :meth:`~django.db.models.query.QuerySet.datetimes` method is
+  now available on :class:`~hvad.manager.TranslationQueryset` too.
+- Calls to :meth:`~hvad.manager.TranslationQueryset.language`, passing `None`
+  to use the current language now defers language resolution until the query is
+  evaluated. It can now be used in form definitions directly, for instance for
+  passing a custom queryset to :class:`~django.forms.ModelChoicefield`.
+
+Deprecation list:
+
+- The deprecated `nani` module was removed.
+- Setting `NANI_TABLE_NAME_SEPARATOR` was renamed to `HVAD_TABLE_NAME_SEPARATOR`.
+  Using the old name will still work for now, but issue a deprecation warning,
+  and get removed in next version.
+- CSS class `nani-language-tabs` in admin templates was renamed to
+  `hvad-language-tabs`. Entities will bear both classes until next version.
+
+
+.. release 0.4.0
+
+*****************************
+0.4.0
 *****************************
 
 Released on May 19, 2014
@@ -25,7 +58,12 @@ New features:
   to each available translation.
 - Instance's translated fields are now available to the model's
   :meth:`~django.db.models.Model.save` method when saving a
-  :class:`hvad.forms.TranslatableModelForm`.
+  :class:`~hvad.forms.TranslatableModelForm`.
+- Accessing a translated field on an untranslated instance will now raise an
+  :exc:`AttributeError` with a helpful message instead of letting the exception
+  bubble up from the ORM.
+- Method :meth:`~hvad.manager.TranslationQueryset.in_bulk` is now available on
+  :class:`~hvad.manager.TranslationQueryset`.
 
 Deprecation list:
 
@@ -34,16 +72,21 @@ Deprecation list:
   is loaded and none exists in database for current language, an :exc:`AttributeError`
   is raised instead. For the transition, both are supported until next release.
 
+Removal of the old 'nani' aliases was postponed until next release.
+
 Fixes:
 
+- Fixed an issue where :class:`~hvad.admin.TranslatableAdmin` could overwrite the
+  wrong language while saving a form.
+- :meth:`~hvad.models.TranslatableModel.lazy_translation_getter` now tries
+  translations in `settings.LANGUAGES` order once it has failed with current
+  language and site's main `LANGUAGE_CODE`.
 - No more deprecation warnings when importing only from :mod:`hvad`.
 - :class:`~hvad.admin.TranslatableAdmin` now generates relative URLs instead
     of absolute ones, enabling it to work behind reverse proxies.
 - django-hvad does not depend on the default manager being named
     'objects' anymore.
 - Q objects now work properly with :class:`~hvad.manager.TranslationQueryset`.
-
-Removal of the old 'nani' aliases was postponed until next release.
 
 .. release-0.3
 
@@ -108,9 +151,6 @@ Released on November 8, 2011
 0.0.4 (Alpha)
 *****************************
 
-In development
-
-
 .. release-0.0.3
 
 *************
@@ -164,3 +204,4 @@ Released on May 13, 2011.
 
 
 .. _django-polymorphic: https://github.com/bconstantin/django_polymorphic
+.. _github repository: https://github.com/KristianOellegaard/django-hvad

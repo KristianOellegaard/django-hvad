@@ -9,10 +9,23 @@ from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
 from hvad.utils import SmartGetFieldByName
 from hvad.compat.method_type import MethodType
+from hvad.compat.settings import settings_updater
 import sys
+import warnings
 
-# maybe there should be an extra settings for this
-FALLBACK_LANGUAGES = tuple( code for code, name in settings.LANGUAGES )
+@settings_updater
+def update_settings(*args, **kwargs):
+    global FALLBACK_LANGUAGES, TABLE_NAME_SEPARATOR
+    FALLBACK_LANGUAGES = tuple( code for code, name in settings.LANGUAGES )
+    try:
+        TABLE_NAME_SEPARATOR = getattr(settings, 'NANI_TABLE_NAME_SEPARATOR')
+    except AttributeError:
+        TABLE_NAME_SEPARATOR = getattr(settings, 'HVAD_TABLE_NAME_SEPARATOR', '_')
+    else:
+        warnings.warn('NANI_TABLE_NAME_SEPARATOR setting is deprecated and will '
+                      'be removed. Please rename it to HVAD_TABLE_NAME_SEPARATOR.',
+                      DeprecationWarning)
+
 
 def create_translations_model(model, related_name, meta, **fields):
     """
@@ -38,7 +51,7 @@ def create_translations_model(model, related_name, meta, **fields):
     # Create inner Meta class 
     Meta = type('Meta', (object,), meta)
     if not hasattr(Meta, 'db_table'):
-        Meta.db_table = model._meta.db_table + '%stranslation' % getattr(settings, 'NANI_TABLE_NAME_SEPARATOR', '_')
+        Meta.db_table = model._meta.db_table + '%stranslation' % TABLE_NAME_SEPARATOR
     Meta.app_label = model._meta.app_label
     name = '%sTranslation' % model.__name__
     attrs = {}

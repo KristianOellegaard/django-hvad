@@ -1,4 +1,3 @@
-from distutils.version import LooseVersion
 import functools
 import django
 from django.conf import settings
@@ -10,7 +9,7 @@ else:
     from django.contrib.admin.util import (flatten_fieldsets, unquote,
         get_deleted_objects)
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
 from django.forms.models import model_to_dict
@@ -34,7 +33,6 @@ from hvad.utils import get_cached_translation, get_translation
 from hvad.manager import FALLBACK_LANGUAGES
 
 
-NEW_GET_DELETE_OBJECTS = LooseVersion(django.get_version()) >= LooseVersion('1.3')
 atomic = (transaction.atomic if django.VERSION >= (1, 6) else
           transaction.commit_on_success)
 
@@ -272,13 +270,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         # will also be deleted.
         
         protected = False
-        if NEW_GET_DELETE_OBJECTS:
-            (deleted_objects, perms_needed, protected) = get_deleted_objects(
-                [obj], translations_model._meta, request.user, self.admin_site, using)
-        else: # pragma: no cover
-            (deleted_objects, perms_needed) = get_deleted_objects(
-                [obj], translations_model._meta, request.user, self.admin_site)
-        
+        deleted_objects, perms_needed, protected = get_deleted_objects(
+            [obj], translations_model._meta, request.user, self.admin_site, using)
         
         lang = get_language_name(language_code) 
             

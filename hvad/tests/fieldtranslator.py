@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from hvad.fieldtranslator import translate
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Related
 
 
-class FieldtranslatorTests(NaniTestCase):
+class FieldtranslatorTests(HvadTestCase):
     def test_simple(self):
         INPUT = 'normal__shared_field'
         query_string, joins = translate(INPUT, Related)

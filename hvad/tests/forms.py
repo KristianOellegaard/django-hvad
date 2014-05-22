@@ -2,7 +2,7 @@
 from django.core.exceptions import FieldError
 from hvad.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, SimpleRelated
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
@@ -34,7 +34,7 @@ class SimpleRelatedForm(TranslatableModelForm):
         model = SimpleRelated
         fields = ['normal', 'translated_field']
 
-class FormTests(NaniTestCase, TwoTranslatedNormalMixin):
+class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
     
     def test_nontranslatablemodelform(self):
         # Make sure that TranslatableModelForm won't accept a regular model
@@ -168,8 +168,6 @@ class FormTests(NaniTestCase, TwoTranslatedNormalMixin):
                     class Meta:
                         model = Normal
                         fields = ['a_field_that_doesnt_exist']
-
-                form = WrongForm()
             self.assertRaises(FieldError, create_wrong_form)
 
     def test_simple_related_form(self):

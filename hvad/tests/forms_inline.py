@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
+from django.forms import ModelForm
 from hvad.admin import TranslatableModelAdminMixin
 from hvad.forms import translatable_inlineformset_factory, translationformset_factory
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.project.app.models import Normal, Related
 from hvad.test_utils.forms import FormData
 
 
-class TestBasicInline(NaniTestCase):
+class TestBasicInline(HvadTestCase):
     def setUp(self):
         with LanguageOverride("en"):
             self.object = Normal.objects.language().create(shared_field="test", translated_field="translated test")
@@ -29,7 +30,7 @@ class TestBasicInline(NaniTestCase):
             self.assertTrue("translated_to_translated" in formset.forms[0].fields)
             self.assertFalse("language_code" in formset.forms[0].fields)
 
-class TestTranslationsInline(NaniTestCase):
+class TestTranslationsInline(HvadTestCase):
     def setUp(self):
         with LanguageOverride('en'):
             self.object = Normal.objects.language().create(
@@ -55,6 +56,18 @@ class TestTranslationsInline(NaniTestCase):
             self.assertEqual(formset.forms[1].initial['language_code'], 'fr')
             self.assertEqual(formset.forms[1].initial['translated_field'], 'translated_test_fr')
             self.assertEqual(formset.forms[2].initial, {})
+
+        with self.assertNumQueries(1):
+            class Form(ModelForm):
+                class Meta:
+                    fields = ('translated_field',)
+            Formset = translationformset_factory(Normal, form=Form, extra=1)
+            formset = Formset(instance=self.object)
+            self.assertIn('translated_field', formset.forms[0].fields)
+            self.assertIn('language_code', formset.forms[0].fields)
+            self.assertIn('DELETE', formset.forms[0].fields)
+            self.assertIn('id', formset.forms[0].fields)
+            self.assertNotIn('master', formset.forms[0].fields)
 
     def test_create_translations(self):
         Formset = translationformset_factory(Normal, extra=1)

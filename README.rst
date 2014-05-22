@@ -3,18 +3,17 @@ django-hvad
 ============
 
 This project is yet another attempt at making model translations suck less in
-Django. It uses an automatically created :term:`Translations Model` to store
+Django. It uses an automatically created `Translations Model` to store
 translatable fields in arbitrary languages with a foreign key to the main model.
 
 Documentation for django-hvad can be found at http://django-hvad.readthedocs.org/.
 
 This project replaces the obsolete django-nani package. It provides the same
 functionality, but does not affect the default queries: translated fields have
-to be activated by calling a specific method on the
-:class:`~hvad.manager.TranslationManager`.
+to be activated by calling a specific method on the `TranslationManager`.
 
 .. warning:: django-hvad is still in beta, please use it with
-             caution and report any bug(s) you might encounter on
+             caution and report any bug you might encounter on
              https://github.com/KristianOellegaard/django-hvad/issues
 
 **Feel free to join us at #django-hvad on irc.freenode.net for a chat**

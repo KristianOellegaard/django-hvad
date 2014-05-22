@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy, RelatedProxy, SimpleRelatedProxy
 
 
-class ProxyTests(NaniTestCase):
+class ProxyTests(HvadTestCase):
     def test_proxy(self):
         self.assertEqual(NormalProxy.objects.count(), 0)
         self.assertEqual(NormalProxy.objects.language('en').count(), 0)

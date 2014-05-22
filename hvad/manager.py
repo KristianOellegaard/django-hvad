@@ -2,7 +2,7 @@ from collections import defaultdict
 import django
 from django.conf import settings
 from django.db import models, transaction, IntegrityError
-from django.db.models.query import QuerySet, ValuesQuerySet, ValuesListQuerySet, DateQuerySet
+from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
 if django.VERSION >= (1, 6):
     from django.db.models.query import DateTimeQuerySet
 try:
@@ -13,13 +13,17 @@ from django.db.models import Q
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
 from hvad.utils import combine
+from hvad.compat.settings import settings_updater
 import logging
 import sys
 
 logger = logging.getLogger(__name__)
 
-# maybe there should be an extra settings for this
-FALLBACK_LANGUAGES = [ code for code, name in settings.LANGUAGES ]
+@settings_updater
+def update_settings(*args, **kwargs):
+    global FALLBACK_LANGUAGES
+    FALLBACK_LANGUAGES = tuple( code for code, name in settings.LANGUAGES )
+
 
 class FieldTranslator(dict):
     """
@@ -442,10 +446,6 @@ class TranslationQueryset(QuerySet):
 
     def dates(self, field_name, kind=None, order='ASC'):
         field_name = self.field_translator.get(field_name)
-        if django.VERSION <= (1, 2):
-            from hvad.compat.date import DateQuerySet
-            return self._clone(klass=DateQuerySet, setup=True,
-                _field_name=field_name, _kind=kind, _order=order)
         return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
 
     if django.VERSION >= (1, 6):

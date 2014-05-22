@@ -1,9 +1,9 @@
 import pickle
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.project.app.models import Normal
 
-class PicklingTest(NaniTestCase):
+class PicklingTest(HvadTestCase):
     def test_untranslated_new_object_can_be_pickled(self):
         normal = Normal(shared_field="Shared")
         serialized_repr = pickle.dumps(normal)

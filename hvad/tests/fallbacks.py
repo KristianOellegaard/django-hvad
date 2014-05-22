@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.testcase import NaniTestCase
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 
-class FallbackTests(NaniTestCase, TwoTranslatedNormalMixin):
+class FallbackTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_single_instance_fallback(self):
         # fetch an object in a language that does not exist
         with LanguageOverride('de'):
