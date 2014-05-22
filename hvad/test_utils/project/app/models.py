@@ -101,6 +101,9 @@ class Date(TranslatableModel):
         translated_date = models.DateTimeField()
     )
 
+    class Meta:
+        get_latest_by = 'shared_date'
+
 class AggregateModel(TranslatableModel):
     number = models.IntegerField()
     translated_fields = TranslatedFields(

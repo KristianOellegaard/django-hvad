@@ -273,7 +273,7 @@ class TranslationQueryset(QuerySet):
     #===========================================================================
     # Queryset/Manager API 
     #===========================================================================
-    
+
     def language(self, language_code=None):
         self._language_code = language_code
         return self
@@ -380,6 +380,9 @@ class TranslationQueryset(QuerySet):
         def update_or_create(self, defaults=None, **kwargs):
             raise NotImplementedError()
 
+    def bulk_create(self, objs, batch_size=None):
+        raise NotImplementedError()
+
     def filter(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
@@ -402,9 +405,14 @@ class TranslationQueryset(QuerySet):
 
     def latest(self, field_name=None):
         qs = self._clone()._add_language_filter()
-        if field_name:
-            field_name = qs.field_translator.get(field_name)
+        field_name = qs.field_translator.get(field_name or self.shared_model._meta.get_latest_by)
         return super(TranslationQueryset, qs).latest(field_name)
+
+    if django.VERSION >= (1, 6):
+        def earliest(self, field_name=None):
+            qs = self._clone()._add_language_filter()
+            field_name = qs.field_translator.get(field_name or self.shared_model._meta.get_latest_by)
+            return super(TranslationQueryset, qs).earliest(field_name)
 
     def in_bulk(self, id_list):
         if not id_list:
@@ -417,6 +425,7 @@ class TranslationQueryset(QuerySet):
         qs = self._get_shared_queryset()
         qs.delete()
     delete.alters_data = True
+    delete.queryset_only = True
     
     def delete_translations(self):
         self.update(master=None)

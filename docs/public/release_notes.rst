@@ -20,6 +20,8 @@ New features:
   :ref:`documentation <translationformset>`.
 - Django 1.6+'s new :meth:`~django.db.models.query.QuerySet.datetimes` method is
   now available on :class:`~hvad.manager.TranslationQueryset` too.
+- Django 1.6+'s new:meth:`~django.db.models.query.QuerySet.earliest` method is
+  now available on :class:`~hvad.manager.TranslationQueryset`.
 - Calls to :meth:`~hvad.manager.TranslationQueryset.language`, passing `None`
   to use the current language now defers language resolution until the query is
   evaluated. It can now be used in form definitions directly, for instance for
@@ -33,6 +35,12 @@ Deprecation list:
   and get removed in next version.
 - CSS class `nani-language-tabs` in admin templates was renamed to
   `hvad-language-tabs`. Entities will bear both classes until next version.
+
+Fixes:
+
+- Method :meth:`~django.db.models.query.QuerySet.latest` now works when passed
+  no field name, properly getting the field name from the model's
+  `Meta.get_latest_by` option.
 
 
 .. release 0.4.0
