@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import django
 from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
@@ -430,6 +431,11 @@ class NotImplementedTests(HvadTestCase):
         self.assertRaises(NotImplementedError, baseqs.defer, 'shared_field')
         self.assertRaises(NotImplementedError, baseqs.annotate)
         self.assertRaises(NotImplementedError, baseqs.only)
+        self.assertRaises(NotImplementedError, baseqs.bulk_create, [])
+        # select_related with no field is not implemented
+        self.assertRaises(NotImplementedError, baseqs.select_related)
+        if django.VERSION >= (1, 7):
+            self.assertRaises(NotImplementedError, baseqs.update_or_create)
 
 
 class ExcludeTests(HvadTestCase):
