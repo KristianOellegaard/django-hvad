@@ -1,7 +1,14 @@
+import django
 from django.test.testcases import TestCase
 from hvad.test_utils.context_managers import UserLoginContext
 from hvad.test_utils.request_factory import RequestFactory
 import warnings
+
+
+def minimumDjangoVersion(*args):
+    return (lambda x: x) if django.VERSION >= args else (lambda x: 'disabled')
+def maximumDjangoVersion(*args):
+    return (lambda x: x) if django.VERSION < args else (lambda x: 'disabled')
 
 
 class _AssertThrowsWarningContext(object):

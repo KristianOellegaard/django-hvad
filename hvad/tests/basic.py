@@ -10,7 +10,7 @@ from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, MultipleFields, Boolean
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 
@@ -318,22 +318,22 @@ class TableNameTest(HvadTestCase):
             )
         self.assertTrue(MyTableNameTestModel.translations.related.model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
 
-    if django.VERSION >= (1, 4):
-        def test_table_name_override(self):
-            from hvad.models import TranslatedFields
-            from django.db import models
-            with self.settings(HVAD_TABLE_NAME_SEPARATOR='O_O'):
-                class MyOtherTableNameTestModel(TranslatableModel):
-                    translations = TranslatedFields(
-                        hello = models.CharField(max_length=128)
-                    )
-                self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
+    @minimumDjangoVersion(1, 4)
+    def test_table_name_override(self):
+        from hvad.models import TranslatedFields
+        from django.db import models
+        with self.settings(HVAD_TABLE_NAME_SEPARATOR='O_O'):
+            class MyOtherTableNameTestModel(TranslatableModel):
+                translations = TranslatedFields(
+                    hello = models.CharField(max_length=128)
+                )
+            self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
 
-    if django.VERSION >= (1, 4):
-        def test_table_name_override_rename(self):
-            with self.assertThrowsWarning(DeprecationWarning, 1):
-                with self.settings(NANI_TABLE_NAME_SEPARATOR='O_O'):
-                    pass
+    @minimumDjangoVersion(1, 4)
+    def test_table_name_override_rename(self):
+        with self.assertThrowsWarning(DeprecationWarning, 1):
+            with self.settings(NANI_TABLE_NAME_SEPARATOR='O_O'):
+                pass
 
     def test_table_name_from_meta(self):
         from hvad.models import TranslatedFields
