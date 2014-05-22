@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Django Hvad 0.5\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-05-22 15:23+0200\n"
+"PO-Revision-Date: 2014-05-22 15:41+0100\n"
+"Last-Translator: Paolo Melchiorre <paolo.melchiorre@madec.it>\n"
+"Language-Team: Italian <paulox@paulox.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 1.5.4\n"
+"Language: it\n"
+
+#: admin.py:101
+msgid "all translations"
+msgstr "tutte le traduzioni"
+
+#: admin.py:287
+#, python-format
+msgid "The %(name)s \"%(obj)s\" was deleted successfully."
+msgstr "Il %(name)s \"%(obj)s\" e' stato cancellato con successo."
+
+#: admin.py:301
+#, python-format
+msgid "Cannot delete %(name)s"
+msgstr "Impossibile rimuovere %(name)s"
+
+#: admin.py:303
+msgid "Are you sure?"
+msgstr "Sei sicuro?"
+
+#: forms.py:342
+msgid "At least one translation must be provided"
+msgstr "Deve essere fornita almeno una traduzione"
+
+#: templates/admin/hvad/change_form.html:38
+#: templates/admin/hvad/change_form.html:40
+#: templates/admin/hvad/deletion_not_allowed.html:10
+#: templates/admin/hvad/includes/translation_tabs.html:6
+#: templates/admin/hvad/includes/translation_tabs.html:8
+msgid "Delete Translation"
+msgstr "Cancella la traduzione"
+
+#: templates/admin/hvad/deletion_not_allowed.html:6
+msgid "Home"
+msgstr "Home"
+
+#: templates/admin/hvad/deletion_not_allowed.html:15
+#, python-format
+msgid ""
+"Deletion of the %(language_name)s translation of %(object_name)s "
+"'%(escaped_object)s' is not allowed, because it is the last available "
+"translation of this instance."
+msgstr ""
+"La rimozione della traduzione %(language_name)s di %(object_name)s "
+"'%(escaped_object)s' non e' consentita poichè è l'ultima traduzione "
+"disponibile di questa istanza."
+
+#: templates/admin/hvad/edit_inline/stacked.html:10
+#: templates/admin/hvad/edit_inline/tabular.html:30
+msgid "View on site"
+msgstr "Vedi sul sito"
+
+#: templates/admin/hvad/edit_inline/stacked.html:68
+#: templates/admin/hvad/edit_inline/tabular.html:115
+#, python-format
+msgid "Add another %(verbose_name)s"
+msgstr "Aggiungi %(verbose_name)s"
+
+#: templates/admin/hvad/edit_inline/stacked.html:71
+#: templates/admin/hvad/edit_inline/tabular.html:118
+msgid "Remove"
+msgstr "Rimuovi"
+
+#: templates/admin/hvad/edit_inline/tabular.html:17
+msgid "Delete?"
+msgstr "Cancella?"
