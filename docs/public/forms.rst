@@ -16,6 +16,8 @@ Please be careful while overriding the :meth:`~hvad.forms.TranslatableModelForm.
 or :meth:`~hvad.forms.TranslatableModelForm._post_clean` methods, as they are crucial
 parts for the form to work.
 
+.. _translationformset:
+
 ********************
 Translations Formset
 ********************

@@ -51,8 +51,6 @@ Contents
     public/contributing
     internal/index
 
-    changelog
-
     glossary
     
 
