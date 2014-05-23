@@ -20,6 +20,10 @@ all_translations
     languages in which this object is available. Entries are linked to their
     corresponding admin page.
 
+    .. note:: You should add `prefetch_related('translations')` to your queryset
+              if you use this in :attr:`~django.contrib.admin.ModelAdmin.list_display`,
+              else one query will be run for every item in the list.
+
 
 ***********************************************************
 ModelAdmin APIs you should not change on TranslatableAdmin
