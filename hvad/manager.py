@@ -740,6 +740,18 @@ class FallbackQueryset(QuerySet):
         })
         return super(FallbackQueryset, self)._clone(klass, setup, **kwargs)
 
+    def aggregate(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def annotate(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def defer(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def only(self, *args, **kwargs):
+        raise NotImplementedError()
+
 
 class TranslationFallbackManager(models.Manager):
     """
