@@ -125,7 +125,10 @@ use_fallbacks
     Returns a queryset which will use fallbacks to get the translated part of
     the instances returned by this queryset. If ``fallbacks`` is given as a
     tuple of language codes, it will try to get the translations in the order
-    specified. Otherwise the order of your LANGUAGES setting will be used.
+    specified, replacing the special `None` value with the current language at
+    query evaluation, as returned by :func:`~django.utils.translation.get_language`.
+    Otherwise the order of your LANGUAGES setting will be used, prepended with
+    current language.
     
     .. warning:: Using fallbacks will cause **a lot** of queries! In the worst
                  case 1 + (n * x) with n being the amount of rows being fetched

@@ -26,6 +26,9 @@ New features:
   to use the current language now defers language resolution until the query is
   evaluated. It can now be used in form definitions directly, for instance for
   passing a custom queryset to :class:`~django.forms.ModelChoicefield`.
+- Similarly, :meth:`~hvad.manager.FallbackQueryset.use_fallbacks` can now be
+  passed `None` as one of the fallbacks, and it will be replaced with current
+  language at query evaluation time.
 - All queryset classes used by :class:`~hvad.manager.TranslationManager` can now
   be customized thanks to the new :attr:`~hvad.manager.TranslationManager.fallback_class`
   and :attr:`~hvad.manager.TranslationManager.default_class` attributes.

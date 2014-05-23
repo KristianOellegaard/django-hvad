@@ -658,7 +658,8 @@ class FallbackQueryset(QuerySet):
         """
         # get the primary keys of the shared model results
         base_ids = [obj.pk for obj in base_results]
-        fallbacks = list(self.translation_fallbacks)
+        fallbacks = [get_language() if lang is None else lang
+                     for lang in self.translation_fallbacks]
         # get all translations for the fallbacks chosen for those shared models,
         # note that this query is *BIG* and might return a lot of data, but it's
         # arguably faster than running one query for each result or even worse
@@ -731,7 +732,7 @@ class FallbackQueryset(QuerySet):
         if fallbacks:
             self.translation_fallbacks = fallbacks
         else:
-            self.translation_fallbacks = FALLBACK_LANGUAGES
+            self.translation_fallbacks = (None, ) + FALLBACK_LANGUAGES
         return self
 
     def _clone(self, klass=None, setup=False, **kwargs):

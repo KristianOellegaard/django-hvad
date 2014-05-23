@@ -15,6 +15,20 @@ class FallbackTests(HvadTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(obj.language_code, 'en')
                 self.assertEqual(obj.translated_field, 'English1')
 
+    def test_deferred_fallbacks(self):
+        with LanguageOverride('de'):
+            qs = Normal.objects.untranslated().use_fallbacks('ru', None, 'en')
+        with LanguageOverride('ja'):
+            with self.assertNumQueries(2):
+                obj = qs.get(pk=1)
+                self.assertEqual(obj.language_code, 'ja')
+                self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
+        with LanguageOverride('en'):
+            with self.assertNumQueries(2):
+                obj = qs.get(pk=1)
+                self.assertEqual(obj.language_code, 'en')
+                self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
+
     def test_shared_only(self):
         with LanguageOverride('de'):
             with self.assertNumQueries(1):

@@ -460,8 +460,10 @@ FallbackQueryset
     .. method:: use_fallbacks(self, *fallbacks)
     
         If this method gets called, :meth:`iterator` will use the fallbacks
-        defined here. If not fallbacks are given, :data:`FALLBACK_LANGUAGES`
-        will be used.
+        defined here. `None` value will be replaced with current language at
+        query evaluation, as returned by :func:`~django.utils.translation.get_language`.
+        If not fallbacks are given, :data:`FALLBACK_LANGUAGES` will be used,
+        with current language prepended.
 
     .. method:: _clone(self, klass=None, setup=False, **kwargs)
     
