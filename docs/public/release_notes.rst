@@ -60,6 +60,12 @@ Fixes:
   queries allowed in Django 1.6 and newer to use only one query to resolve
   fallbacks. Old behavior can be forced by adding `HVAD_LEGACY_FALLBACKS = True`
   to your settings.
+- Method :meth:`~hvad.models.TranslatableModel.get_available_languages` will now
+  use prefetched translations if the instance was loaded from the database with
+  `prefetch_related('translations')`. Especially, using
+  :meth:`~hvad.admin.TranslatableAdmin.all_translations` in
+  :attr:`~django.contrib.admin.ModelAdmin.list_display` no longer results in one
+  query per item, as long as translations were prefetched.
 
 
 .. release 0.4.0

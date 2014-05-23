@@ -15,6 +15,8 @@ from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, Other, AutoPopulated
 
+PREFETCH_RELATED = (django.VERSION >= (1, 4))
+
 class BaseAdminTests(object):
     def _get_admin(self, model):
         return admin.site._registry[model]
@@ -82,13 +84,21 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
         obj = Normal.objects.language("en").create(
             shared_field="shared",
         )
+
+        # Get the object back from db to test the use of prefetch_related
+        qs = Normal.objects.language('en')
+        if PREFETCH_RELATED:
+            qs = qs.prefetch_related('translations')
+        obj = qs.get(pk=obj.pk)
         with LanguageOverride('en'):
-            self.assertTrue(myadmin.all_translations(obj).find("<strong>") != -1)
-            # Entries should be linked to the corresponding translation page
-            self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
+            with self.assertNumQueries(0 if PREFETCH_RELATED else 2):
+                self.assertTrue(myadmin.all_translations(obj).find("<strong>") != -1)
+                # Entries should be linked to the corresponding translation page
+                self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
 
         with LanguageOverride('ja'):
-            self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
+            with self.assertNumQueries(0 if PREFETCH_RELATED else 1):
+                self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
 
         # An unsaved object, shouldn't have any translations
         

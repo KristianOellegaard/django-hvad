@@ -325,8 +325,10 @@ class TranslatableModel(with_metaclass(TranslatableModelBase, models.Model)):
         return getattr(translation, name, default)
 
     def get_available_languages(self):
-        manager = self._meta.translations_model.objects
-        return manager.filter(master=self).values_list('language_code', flat=True)
+        qs = getattr(self, self._meta.translations_accessor).all()
+        if qs._result_cache is not None:
+            return [obj.language_code for obj in qs]
+        return qs.values_list('language_code', flat=True)
     
     #===========================================================================
     # Internals
