@@ -8,7 +8,10 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
         DefinitionTests, TableNameTest, GetOrCreateTest, BooleanTests)
     from hvad.tests.dates import LatestTests, DatesTests
     from hvad.tests.docs import DocumentationTests
-    from hvad.tests.fallbacks import FallbackTests
+    from hvad.tests.fallbacks import (FallbackTests, FallbackFilterTests, FallbackCachingTests,
+                                      FallbackIterTests, FallbackValuesListTests,
+                                      FallbackValuesTests, FallbackInBulkTests,
+                                      FallbackNotImplementedTests)
     from hvad.tests.fieldtranslator import FieldtranslatorTests
     from hvad.tests.forms import FormTests
     from hvad.tests.ordering import OrderingTest

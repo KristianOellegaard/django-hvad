@@ -49,9 +49,11 @@ class SmartGetFieldByName(object):
             if name in meta.translations_model._meta.get_all_field_names():
                 raise WrongManager("To access translated fields like %r from "
                                    "an untranslated model, you must use a "
-                                   "translation aware manager, you can get one "
-                                   "using "
-                                   "hvad.utils.get_translation_aware_manager." %
+                                   "translation aware manager. For non-translatable "
+                                   "models, you can get one using "
+                                   "hvad.utils.get_translation_aware_manager.\n"
+                                   "For translatable models, use the language() "
+                                   "method."%
                                    name)
             raise
 

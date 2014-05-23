@@ -26,21 +26,40 @@ New features:
   to use the current language now defers language resolution until the query is
   evaluated. It can now be used in form definitions directly, for instance for
   passing a custom queryset to :class:`~django.forms.ModelChoicefield`.
+- Similarly, :meth:`~hvad.manager.FallbackQueryset.use_fallbacks` can now be
+  passed `None` as one of the fallbacks, and it will be replaced with current
+  language at query evaluation time.
+- All queryset classes used by :class:`~hvad.manager.TranslationManager` can now
+  be customized thanks to the new :attr:`~hvad.manager.TranslationManager.fallback_class`
+  and :attr:`~hvad.manager.TranslationManager.default_class` attributes.
 
 Deprecation list:
 
 - The deprecated `nani` module was removed.
+- Method :meth:`~hvad.manager.TranslationManager.using_translations` is now deprecated.
+  It can be safely replaced by :meth:`~hvad.manager.TranslationManager.language`
+  with no arguments.
 - Setting `NANI_TABLE_NAME_SEPARATOR` was renamed to `HVAD_TABLE_NAME_SEPARATOR`.
   Using the old name will still work for now, but issue a deprecation warning,
   and get removed in next version.
 - CSS class `nani-language-tabs` in admin templates was renamed to
   `hvad-language-tabs`. Entities will bear both classes until next version.
+- Private `_real_manager` and `_fallback_manager` attributes of
+  :class:`~hvad.manager.TranslationQueryset` have been removed as the indirection
+  served no real purpose.
+- The :class:`~hvad.manager.TranslationFallbackManager` is deprecated and will
+  be removed in next release. Please use manager's
+  :meth:`~hvad.manager.TranslationManager.untranslated` method instead.
 
 Fixes:
 
 - Method :meth:`~django.db.models.query.QuerySet.latest` now works when passed
   no field name, properly getting the field name from the model's
   `Meta.get_latest_by` option.
+- :class:`~hvad.manager.FallbackQueryset` now leverages the better control on
+  queries allowed in Django 1.6 and newer to use only one query to resolve
+  fallbacks. Old behavior can be forced by adding `HVAD_LEGACY_FALLBACKS = True`
+  to your settings.
 
 
 .. release 0.4.0
