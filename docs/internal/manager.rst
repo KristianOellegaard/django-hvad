@@ -99,14 +99,6 @@ TranslationQueryset
     
         The cached field translator for this manager.
     
-    .. attribute:: _real_manager
-    
-        The real manager of the :term:`Shared Model`.
-        
-    .. attribute:: _fallback_manager
-    
-        The fallback manager of the :term:`Shared Model`.
-    
     .. attribute:: _language_code
     
         The language code of this queryset.
@@ -188,8 +180,8 @@ TranslationQueryset
     .. method:: _get_shared_queryset(self)
     
         Returns a clone of this queryset but for the shared model. Does so by
-        using :attr:`_real_manager` and filtering over this queryset. Returns a
-        queryset for the :term:`Shared Model`.
+        creating a :class:`django.db.query.QuerySet` on :attr:`shared_model`
+        and filtering over this queryset. Returns a queryset for the :term:`Shared Model`.
     
     .. method:: _add_language_filter(self)
 
@@ -354,7 +346,7 @@ TranslationQueryset
     .. method:: _clone(self, klass=None, setup=False, **kwargs)
     
         Injects *_local_field_names*, *_field_translator*, *_language_code*,
-        *_real_manager* and *_fallback_manager* into *kwargs*. If a *klass* is
+        and *shared_model* into *kwargs*. If a *klass* is
         given, calls :meth:`_get_class` to get a mixed class if necessary.
         
         Calls the superclass with the new *kwargs* and *klass*.
@@ -410,20 +402,7 @@ TranslationManager
     
     .. method:: contribute_to_class(self, model, name)
     
-        Contributes this manager, the real manager and the fallback manager onto
-        the class using :meth:`contribute_real_manager` and
-        :meth:`contribute_fallback_manager`.
-        
-    .. method:: contribute_real_manager(self)
-    
-        Creates a real manager and contributes it to the model after prefixing
-        the name with an underscore.
-    
-    .. method:: contribute_fallback_manager(self)
-    
-        Creates a fallback manager and contributes it to the model after
-        prefixing the name with an underscore and suffixing it with
-        ``'_fallback'``.
+        Contributes this manager onto the class.
 
 
 ****************
@@ -465,6 +444,10 @@ FallbackQueryset
 **************************
 TranslationFallbackManager
 **************************
+
+.. warning:: This class is deprecated and will be removed in next release.
+                Please use :meth:`~hvad.manager.TranslationManager.untranslated`
+                instead.
 
 .. class:: TranslationFallbackManager
 

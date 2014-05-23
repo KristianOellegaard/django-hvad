@@ -35,6 +35,12 @@ Deprecation list:
   and get removed in next version.
 - CSS class `nani-language-tabs` in admin templates was renamed to
   `hvad-language-tabs`. Entities will bear both classes until next version.
+- Private `_real_manager` and `_fallback_manager` attributes of
+  :class:`~hvad.manager.TranslationQueryset` have been removed as the indirection
+  served no real purpose.
+- The :class:`~hvad.manager.TranslationFallbackManager` is deprecated and will
+  be removed in next release. Please use manager's
+  :meth:`~hvad.manager.TranslationManager.untranslated` method instead.
 
 Fixes:
 

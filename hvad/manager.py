@@ -16,6 +16,7 @@ from hvad.utils import combine
 from hvad.compat.settings import settings_updater
 import logging
 import sys
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -105,10 +106,9 @@ class TranslationQueryset(QuerySet):
         override_classes[DateTimeQuerySet] = SkipMasterSelectMixin
 
     def __init__(self, *args, **kwargs):
+        self.shared_model = kwargs.pop('shared_model', None)
         self._local_field_names = None
         self._field_translator = None
-        self._real_manager = kwargs.pop('real', None)
-        self._fallback_manager = None
         self._language_code = None
         self._related_model_extra_filters = [] # Used for select_related
         self._forced_unique_fields = []  # Used for select_related
@@ -123,13 +123,6 @@ class TranslationQueryset(QuerySet):
     # Helpers and properties (INTERNAL!)
     #===========================================================================
 
-    @property
-    def shared_model(self):
-        """
-        Get the shared model class
-        """
-        return self._real_manager.model
-        
     @property
     def field_translator(self):
         """
@@ -239,7 +232,7 @@ class TranslationQueryset(QuerySet):
         del qs.query.select_related['master']
         accessor = self.shared_model._meta.translations_accessor
         # update using the real manager
-        return self._real_manager.filter(**{'%s__in' % accessor:qs})
+        return QuerySet(self.shared_model, using=self.db).filter(**{'%s__in' % accessor:qs})
 
     def _scan_for_language_where_node(self, children):
         found = False
@@ -566,11 +559,10 @@ class TranslationQueryset(QuerySet):
     
     def _clone(self, klass=None, setup=False, **kwargs):
         kwargs.update({
+            'shared_model': self.shared_model,
             '_local_field_names': self._local_field_names,
             '_field_translator': self._field_translator,
             '_language_code': self._language_code,
-            '_real_manager': self._real_manager,
-            '_fallback_manager': self._fallback_manager,
             '_related_model_extra_filters': list(self._related_model_extra_filters),
             '_forced_unique_fields': list(self._forced_unique_fields),
         })
@@ -653,9 +645,7 @@ class TranslationManager(models.Manager):
     queryset_class = TranslationQueryset
 
     def using_translations(self):
-        if not hasattr(self, '_real_manager'):
-            self.contribute_real_manager()
-        qs = self.queryset_class(self.translations_model, using=self.db, real=self._real_manager)
+        qs = self.queryset_class(self.translations_model, using=self.db, shared_model=self.model)
         if hasattr(self, 'core_filters'):
             qs = qs._next_is_sticky().filter(**(self.core_filters))
         return qs
@@ -664,10 +654,7 @@ class TranslationManager(models.Manager):
         return self.using_translations().language(language_code)
 
     def untranslated(self):
-        if django.VERSION >= (1, 6):
-            return self._fallback_manager.get_queryset()
-        else:
-            return self._fallback_manager.get_query_set()
+        return FallbackQueryset(self.model, using=self.db)
 
     #===========================================================================
     # Internals
@@ -689,16 +676,6 @@ class TranslationManager(models.Manager):
     def contribute_to_class(self, model, name):
         super(TranslationManager, self).contribute_to_class(model, name)
         self.name = name
-        self.contribute_real_manager()
-        self.contribute_fallback_manager()
-        
-    def contribute_real_manager(self):
-        self._real_manager = models.Manager()
-        self._real_manager.contribute_to_class(self.model, '_%s' % getattr(self, 'name', 'objects'))
-    
-    def contribute_fallback_manager(self):
-        self._fallback_manager = TranslationFallbackManager()
-        self._fallback_manager.contribute_to_class(self.model, '_%s_fallback' % getattr(self, 'name', 'objects'))
 
 
 #===============================================================================
@@ -811,6 +788,12 @@ class TranslationFallbackManager(models.Manager):
     Manager class for the shared model, without specific translations. Allows
     using `use_fallbacks()` to enable per object language fallback.
     """
+    def __init__(self, *args, **kwargs):
+        warnings.warn('TranslationFallbackManager is deprecated. Please use '
+                      'TranslationManager\'s untranslated() method.',
+                      DeprecationWarning, stacklevel=2)
+        super(TranslationFallbackManager, self).__init__(*args, **kwargs)
+
     def use_fallbacks(self, *fallbacks):
         if django.VERSION >= (1, 6):
             return self.get_queryset().use_fallbacks(*fallbacks)
