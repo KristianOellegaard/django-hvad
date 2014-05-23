@@ -5,12 +5,13 @@ from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 from hvad.exceptions import WrongManager
+from hvad.manager import LEGACY_FALLBACKS
 
 class FallbackTests(HvadTestCase, TwoTranslatedNormalMixin):
     def test_single_instance_fallback(self):
         # fetch an object in a language that does not exist
         with LanguageOverride('de'):
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 obj = Normal.objects.untranslated().use_fallbacks('en', 'ja').get(pk=1)
                 self.assertEqual(obj.language_code, 'en')
                 self.assertEqual(obj.translated_field, 'English1')
@@ -19,12 +20,12 @@ class FallbackTests(HvadTestCase, TwoTranslatedNormalMixin):
         with LanguageOverride('de'):
             qs = Normal.objects.untranslated().use_fallbacks('ru', None, 'en')
         with LanguageOverride('ja'):
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 obj = qs.get(pk=1)
                 self.assertEqual(obj.language_code, 'ja')
                 self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
         with LanguageOverride('en'):
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 obj = qs.get(pk=1)
                 self.assertEqual(obj.language_code, 'en')
                 self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
@@ -43,12 +44,12 @@ class FallbackTests(HvadTestCase, TwoTranslatedNormalMixin):
                 shared_field='shared3',
                 translated_field=u'日本語三',
             ).pk
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 objs = list(Normal.objects.untranslated().use_fallbacks('en', 'ja'))
                 self.assertEqual(len(objs), 3)
                 obj = dict([(obj.pk, obj) for obj in objs])[pk]
                 self.assertEqual(obj.language_code, 'ja')
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 objs = list(Normal.objects.untranslated().use_fallbacks('en'))
                 self.assertEqual(len(objs), 3)
 
@@ -71,7 +72,7 @@ class FallbackFilterTests(HvadTestCase, TwoTranslatedNormalMixin):
                             .filter(shared_field__contains='2'))
         with self.assertNumQueries(1):
             self.assertEqual(qs.count(), 1)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
             obj = qs[0]
         with self.assertNumQueries(0):
             self.assertEqual(obj.shared_field, DOUBLE_NORMAL[2]['shared_field'])
@@ -82,7 +83,7 @@ class FallbackFilterTests(HvadTestCase, TwoTranslatedNormalMixin):
                             .filter(shared_field__contains='1'))
         with self.assertNumQueries(1):
             self.assertEqual(qs.count(), 1)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
             obj = qs[0]
         with self.assertNumQueries(0):
             self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
@@ -147,14 +148,14 @@ class FallbackIterTests(HvadTestCase, TwoTranslatedNormalMixin):
                         self.assertEqual(obj.translated_field, DOUBLE_NORMAL[index]['translated_field_en'])
 
     def test_simple_iter_fallbacks(self):
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
             index = 0
             for obj in Normal.objects.untranslated().use_fallbacks('en', 'ja'):
                 index += 1
                 self.assertEqual(obj.shared_field, DOUBLE_NORMAL[index]['shared_field'])
                 self.assertEqual(obj.translated_field, DOUBLE_NORMAL[index]['translated_field_en'])
 
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
             index = 0
             for obj in Normal.objects.untranslated().use_fallbacks('ja', 'en'):
                 index += 1
@@ -221,7 +222,7 @@ class FallbackInBulkTests(HvadTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(result[2].language_code, 'ja')
 
     def test_in_bulk_fallbacks(self):
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
             result = Normal.objects.untranslated().use_fallbacks('en', 'ja').in_bulk([1, 2])
         with self.assertNumQueries(0):
             self.assertCountEqual((1, 2), result)

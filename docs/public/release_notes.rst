@@ -56,6 +56,10 @@ Fixes:
 - Method :meth:`~django.db.models.query.QuerySet.latest` now works when passed
   no field name, properly getting the field name from the model's
   `Meta.get_latest_by` option.
+- :class:`~hvad.manager.FallbackQueryset` now leverages the better control on
+  queries allowed in Django 1.6 and newer to use only one query to resolve
+  fallbacks. Old behavior can be forced by adding `HVAD_LEGACY_FALLBACKS = True`
+  to your settings.
 
 
 .. release 0.4.0
