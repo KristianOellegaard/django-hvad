@@ -7,31 +7,27 @@ Models
 Defining models
 ***************
 
-Models which have fields that should be translatable have to inherit
-:class:`hvad.models.TranslatableModel` instead of
-:class:`django.db.models.Model`. Their default manager (usually the ``objects``
-attribute) must be an instance of :class:`hvad.manager.TranslationManager` or a
-subclass of that class. Your inner :class:`Meta` class on the model may not
-use any translated fields in it's options.
+Defining models with django-hvad is done by inheriting
+:class:`~hvad.models.TranslatableModel`. Model definition works like in
+regular Django, with the following additional features:
 
-Fields to be translated have to be wrapped in a
-:class:`hvad.models.TranslatedFields` instance which has to be assigned to an
-attribute on your model. That attribute will be the reversed ForeignKey from the
-:term:`Translations Model` to your :term:`Shared Model`.
-
-If you want to customize your :term:`Translations Model` using directives on a
-inner :class:`Meta` class, you can do so by passing a dictionary holding the
-directives as the ``meta`` keyword to :class:`~hvad.models.TranslatedFields`.
+- Translatable fields can be defined on the model, by wrapping them in a
+  :class:`~hvad.models.TranslatedFields` instance, and assigning it to an
+  attribute on the model. That attribute will be used to access the
+  :term:`translations <Translations Model>` of your model directly. Behind the
+  scenes, it will be a reversed ForeignKey from the
+  :term:`Translations Model` to your :term:`Shared Model`.
+- Custom settings can be set on the :term:`Translations Model` by passing them
+  as a ``meta`` dictionnary to :class:`~hvad.models.TranslatedFields`.
 
 A full example of a model with translations::
 
     from django.db import models
     from hvad.models import TranslatableModel, TranslatedFields
-    
-    
+
     class TVSeries(TranslatableModel):
         distributor = models.CharField(max_length=255)
-        
+
         translations = TranslatedFields(
             title = models.CharField(max_length=100),
             subtitle = models.CharField(max_length=255),
@@ -39,19 +35,15 @@ A full example of a model with translations::
             meta={'unique_together': [('title', 'subtitle')]},
         )
 
+.. note:: The :djterm:`Meta <meta-options>` class of the model may not use the
+          translatable fields in its options. In particular, using them on
+          :attr:`~django.db.models.Options.ordering` or
+          :attr:`~django.db.models.Options.unique_together` will cause
+          inconsistent query results.
 
-.. note::
-
-    When using proxy models with hvad, the ``__init__`` method of the proxy
-    model will not be called when it is loaded from the database. As a result,
-    the ``pre_init`` and ``post_init`` signals will not be called for the proxy
-    model either. The ``__init__`` method and signals for the concrete model
-    will still be called.
-
-***********
-New methods
-***********
-
+***********************
+New and Changed Methods
+***********************
 
 translate
 =========
@@ -59,9 +51,9 @@ translate
 .. method:: translate(language_code)
 
     Prepares a new translation for this instance for the language specified.
-    
+
     .. warning:: This does **not** check if this language already exists in the
-                 database and assumes it doesn't! If it already exists and you
+                 database and assumes it does not! If it already exists and you
                  try to save this instance, it will break!
 
     .. note:: This method does not perform any database queries.
@@ -77,23 +69,27 @@ safe_translation_getter
     value from the database. Returns the value specified in ``default`` if no
     translation was cached on this instance or the translation does not have a
     value for this field.
-    
+
     This method is useful to safely get a value in methods such as
     :meth:`~django.db.models.Model.__unicode__`.
-    
+
     .. note:: This method never performs any database queries.
-    
+
 Example usage::
 
     class MyModel(TranslatableModel):
         translations = TranslatedFields(
             name = models.CharField(max_length=255)
         )
-        
+
         def __unicode__(self):
             return self.safe_translation_getter('name', 'MyMode: %s' % self.pk)
-            
-            
+
+
+lazy_translation_getter
+=======================
+
+.. versionchanged:: 0.4
 .. method:: lazy_translation_getter(name, default=None)
 
     Tries to get the value of the field specified by ``name`` using
@@ -103,7 +99,7 @@ Example usage::
     This method is useful to get a value in methods such as
     :meth:`~django.db.models.Model.__unicode__`.
 
-    .. note:: This method may perform database queries.
+    .. note:: This method may perform a database query.
 
 Example usage::
 
@@ -122,20 +118,18 @@ get_available_languages
 .. method:: get_available_languages
 
     Returns a list of available language codes for this instance.
-    
+
     .. note:: This method runs a database query to fetch the available
-              languages.
-
-
-***************
-Changed methods
-***************
+              languages, unless they were prefetched before (if the instance
+              was retrived with a call to ``prefetch_related('translations')``).
 
 
 save
 ====
 
 .. method:: save(force_insert=False, force_update=False, using=None)
+
+    Overrides :meth:`~django.db.models.Model.save`.
 
     This method runs an extra query when used to save the translation cached on
     this instance, if any translation was cached.
@@ -149,13 +143,116 @@ Foreign keys pointing to a :term:`Translated Model` always point to the
 :term:`Shared Model`. It is currently not possible to have a foreign key to a
 :term:`Translations Model`.
 
-Please note that :meth:`django.db.models.query.QuerySet.select_related` used on
+Please note that :meth:`~django.db.models.query.QuerySet.select_related` used on
 a foreign key pointing to a :term:`Translated Model` does not span to its
 :term:`Translations Model` and therefore accessing a translated field over the
 relation causes an extra query.
 
 If you wish to filter over a translated field over the relation from a
 :term:`Normal Model` you have to use
-:func:`hvad.utils.get_translation_aware_manager` to get a manager that allows
+:func:`~hvad.utils.get_translation_aware_manager` to get a manager that allows
 you to do so. That function takes your model class as argument and returns a
 manager that works with translated fields on related models.
+
+**************************
+Advanced model definitions
+**************************
+
+.. _custom-managers:
+
+Custom Managers and Querysets
+=============================
+
+.. versionchanged:: 0.5
+
+Vanilla :class:`managers <django.db.models.Manager>`, using vanilla
+:class:`querysets <django.db.models.query.QuerySet>` can be used with translatable
+models. However, they will not have access to translations or translatable fields.
+Also, such a vanilla manager cannot server as a
+:djterm:`default manager <default managers>` for the model. The default manager
+**must** be translation aware.
+
+To have full access to translations and translatable fields, custom managers
+must inherit :class:`~hvad.manager.TranslationManager` and custom querysets
+must inherit either :class:`~hvad.manager.TranslationQueryset` (enabling the
+use of :meth:`~hvad.manager.TranslationQueryset.language`) or
+:class:`~hvad.manager.FallbackQueryset` (enabling the use of
+:meth:`~hvad.manager.FallbackQueryset.use_fallbacks`). Both are described in the
+:doc:`dedicated section <queryset>`.
+
+Once you have a custom queryset, you can use it to override the default ones
+in your manager. This is where it is more complex than a regular manager:
+:class:`~hvad.manager.TranslationManager` uses three types of queryset, that
+can be overriden independently:
+
+- :attr:`~hvad.manager.TranslationManager.queryset_class` must inherit
+  :class:`~hvad.manager.TranslationQueryset`, and will be used for all queries
+  that call the :meth:`language <hvad.manager.TranslationManager.language>` method.
+- :attr:`~hvad.manager.TranslationManager.fallback_class` must inherit
+  :class:`~hvad.manager.FallbackQueryset`, and will be used for all queries
+  that call the :meth:`untranslated <hvad.manager.TranslationManager.untranslated>`
+  method.
+- :attr:`~hvad.manager.TranslationManager.default_class` may be any kind of
+  queryset (a ``TranslationQueryset``, a ``FallbackQueryset`` of a plain
+  :class:`~django.db.models.query.QuerySet`). It will be used for all queries
+  that call neither ``language`` nor ``untranslated``.
+
+As a convenience, it is possible to override the queryset at manager instanciation,
+avoiding the need to subclass the manager::
+
+    class TVSeriesTranslationQueryset(TranslationQueryset):
+        def is_public_domain(self):
+            threshold = datetime.now() - timedelta(days=365*70)
+            return self.filter(released__gt=threshold)
+
+    class TVSeries(TranslatableModel):
+        # ... (see full definition in previous example)
+        objects = TranslationManager(queryset_class=TVSeriesTranslationQueryset)
+
+More on querysets in the :doc:`dedicated section <queryset>`.
+
+Abstract Models
+===============
+
+.. versionadded:: 0.5
+
+:djterm:`Abstract models <abstract-base-classes>` can be used normally with hvad.
+Untranslatable fields of the base models will remain untranslatable, while
+translatable fields will be translatable on the concrete model as well::
+
+    class Place(TranslatableModel):
+        coordinates = models.CharField(max_length=64)
+        translations = TranslatedFields(
+            name = models.CharField(max_length=255),
+        )
+        class Meta:
+            abstract = True
+
+    class Restaurant(Place):
+        score = models.PositiveIntegerField()
+        translations = TranslatedFields()   # see note below
+
+.. note:: The concrete models **must** have a :class:`~hvad.models.TranslatedFields`
+          instance as one of their attributes. This is required because this
+          attribute will be used to access the translations. It can be empty.
+
+Proxy Models
+============
+
+.. versionadded:: 0.4
+
+:djterm:`Proxy models <proxy-models>` can be used normally with hvad, with the
+following restrictions:
+
+- The ``__init__`` method of the proxy model will not be called when it is
+  loaded from the database.
+- As a result, the :attr:`~django.db.models.signals.pre_init` and
+  :data:`~django.db.models.signals.post_init` signals will not be sent for
+  the proxy model either.
+
+The ``__init__`` method and signals for the concrete model will still be called.
+
+--------
+
+Next, we will detail the :doc:`translation-aware querysets <queryset>` provided
+by hvad.

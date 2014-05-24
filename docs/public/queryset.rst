@@ -2,50 +2,44 @@
 Queryset API
 ############
 
-.. _TranslationQueryset-public:
+If you do not need to do fancy things such as custom querysets and are not in
+the process of optimizing your queries yet, you can skip straight to next
+section, to start using your translatable models to :doc:`build some forms <forms>`.
+
+The queryset API is at the heart of hvad. It provides the ability to filter
+on translatable fields and retrieve instances along with their translations.
+They come in two flavors:
+
+- The :ref:`TranslationQueryset <TranslationQueryset-public>`, for working with
+  instances translated in a specific language. It is the one used when calling
+  :meth:`TranslationManager.language() <hvad.manager.TranslationManager.language>`.
+- The :ref:`FallbackQueryset <FallbackQueryset-public>`, for working with
+  all instances regardless of their language, and envetually loading translations
+  using a fallback algorithm. It is the one used when calling
+  :meth:`TranslationManager.untranslated() <hvad.manager.TranslationManager.untranslated>`.
 
 .. note::
-    You can select a custom queryset to use on your manager, by defining the attribute
-    :attr:`~hvad.manager.TranslationManager.queryset_class` on the manager class.
+    It is possible to :ref:`override the querysets <custom-managers>` used on
+    a model's manager.
+
+.. _TranslationQueryset-public:
 
 *******************
 TranslationQueryset
 *******************
 
-This is the default queryset used by the :class:`~hvad.manager.TranslationManager`.
+The TranslationQueryset works on a translatable model, limiting itself to instances
+that have a translation in a specific language. Its API is almost identical to
+the regular Django :class:`~django.db.models.query.QuerySet`.
 
-Performance consideration
-=========================
-
-While most methods on :class:`~hvad.manager.TranslationQueryset` querysets run
-using the same amount of queries as if they were untranslated, they all do
-slightly more complex queries (one extra join).
-
-The following methods run two queries where standard querysets would run one:
-
-* :meth:`hvad.manager.TranslationQueryset.create`
-* :meth:`hvad.manager.TranslationQueryset.update` (only if both translated and 
-  untranslated fields are updated at once)
-  
-:meth:`hvad.manager.TranslationQueryset.get_or_create` runs one query if the
-object exists, three queries if the object does not exist in this language, but
-in another language and four queries if the object does not exist at all. It
-will return ``True`` for created if either the shared or translated instance
-was created.
-
-
-New methods
-===========
-
-Methods described here are unique to django-hvad and cannot be used on normal
-querysets.
-
+New and Changed Methods
+=======================
 
 language
 --------
 
 .. method:: language(language_code=None)
-    
+
     Sets the language for the queryset to either the given language code or
     the currently active language if None. Language resolution will be deferred
     until the query is evaluated.
@@ -53,33 +47,24 @@ language
     This filters out all instances that are not translated in the given language,
     and makes translatable fields available on the query results.
 
-
-.. _TranslationQueryset.untranslated-public:
-
-untranslated
-------------
-
-.. method:: untranslated
-
-    Returns a :class:`hvad.manager.FallbackQueryset` instance which by default
-    does not fetch any translations. This is useful if you want a list of
-    :term:`Shared Model` instances, regardless of whether they're translated in
-    any language.
-
-    .. note:: No translated fields can be used in any method of the queryset
-              returned my this method. See :ref:`FallbackQueryset-public`
-
-    .. note:: This method is only available on the manager directly, not on a
-              queryset.
-
-
 delete_translations
 -------------------
 
-.. method:: delete_translations
+.. method:: delete_translations()
 
     Deletes all :term:`Translations Model` instances in a queryset, without
     deleting the :term:`Shared Model` instances.
+
+select_related
+--------------
+
+.. method:: select_related(*fields)
+
+    Inherited from :meth:`~django.db.models.query.QuerySet.select_related`.
+
+    The ``select_related`` method is limited to a one level depth when selecting
+    related translatable models. Passing deeper relations to it will result in
+    an :exc:`~exceptions.NotImplementedError` being raised.
 
 
 Not implemented public queryset methods
@@ -88,14 +73,33 @@ Not implemented public queryset methods
 The following are methods on a queryset which are public APIs in Django, but are
 not implemented (yet) in django-hvad:
 
-* :meth:`hvad.manager.TranslationQueryset.in_bulk`
-* :meth:`hvad.manager.TranslationQueryset.complex_filter`
-* :meth:`hvad.manager.TranslationQueryset.annotate`
-* :meth:`hvad.manager.TranslationQueryset.reverse`
-* :meth:`hvad.manager.TranslationQueryset.defer`
-* :meth:`hvad.manager.TranslationQueryset.only`
+* :meth:`~hvad.manager.TranslationQueryset.bulk_create`
+* :meth:`~hvad.manager.TranslationQueryset.update_or_create`
+* :meth:`~hvad.manager.TranslationQueryset.complex_filter`
+* :meth:`~hvad.manager.TranslationQueryset.annotate`
+* :meth:`~hvad.manager.TranslationQueryset.defer`
+* :meth:`~hvad.manager.TranslationQueryset.only`
 
-Using any of these methods will raise a :exc:`NotImplementedError`.
+Using any of these methods will raise a :exc:`~exceptions.NotImplementedError`.
+
+Performance consideration
+=========================
+
+While most methods on :class:`~hvad.manager.TranslationQueryset` run
+using the same amount of queries as if they were untranslated, they all do
+slightly more complex queries (one extra join).
+
+The following methods run two queries where standard querysets would run one:
+
+* :meth:`~hvad.manager.TranslationQueryset.create`
+* :meth:`~hvad.manager.TranslationQueryset.update` (only if both translated and
+  untranslated fields are updated at once)
+
+:meth:`~hvad.manager.TranslationQueryset.get_or_create` runs one query if the
+object exists, three queries if the object does not exist in this language, but
+in another language and four queries if the object does not exist at all. It
+will return ``True`` for created if either the shared or translated instance
+was created.
 
 
 .. _FallbackQueryset-public:
@@ -104,9 +108,10 @@ Using any of these methods will raise a :exc:`NotImplementedError`.
 FallbackQueryset
 ****************
 
-This is a queryset returned by :ref:`TranslationQueryset.untranslated-public`,
+This is a queryset returned by :meth:`~hvad.manager.TranslationManager.untranslated`,
 which can be used both to get the untranslated parts of models only or to use
-fallbacks. Only the untranslated parts of models are retrieved from
+fallbacks for loading a translation based on a priority list of languages.
+By default, only the untranslated parts of models are retrieved from
 the database, and accessing translated field will trigger an additional query
 for each instance.
 
@@ -116,9 +121,10 @@ for each instance.
 New Methods
 ===========
 
-
 use_fallbacks
 -------------
+
+.. versionchanged:: 0.5
 
 .. method:: use_fallbacks(*fallbacks)
 
@@ -130,8 +136,28 @@ use_fallbacks
     Otherwise the order of your LANGUAGES setting will be used, prepended with
     current language.
     
-    .. warning:: Using fallbacks will cause **a lot** of queries! In the worst
+    .. warning:: Using fallbacks with a version of Django older than 1.6 will
+                 cause **a lot** of queries! In the worst
                  case 1 + (n * x) with n being the amount of rows being fetched
                  and x the amount of languages given as fallbacks. Only ever use
                  this method when absolutely necessary and on a queryset with as
-                 few results as possibel.
+                 few results as possible.
+
+                 .. versionchanged:: 0.5
+                    Fallbacks were reworked, so that when running
+                    on Django 1.6 or newer, only one query is needed.
+
+Not implemented public queryset methods
+=======================================
+
+The following are methods on a queryset which are public APIs in Django, but are
+not implemented on fallback querysets.
+
+* :meth:`~django.db.models.query.QuerySet.aggregate`
+* :meth:`~django.db.models.query.QuerySet.annotate`
+* :meth:`~django.db.models.query.QuerySet.defer`
+* :meth:`~django.db.models.query.QuerySet.only`
+
+----------
+
+Next, we will use our models and queries to :doc:`build some forms <forms>`.

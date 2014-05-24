@@ -14,18 +14,18 @@ Release Notes
 
 New features:
 
-- New :func:`~hvad.forms.translationformset_factory` and its companion
+- New :ref:`translationformset_factory <translationformset>` and its companion
   :class:`~hvad.forms.BaseTranslationFormSet` allow building a formset to work
   on an instance's translations. Please have at look at its detailed
   :ref:`documentation <translationformset>`.
 - Django 1.6+'s new :meth:`~django.db.models.query.QuerySet.datetimes` method is
   now available on :class:`~hvad.manager.TranslationQueryset` too.
-- Django 1.6+'s new:meth:`~django.db.models.query.QuerySet.earliest` method is
+- Django 1.6+'s new :meth:`~django.db.models.query.QuerySet.earliest` method is
   now available on :class:`~hvad.manager.TranslationQueryset`.
 - Calls to :meth:`~hvad.manager.TranslationQueryset.language`, passing `None`
   to use the current language now defers language resolution until the query is
   evaluated. It can now be used in form definitions directly, for instance for
-  passing a custom queryset to :class:`~django.forms.ModelChoicefield`.
+  passing a custom queryset to :class:`~django.forms.ModelChoiceField`.
 - Similarly, :meth:`~hvad.manager.FallbackQueryset.use_fallbacks` can now be
   passed `None` as one of the fallbacks, and it will be replaced with current
   language at query evaluation time.
@@ -95,8 +95,8 @@ New features:
   :meth:`~django.db.models.Model.save` method when saving a
   :class:`~hvad.forms.TranslatableModelForm`.
 - Accessing a translated field on an untranslated instance will now raise an
-  :exc:`AttributeError` with a helpful message instead of letting the exception
-  bubble up from the ORM.
+  :exc:`~exceptions.AttributeError` with a helpful message instead of letting the
+  exception bubble up from the ORM.
 - Method :meth:`~hvad.manager.TranslationQueryset.in_bulk` is now available on
   :class:`~hvad.manager.TranslationQueryset`.
 
@@ -104,8 +104,9 @@ Deprecation list:
 
 - Catching :exc:`~django.core.exceptions.ObjectDoesNotExist` when accessing
   a translated field on an instance is deprecated. In case no translation
-  is loaded and none exists in database for current language, an :exc:`AttributeError`
-  is raised instead. For the transition, both are supported until next release.
+  is loaded and none exists in database for current language, an
+  :exc:`~exceptions.AttributeError` is raised instead. For the transition,
+  both are supported until next release.
 
 Removal of the old 'nani' aliases was postponed until next release.
 
@@ -116,7 +117,7 @@ Fixes:
 - :meth:`~hvad.models.TranslatableModel.lazy_translation_getter` now tries
   translations in `settings.LANGUAGES` order once it has failed with current
   language and site's main `LANGUAGE_CODE`.
-- No more deprecation warnings when importing only from :mod:`hvad`.
+- No more deprecation warnings when importing only from ``hvad``.
 - :class:`~hvad.admin.TranslatableAdmin` now generates relative URLs instead
     of absolute ones, enabling it to work behind reverse proxies.
 - django-hvad does not depend on the default manager being named

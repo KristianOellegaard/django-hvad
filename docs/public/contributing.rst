@@ -12,27 +12,30 @@ Common Setup
 
 * ``virtualenv env``
 * ``source env/bin/activate``
-* ``pip install django``
+* ``pip install django sphinx``
 
 Postgres Setup
 ==============
 
-Additional to the steps above, install ``psycopg2`` using pip and have a postgres server running that you have access to
-with a user that can create databases.
+Additional to the steps above, install ``psycopg2`` using pip and have a
+postgres server running that you have access to with a user that can create
+databases.
 
 Mysql Setup
 ===========
 
-Additional to the steps above, install ``mysql-python`` using pip and have a mysql server running that you have
-access to with a user that can create databases.
+Additional to the steps above, install ``mysql-python`` using pip and have a
+mysql server running that you have access to with a user that can create
+databases.
 
 Run the test
 ============
 
 * ``python runtests.py``
 
-Optionally, prefix it with a environment variable called ``DATBASE_URL``, for example for a Postgres server running on
-``myserver.com`` on port ``5432`` with the user ``username`` and password ``password`` and database name ``hvad``:
+Optionally, prefix it with a environment variable called ``DATBASE_URL``, for
+example for a Postgres server running on ``myserver.com`` on port ``5432``
+with the user ``username`` and password ``password`` and database name ``hvad``:
 
 * ``DATABASE_URL=postgres://username:password@myserver.com:5432/hvad python runtests.py``
 

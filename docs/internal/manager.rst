@@ -44,7 +44,7 @@ ValuesMixin
 
 .. class:: ValuesMixin
 
-    A mixin class for :class:`django.db.models.query.ValuesQuerySet` which
+    A mixin class for :class:`~django.db.models.query.ValuesQuerySet` which
     implements the functionality needed by :meth:`TranslationQueryset.values`
     and :meth:`TranslationQueryset.values_list`.
 
@@ -171,7 +171,7 @@ TranslationQueryset
     
     .. method:: _get_class(self, klass)
     
-        Given a :class:`django.db.models.query.QuerySet` class or subclass, it
+        Given a :class:`~django.db.models.query.QuerySet` class or subclass, it
         checks if the class is a subclass of any class in
         :attr:`override_classes` and if so, returns a new class which mixes
         the initial class, the class from :attr:`override_classes` and
@@ -180,7 +180,7 @@ TranslationQueryset
     .. method:: _get_shared_queryset(self)
     
         Returns a clone of this queryset but for the shared model. Does so by
-        creating a :class:`django.db.query.QuerySet` on :attr:`shared_model`
+        creating a :class:`~django.db.models.query.QuerySet` on :attr:`shared_model`
         and filtering over this queryset. Returns a queryset for the :term:`Shared Model`.
     
     .. method:: _add_language_filter(self)
@@ -217,7 +217,16 @@ TranslationQueryset
         This causes two queries as opposed to the one by the normal queryset.
         
         Returns the newly created (combined) instance.
-    
+
+    .. method:: bulk_create(self, objs, batch_size=None)
+
+        Not implemented yet and unlikely to be due to inherent limitations of
+        multi-table inserts.
+
+    .. method:: update_or_create(self, defaults=None, **kwargs)
+
+        Not implemented yet.
+
     .. method:: get(self, *args, **kwargs)
     
         Gets a single instance from this queryset using the args and kwargs
@@ -240,7 +249,7 @@ TranslationQueryset
 
         .. warning:: It is an error to pass `language_code` in a Q object if a
                      :meth:`select_related` clause was enabled on this queryset.
-                     Doing so will raise an :exc:`AssertionError`.
+                     Doing so will raise an :exc:`~exceptions.AssertionError`.
      
     .. method:: get_or_create(self, **kwargs)
     
@@ -270,9 +279,20 @@ TranslationQueryset
         Translates the fieldname (if given) using :attr:`field_translator` and
         calls the superclass.
 
+    .. method:: earliest(self, field_name=None)
+
+        .. versionadded:: 0.4
+
+        Translates the fieldname (if given) using :attr:`field_translator` and
+        calls the superclass.
+
+        Only defined if django version is 1.6 or newer.
+
     .. method:: in_bulk(self, id_list)
-    
-        Not implemented yet.
+
+        .. versionadded:: 0.4
+
+        Retrieves the objects, building a dict from :meth:`iterator`.
 
     .. method:: delete(self)
     
@@ -313,6 +333,13 @@ TranslationQueryset
         Translates fields using :meth:`_translate_fieldnames` and calls the
         superclass.
 
+    .. method:: datetimes(self, field_name, *args, **kwargs)
+
+        Translates fields using :meth:`_translate_fieldnames` and calls the
+        superclass.
+
+        Only defined if django version is 1.6 or newer.
+
     .. method:: exclude(self, *args, **kwargs)
     
         Works like :meth:`filter`.
@@ -333,7 +360,7 @@ TranslationQueryset
     
     .. method:: reverse(self)
     
-        Not implemented yet.
+        Calls the superclass.
 
     .. method:: defer(self, *fields)
     

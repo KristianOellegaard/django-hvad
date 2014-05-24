@@ -69,7 +69,7 @@ TranslatableModel
     If initalized with data, it splits the shared and translated fields and
     prepopulates both the :term:`Shared Model` and the
     :term:`Translations Model`. If no *language_code* is given,
-    :func:`django.utils.translations.get_language` is used to get the language
+    :func:`~django.utils.translation.get_language` is used to get the language
     for the :term:`Translations Model` instance that gets initialized.
     
     .. note:: When initializing a :class:`TranslatableModel`, positional

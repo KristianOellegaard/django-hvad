@@ -1,0 +1,14 @@
+@import url('default.css');
+
+.toctree-l1.current > a {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.toctree-l2.current > a {
+    color: #efefff;
+}
+
+.toctree-l1.current > ul.current {
+    margin-bottom: 0.6em;
+}

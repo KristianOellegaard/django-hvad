@@ -25,7 +25,7 @@ BaseDescriptor
         instance.
 
         If no translation is cached, and no translation exists for current language,
-        raise an :exc:`AttributeError`.
+        raise an :exc:`~exceptions.AttributeError`.
 
 
 *******************
@@ -52,19 +52,20 @@ TranslatedAttribute
         allowing introspection of the model.
 
         Starting from Django 1.7, calling :func:`getattr` on a translated field
-        before the App Registry is initialized raises an :exc:`AttributeError`.
+        before the App Registry is initialized raises an
+        :exc:`~exceptions.AttributeError`.
 
     .. method:: __set__(self, instance, value)
     
         Sets the value on the attribute on the translation object using
         :meth:`BaseDescriptor.translation` if an instance is given, if no 
-        instance is given, raises an :exc:`AttributeError`.
+        instance is given, raises an :exc:`~exceptions.AttributeError`.
 
     .. method:: __delete__(self, instance)
     
         Deletes the attribute on the translation object using
         :meth:`BaseDescriptor.translation` if an instance is given, if no 
-        instance is given, raises an :exc:`AttributeError`.
+        instance is given, raises an :exc:`~exceptions.AttributeError`.
 
 
 *********************
