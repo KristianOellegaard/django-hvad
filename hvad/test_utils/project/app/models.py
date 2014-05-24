@@ -2,7 +2,7 @@ import django
 from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
-if django.VERSION >= (1, 4):
+if django.VERSION >= (1, 4, 2):
     from django.utils.encoding import python_2_unicode_compatible
 else: # older versions do not run on py3, so we know we are running py2
     def python_2_unicode_compatible(klass):
@@ -61,6 +61,52 @@ class SimpleRelated(TranslatableModel):
 
 
 class SimpleRelatedProxy(SimpleRelated):
+    class Meta:
+        proxy = True
+
+
+class AbstractA(TranslatableModel):
+    translations = TranslatedFields(
+        translated_field_a = models.ForeignKey(Normal, related_name='%(class)s_set'),
+    )
+    class Meta:
+        abstract = True
+
+class AbstractAA(AbstractA):
+    shared_field_a = models.CharField(max_length=255)
+    class Meta:
+        abstract = True
+
+class AbstractB(TranslatableModel):
+    shared_field_b = models.ForeignKey(Normal, related_name='%(class)s_set')
+    translations = TranslatedFields(
+        translated_field_b = models.CharField(max_length=255),
+    )
+    class Meta:
+        abstract = True
+
+@python_2_unicode_compatible
+class ConcreteAB(AbstractAA, AbstractB):
+    shared_field_ab = models.CharField(max_length=255)
+    translations = TranslatedFields(
+        translated_field_ab = models.CharField(max_length=255),
+    )
+
+    def __str__(self):
+        return '%s, %s, %s' % (
+            str(self.safe_translation_getter('translated_field_a', self.shared_field_a)),
+            self.safe_translation_getter('translated_field_b', str(self.shared_field_b)),
+            self.safe_translation_getter('translated_field_ab', self.shared_field_ab),
+        )
+
+@python_2_unicode_compatible
+class ConcreteABProxy(ConcreteAB):
+    def __str__(self):
+        return 'proxied %s, %s, %s' % (
+            str(self.safe_translation_getter('translated_field_a', self.shared_field_a)),
+            self.safe_translation_getter('translated_field_b', str(self.shared_field_b)),
+            self.safe_translation_getter('translated_field_ab', self.shared_field_ab),
+        )
     class Meta:
         proxy = True
 

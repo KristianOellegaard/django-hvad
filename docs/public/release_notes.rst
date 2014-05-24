@@ -32,6 +32,8 @@ New features:
 - All queryset classes used by :class:`~hvad.manager.TranslationManager` can now
   be customized thanks to the new :attr:`~hvad.manager.TranslationManager.fallback_class`
   and :attr:`~hvad.manager.TranslationManager.default_class` attributes.
+- Abstract models are now supported. The concrete class must still declare a
+  :class:`~hvad.models.TranslatedFields` instance, but it can be empty.
 
 Deprecation list:
 

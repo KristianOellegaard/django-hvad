@@ -26,3 +26,4 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.limit_choices_to import LimitChoicesToTests
     from hvad.tests.serialization import PicklingTest
     from hvad.tests.proxy import ProxyTests
+    from hvad.tests.abstract import AbstractTests
