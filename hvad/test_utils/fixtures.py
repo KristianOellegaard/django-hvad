@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
-from hvad.test_utils.data import D1, D3, D2
-from hvad.test_utils.project.app.models import Normal, Date, Standard
+from hvad.test_utils.data import DOUBLE_NORMAL, D1, D3, D2
+from hvad.test_utils.project.app.models import Normal, Date, Standard, ConcreteAB
 
 
 class Fixture(object):
@@ -37,6 +37,40 @@ class TwoTranslatedNormalMixin(Fixture):
         ja2.save()
         super(TwoTranslatedNormalMixin, self).create_fixtures()
 
+
+class TwoTranslatedConcreteABMixin(TwoTranslatedNormalMixin):
+    def create_fixtures(self):
+        super(TwoTranslatedConcreteABMixin, self).create_fixtures()
+        normal1 = Normal.objects.language('en').get(shared_field='Shared1')
+        normal2 = Normal.objects.language('en').get(shared_field='Shared2')
+
+        ab1 = ConcreteAB.objects.language('en').create(
+            shared_field_a = DOUBLE_NORMAL[1]['shared_field'],
+            shared_field_b = normal1,
+            shared_field_ab = DOUBLE_NORMAL[1]['shared_field'],
+            translated_field_a = normal1,
+            translated_field_b = DOUBLE_NORMAL[1]['translated_field_en'],
+            translated_field_ab = DOUBLE_NORMAL[1]['translated_field_en'],
+        )
+        ab1.translate('ja')
+        ab1.translated_field_a = normal2
+        ab1.translated_field_b = DOUBLE_NORMAL[1]['translated_field_ja']
+        ab1.translated_field_ab = DOUBLE_NORMAL[1]['translated_field_ja']
+        ab1.save()
+
+        ab2 = ConcreteAB.objects.language('ja').create(
+            shared_field_a = DOUBLE_NORMAL[2]['shared_field'],
+            shared_field_b = normal2,
+            shared_field_ab = DOUBLE_NORMAL[2]['shared_field'],
+            translated_field_a = normal2,
+            translated_field_b = DOUBLE_NORMAL[2]['translated_field_ja'],
+            translated_field_ab = DOUBLE_NORMAL[2]['translated_field_ja'],
+        )
+        ab2.translate('en')
+        ab2.translated_field_a = normal1
+        ab2.translated_field_b = DOUBLE_NORMAL[2]['translated_field_en']
+        ab2.translated_field_ab = DOUBLE_NORMAL[2]['translated_field_en']
+        ab2.save()
 
 class SuperuserMixin(Fixture):
     def create_fixtures(self):

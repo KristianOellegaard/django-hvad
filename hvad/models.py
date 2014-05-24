@@ -44,32 +44,61 @@ def create_translations_model(model, related_name, meta, **fields):
     Those two fields are unique together, this get's enforced in the inner Meta
     class of the translations table
     """
-    if not meta:
-        meta = {}
-    unique = [('language_code', 'master')]
-    meta['unique_together'] = list(meta.get('unique_together', [])) + unique
-    # Create inner Meta class 
+    meta = meta or {}
+
+    # Build a list of translation models from base classes. Depth-first scan.
+    abstract = model._meta.abstract
+    translation_bases = []
+    scan_bases = list(reversed(model.__bases__)) # backwards so we can use pop/extend
+    while scan_bases:
+        base = scan_bases.pop()
+        if not issubclass(base, TranslatableModel) or base is TranslatableModel:
+            continue
+        try:
+            # The base may have translations model, then just inherit that
+            translation_bases.append(base._meta.translations_model)
+        except AttributeError:
+            # But it may not, and simply inherit other abstract bases, scan them
+            scan_bases.extend(reversed(base.__bases__))
+    translation_bases.append(BaseTranslationModel)
+
+    # Create translation model Meta
+    meta['abstract'] = abstract
+    if not abstract:
+        unique = [('language_code', 'master')]
+        meta['unique_together'] = list(meta.get('unique_together', [])) + unique
     Meta = type('Meta', (object,), meta)
+
     if not hasattr(Meta, 'db_table'):
         Meta.db_table = model._meta.db_table + '%stranslation' % TABLE_NAME_SEPARATOR
     Meta.app_label = model._meta.app_label
     name = '%sTranslation' % model.__name__
+
+    # Create translation model
     attrs = {}
     attrs.update(fields)
     attrs['Meta'] = Meta
     attrs['__module__'] = model.__module__
-    attrs['objects'] = TranslationsModelManager()
-    attrs['language_code'] = models.CharField(max_length=15, db_index=True)
-    # null=True is so we can prevent cascade deletion
-    attrs['master'] = models.ForeignKey(model, related_name=related_name,
-                                        editable=False, null=True)
+
+    if not abstract:
+        # If this class is abstract, we must not contribute management fields
+        attrs['objects'] = TranslationsModelManager()
+        attrs['language_code'] = models.CharField(max_length=15, db_index=True)
+        # null=True is so we can prevent cascade deletion
+        attrs['master'] = models.ForeignKey(model, related_name=related_name,
+                                            editable=False, null=True)
     # Create and return the new model
-    translations_model = ModelBase(name, (BaseTranslationModel,), attrs)
-    bases = (model.DoesNotExist, translations_model.DoesNotExist,)
-    DNE = type('DoesNotExist', bases, {})
-    translations_model.DoesNotExist = DNE
+    translations_model = ModelBase(name, tuple(translation_bases), attrs)
+    if not abstract:
+        # Abstract models do not have a DNE class
+        bases = (model.DoesNotExist, translations_model.DoesNotExist,)
+        DNE = type('DoesNotExist', bases, {})
+        translations_model.DoesNotExist = DNE
     opts = translations_model._meta
     opts.shared_model = model
+
+    # We need to set it here so it is available when we scan subclasses
+    model._meta.translations_model = translations_model
 
     # Register it as a global in the shared model's module.
     # This is needed so that Translation model instances, and objects which
