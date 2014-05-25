@@ -18,6 +18,8 @@ New features:
   :class:`~hvad.forms.BaseTranslationFormSet` allow building a formset to work
   on an instance's translations. Please have at look at its detailed
   :ref:`documentation <translationformset>`.
+- Method :meth:`~hvad.manager.TranslationQueryset.language` now accepts the
+  special value ``'all'``, allowing the query to consider all translations.
 - Django 1.6+'s new :meth:`~django.db.models.query.QuerySet.datetimes` method is
   now available on :class:`~hvad.manager.TranslationQueryset` too.
 - Django 1.6+'s new :meth:`~django.db.models.query.QuerySet.earliest` method is
