@@ -19,6 +19,7 @@ import sys
 import warnings
 
 logger = logging.getLogger(__name__)
+warned_for_select_related_keys = set()
 
 @settings_updater
 def update_settings(*args, **kwargs):
@@ -520,9 +521,10 @@ class TranslationQueryset(QuerySet):
             bits = query_key.split('__')
             try:
                 field, model, direct, _ = self.shared_model._meta.get_field_by_name.real(bits[0])
-                query_key = 'master__%s' % query_key
+                query_key, translated = 'master__%s' % query_key, False
             except models.FieldDoesNotExist:
                 field, model, direct, _ = self.model._meta.get_field_by_name(bits[0])
+                translated = True
 
             if direct:  # field is on model
                 if field.rel:    # field is a foreign key, follow it
@@ -536,7 +538,14 @@ class TranslationQueryset(QuerySet):
                 # This is a relation to a translated model,
                 # so we need to select_related both the model and its translation model
                 if len(bits) > 1:
-                    raise NotImplementedError("Deep select_related with translated models not yet supported")
+                    if query_key not in warned_for_select_related_keys:
+                        warned_for_select_related_keys.add(query_key)
+                        caller = '%s:%d, in %s()' % logger.findCaller()
+                        logger.warning('From %s: deep select_related with translated '
+                                       'models it not supported, truncating %s',
+                                       caller, query_key)
+                    del bits[1:]
+                    query_key = '__'.join(bits if translated else ['master'] + bits)
                 related_model_keys.append(query_key)  # Select the related model
                 related_model_keys.append('%s__%s' % (query_key, model._meta.translations_accessor))  # and its translation model
 

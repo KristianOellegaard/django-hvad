@@ -70,6 +70,11 @@ Fixes:
   :meth:`~hvad.admin.TranslatableAdmin.all_translations` in
   :attr:`~django.contrib.admin.ModelAdmin.list_display` no longer results in one
   query per item, as long as translations were prefetched.
+- Using :ref:`select_related() <select_related-public>` with deep relations on a
+  :ref:`TranslationQueryset <TranslationQueryset-public>` no longers raises an
+  :exc:`~exceptions.NotImplementedError`. Rather, it logs a warning and truncates
+  the relation to the first level. This is more consistent with Django
+  behavior.
 
 
 .. release 0.4.0
