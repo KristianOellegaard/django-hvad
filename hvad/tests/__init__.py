@@ -3,9 +3,12 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.admin import (NormalAdminTests, AdminEditTests,
         AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests,
         TranslatableInlineAdminTests)
-    from hvad.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest, CreateTest, GetTest,
-        TranslatedTest, DeleteLanguageCodeTest, GetByLanguageTest, DescriptorTests,
-        DefinitionTests, TableNameTest, GetOrCreateTest, BooleanTests)
+    from hvad.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest,
+                                  CreateTest, GetTest, TranslatedTest,
+                                  DeleteLanguageCodeTest, GetByLanguageTest,
+                                  GetAllLanguagesTest, DescriptorTests,
+                                  DefinitionTests, TableNameTest, GetOrCreateTest,
+                                  BooleanTests)
     from hvad.tests.dates import LatestTests, DatesTests
     from hvad.tests.docs import DocumentationTests
     from hvad.tests.fallbacks import (FallbackTests, FallbackFilterTests, FallbackCachingTests,

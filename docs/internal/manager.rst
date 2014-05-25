@@ -101,8 +101,13 @@ TranslationQueryset
     
     .. attribute:: _language_code
     
-        The language code of this queryset.
-    
+        The language code of this queryset, or one of the following special values:
+
+        - ``None``: :func:`~django.utils.translation.get_language`
+          will be called to get the current language.
+        - ``'all'``: no language filtering will be applied, a copy of an instance
+          will be returned for every translation that matched the query.
+
     .. attribute:: translations_manager
     
         The (real) manager of the :term:`Translations Model`.
@@ -189,6 +194,12 @@ TranslationQueryset
         :attr:`_language_code`, or :func:`~django.utils.translation.get_language` if
         None.
 
+        Special value ``'all'`` will prevent any language filter from being applied,
+        resulting in the query considering all translations, possibly returning
+        the same instance mutiple times if several of its translations match.
+        In that case, each instance will be :func:`combined <hvad.utils.combine>`
+        with one of the matching translations.
+
         Applied filters include the base language filter on the language_code
         field, as well as any related model translation set up by
         :meth:`select_related`.
@@ -200,13 +211,22 @@ TranslationQueryset
         :meth:`_add_language_filter` is called. This allows for query-time
         resolution of the None value. It is an error to call :meth:`language`
         multiple times on the same queryset.
-        
-        If no language code is given,
-        :func:`~django.utils.translation.get_language` will be called to get the
-        current language.
-        
+
+        The following special values are accepted:
+
+        - ``None``, or no value: :func:`~django.utils.translation.get_language`
+          will be called to get the current language.
+        - ``'all'``: no language filtering will be applied, a copy of an instance
+          will be returned for every translation that matched the query, each
+          copy being :func:`combined <hvad.utils.combine>` with one of the
+          matching translations.
+
         Returns a queryset.
-        
+
+        .. note:: Using ``language('all')`` and :meth:`select_related` on the
+                  same queryset is not supported and will raise a
+                  :exc:`~exceptions.NotImplementedError`.
+
     .. method:: create(self, **kwargs)
     
         Creates a new instance using the kwargs given. If :attr:`_language_code`
@@ -217,6 +237,10 @@ TranslationQueryset
         This causes two queries as opposed to the one by the normal queryset.
         
         Returns the newly created (combined) instance.
+
+        .. note:: It is an error to call ``create`` with no ``language_code``
+                  on a queryset whose :attr:`_language_code` is ``'all'``.
+                  Doing so will raise a :exc:`~exceptions.ValueError`.
 
     .. method:: bulk_create(self, objs, batch_size=None)
 

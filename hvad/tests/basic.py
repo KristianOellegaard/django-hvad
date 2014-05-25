@@ -263,6 +263,39 @@ class GetByLanguageTest(HvadTestCase, TwoTranslatedNormalMixin):
             self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
 
 
+class GetAllLanguagesTest(HvadTestCase, TwoTranslatedNormalMixin):
+    def test_args(self):
+        with LanguageOverride('en'):
+            q = Q(pk=1)
+            with self.assertNumQueries(1):
+                objs = Normal.objects.language('all').filter(q)
+                self.assertEqual(len(objs), 2)
+                self.assertCountEqual((1, 1), (objs[0].pk, objs[1].pk))
+                self.assertCountEqual(('en', 'ja'), (objs[0].language_code, objs[1].language_code))
+
+    def test_kwargs(self):
+        with LanguageOverride('en'):
+            kwargs = {'pk':1}
+            with self.assertNumQueries(1):
+                objs = Normal.objects.language('all').filter(**kwargs)
+                self.assertEqual(len(objs), 2)
+                self.assertCountEqual((1, 1), (objs[0].pk, objs[1].pk))
+                self.assertCountEqual(('en', 'ja'), (objs[0].language_code, objs[1].language_code))
+
+    def test_translated_unique(self):
+        with LanguageOverride('en'):
+            with self.assertNumQueries(1):
+                obj = Normal.objects.language('all').get(translated_field=DOUBLE_NORMAL[1]['translated_field_ja'])
+                self.assertEqual(obj.pk, 1)
+                self.assertEqual(obj.language_code, 'ja')
+                self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
+                self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
+
+    def test_get_all_raises(self):
+        with self.assertRaises(ValueError):
+            Normal.objects.language('en').get(pk=1, language_code='all')
+
+
 class BasicQueryTest(HvadTestCase, OneSingleTranslatedNormalMixin):
     def test_basic(self):
         en = Normal.objects.language('en').get(pk=1)

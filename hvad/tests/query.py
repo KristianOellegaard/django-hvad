@@ -4,7 +4,7 @@ from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.testcase import HvadTestCase
-from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard
+from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard, SimpleRelated
 from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
 
 class FilterTests(HvadTestCase, TwoTranslatedNormalMixin):
@@ -28,6 +28,36 @@ class FilterTests(HvadTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(obj1.translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
         self.assertEqual(obj2.shared_field, DOUBLE_NORMAL[2]['shared_field'])
         self.assertEqual(obj2.translated_field, DOUBLE_NORMAL[2]['translated_field_en'])
+
+    def test_all_languages_filter(self):
+        with self.assertNumQueries(2):
+            qs = Normal.objects.language('all').filter(shared_field__contains='Shared')
+            self.assertEqual(qs.count(), 4)
+            self.assertCountEqual((obj.shared_field for obj in qs),
+                                  (DOUBLE_NORMAL[1]['shared_field'],
+                                   DOUBLE_NORMAL[2]['shared_field']) * 2)
+            self.assertCountEqual((obj.translated_field for obj in qs),
+                                  (DOUBLE_NORMAL[1]['translated_field_en'],
+                                   DOUBLE_NORMAL[1]['translated_field_ja'],
+                                   DOUBLE_NORMAL[2]['translated_field_en'],
+                                   DOUBLE_NORMAL[2]['translated_field_ja']))
+
+        with self.assertNumQueries(2):
+            qs = Normal.objects.language('all').filter(translated_field__contains='English')
+            self.assertEqual(qs.count(), 2)
+            self.assertCountEqual((obj.shared_field for obj in qs),
+                                  (DOUBLE_NORMAL[1]['shared_field'],
+                                   DOUBLE_NORMAL[2]['shared_field']))
+            self.assertCountEqual((obj.translated_field for obj in qs),
+                                  (DOUBLE_NORMAL[1]['translated_field_en'],
+                                   DOUBLE_NORMAL[2]['translated_field_en']))
+
+        with self.assertNumQueries(2):
+            qs = Normal.objects.language('all').filter(translated_field__contains='1')
+            self.assertEqual(qs.count(), 1)
+            obj = qs[0]
+            self.assertEqual(obj.shared_field, DOUBLE_NORMAL[1]['shared_field'])
+            self.assertEqual(obj.translated_field, DOUBLE_NORMAL[1]['translated_field_en'])
 
     def test_deferred_language_filter(self):
         with LanguageOverride('ja'):
@@ -327,6 +357,10 @@ class InBulkTests(HvadTestCase, TwoTranslatedNormalMixin):
                 self.assertEqual(result[1].translated_field, DOUBLE_NORMAL[1]['translated_field_ja'])
                 self.assertEqual(result[1].language_code, 'ja')
 
+    def test_all_languages_in_bulk(self):
+        with self.assertRaises(ValueError):
+            Normal.objects.language('all').in_bulk([1])
+
     def test_in_bulk_deferred_language(self):
         with LanguageOverride('ja'):
             qs = Normal.objects.language()
@@ -416,14 +450,7 @@ class AggregateTests(HvadTestCase):
 
 class NotImplementedTests(HvadTestCase):
     def test_defer(self):
-        SHARED = 'shared'
-        TRANS_EN = 'English'
-        Normal.objects.language('en').create(
-            shared_field=SHARED,
-            translated_field=TRANS_EN,
-        )
-        
-        baseqs = Normal.objects.language('en')
+        baseqs = SimpleRelated.objects.language('en')
         
         self.assertRaises(NotImplementedError, baseqs.defer, 'shared_field')
         self.assertRaises(NotImplementedError, baseqs.annotate)
@@ -431,26 +458,36 @@ class NotImplementedTests(HvadTestCase):
         self.assertRaises(NotImplementedError, baseqs.bulk_create, [])
         # select_related with no field is not implemented
         self.assertRaises(NotImplementedError, baseqs.select_related)
+        # select_related with language('all') is not implemented
+        self.assertRaises(NotImplementedError, len, baseqs.language('all').select_related('normal'))
         if django.VERSION >= (1, 7):
             self.assertRaises(NotImplementedError, baseqs.update_or_create)
 
 
 class ExcludeTests(HvadTestCase):
-    def test_defer(self):
-        SHARED = 'shared'
-        TRANS_EN = 'English'
-        TRANS_JA = u'日本語'
+    SHARED = 'shared'
+    TRANS_EN = 'English'
+    TRANS_JA = u'日本語'
+
+    def setUp(self):
+        super(ExcludeTests, self).setUp()
         en = Normal.objects.language('en').create(
-            shared_field=SHARED,
-            translated_field=TRANS_EN,
+            shared_field=self.SHARED,
+            translated_field=self.TRANS_EN,
         )
         ja = en
         ja.translate('ja')
-        ja.translated_field = TRANS_JA
+        ja.translated_field = self.TRANS_JA
         ja.save()
 
-        qs = Normal.objects.language('en').exclude(translated_field=TRANS_EN)
+    def test_defer(self):
+        qs = Normal.objects.language('en').exclude(translated_field=self.TRANS_EN)
         self.assertEqual(qs.count(), 0)
+
+    def test_all_languages_exclude(self):
+        qs = Normal.objects.language('all').exclude(translated_field=self.TRANS_EN)
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs[0].translated_field, self.TRANS_JA)
 
 
 class ComplexFilterTests(HvadTestCase, TwoTranslatedNormalMixin):

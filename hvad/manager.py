@@ -290,14 +290,19 @@ class TranslationQueryset(QuerySet):
                 return True
 
     def _add_language_filter(self):
-        language_code = self._language_code or get_language()
-        if not self._scan_for_language_where_node(self.query.where.children):
-            self.query.add_filter(('language_code', language_code))
+        if self._language_code == 'all':
+            if self._related_model_extra_filters:
+                raise NotImplementedError('Using select_related along with '
+                                          'language(\'all\') is not supported')
+        else:
+            language_code = self._language_code or get_language()
+            if not self._scan_for_language_where_node(self.query.where.children):
+                self.query.add_filter(('language_code', language_code))
 
-        for f in self._related_model_extra_filters:
-            f1 = {f: language_code}
-            f2 = {f: None}  # Allow select_related() to fetch objects with a relation set to NULL
-            self.query.add_q( Q(**f1) | Q(**f2) )
+            for f in self._related_model_extra_filters:
+                f1 = {f: language_code}
+                f2 = {f: None}  # Allow select_related() to fetch objects with a relation set to NULL
+                self.query.add_q( Q(**f1) | Q(**f2) )
         return self
 
     #===========================================================================
@@ -321,10 +326,9 @@ class TranslationQueryset(QuerySet):
 
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
-            if self._language_code:
-                kwargs['language_code'] = self._language_code
-            else:
-                kwargs['language_code'] = get_language()
+            kwargs['language_code'] = self._language_code or get_language()
+        if kwargs['language_code'] == 'all':
+            raise ValueError('Cannot create an object with language \'all\'')
         obj = self.shared_model(**kwargs)
         self._for_write = True
         obj.save(force_insert=True, using=self.db)
@@ -353,7 +357,11 @@ class TranslationQueryset(QuerySet):
         newargs, newkwargs = qs._translate_args_kwargs(*args, **kwargs)
 
         if 'language_code' in newkwargs:
-            qs.language(newkwargs.pop('language_code'))
+            language_code = newkwargs.pop('language_code')
+            if language_code == 'all': # it would work, but make future evolutions hard
+                raise ValueError('Special value \'all\' can only be passed through '
+                                 'the language() method.')
+            qs.language(language_code)
             qs._add_language_filter()
         elif any(qs._find_language_code(arg) for arg in args if isinstance(arg, Q)):
             assert not self._related_model_extra_filters, (
@@ -387,10 +395,9 @@ class TranslationQueryset(QuerySet):
                 params.update(defaults)
                 # START PATCH
                 if 'language_code' not in params:
-                    if self._language_code:
-                        params['language_code'] = self._language_code
-                    else:
-                        params['language_code'] = get_language()
+                    params['language_code'] = self._language_code or get_language()
+                if params['language_code'] == 'all':
+                    raise ValueError('Cannot create an object with language \'all\'')
                 obj = self.shared_model(**params)
                 # END PATCH
                 sid = transaction.savepoint(using=self.db)
@@ -447,6 +454,8 @@ class TranslationQueryset(QuerySet):
     def in_bulk(self, id_list):
         if not id_list:
             return {}
+        if self._language_code == 'all':
+            raise ValueError('Cannot use in_bulk along with language(\'all\').')
         qs = self.filter(pk__in=id_list)
         qs.query.clear_ordering(force_empty=True)
         return dict((obj._get_pk_val(), obj) for obj in qs.iterator())
