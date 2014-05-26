@@ -126,15 +126,21 @@ class RawConstraint(object):
 
 class BetterTranslationsField(object):
     def __init__(self, translation_fallbacks):
-        self._fallbacks = translation_fallbacks
-        self._langcase = ('(CASE %s.language_code ' +
-                          ' '.join('WHEN \'%s\' THEN %d' % (lang, i)
-                                   for i, lang in enumerate(self._fallbacks)) +
-                          ' ELSE %d END)' % len(self._fallbacks))
+        # Filter out duplicates, while preserving order
+        self._fallbacks = []
+        seen = set()
+        for lang in translation_fallbacks:
+            if lang not in seen:
+                seen.add(lang)
+                self._fallbacks.append(lang)
 
     def get_extra_restriction(self, where_class, alias, related_alias):
+        langcase = ('(CASE %s.language_code ' +
+                    ' '.join('WHEN \'%s\' THEN %d' % (lang, i)
+                             for i, lang in enumerate(self._fallbacks)) +
+                    ' ELSE %d END)' % len(self._fallbacks))
         return RawConstraint(
-            sql=' '.join((self._langcase, '<', self._langcase, 'OR ('
+            sql=' '.join((langcase, '<', langcase, 'OR ('
                           '%s.language_code = %s.language_code AND '
                           '%s.id < %s.id)')),
             aliases=(alias, related_alias,
@@ -174,6 +180,7 @@ class TranslationQueryset(QuerySet):
         self._local_field_names = None
         self._field_translator = None
         self._language_code = None
+        self._language_fallbacks = None
         self._raw_select_related = []
         self._forced_unique_fields = []  # Used for select_related
         self._language_filter_tag = False
@@ -192,6 +199,7 @@ class TranslationQueryset(QuerySet):
             '_local_field_names': self._local_field_names,
             '_field_translator': self._field_translator,
             '_language_code': self._language_code,
+            '_language_fallbacks': self._language_fallbacks,
             '_raw_select_related': self._raw_select_related,
             '_forced_unique_fields': list(self._forced_unique_fields),
             '_language_filter_tag': getattr(self, '_language_filter_tag', False)
@@ -389,6 +397,25 @@ class TranslationQueryset(QuerySet):
             if self._raw_select_related:
                 raise NotImplementedError('Using select_related along with '
                                           'language(\'all\') is not supported')
+
+            self.query.add_select_related(('master',))
+
+        elif self._language_fallbacks:
+            if self._raw_select_related:
+                raise NotImplementedError('Using select_related along with '
+                                          'fallbacks() is not supported')
+            languages = tuple(get_language() if lang is None else lang
+                              for lang in (self._language_code,) + self._language_fallbacks)
+
+            masteratt = self.model._meta.get_field('master').attname
+            nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
+                        {'nullable': True, 'outer_if_first': True})
+            alias = self.query.join((self.query.get_initial_alias(), self.model._meta.db_table,
+                                     ((masteratt, masteratt),)),
+                                    join_field=BetterTranslationsField(languages),
+                                    **nullable)
+            self.query.add_extra(None, None, ('%s.id IS NULL'%alias,), None, None, None)
+            self.query.add_filter(('master__pk__isnull', False))
             self.query.add_select_related(('master',))
 
         else:
@@ -446,6 +473,16 @@ class TranslationQueryset(QuerySet):
 
     def language(self, language_code=None):
         self._language_code = language_code
+        return self
+
+    @minimumDjangoVersion(1, 6)
+    def fallbacks(self, *fallbacks):
+        if not fallbacks:
+            self._language_fallbacks = FALLBACK_LANGUAGES
+        elif fallbacks == (None,):
+            self._language_fallbacks = None
+        else:
+            self._language_fallbacks = fallbacks
         return self
 
     #===========================================================================

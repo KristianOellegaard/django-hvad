@@ -3,7 +3,7 @@ import django
 from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL, STANDARD
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard, SimpleRelated
 from hvad.test_utils.fixtures import NormalFixture, StandardFixture
 
@@ -30,6 +30,20 @@ class FilterTests(HvadTestCase, NormalFixture):
         self.assertEqual(obj1.translated_field, NORMAL[1].translated_field['en'])
         self.assertEqual(obj2.shared_field, NORMAL[2].shared_field)
         self.assertEqual(obj2.translated_field, NORMAL[2].translated_field['en'])
+
+    @minimumDjangoVersion(1, 6)
+    def test_fallbacks_filter(self):
+        (Normal.objects.language('en')
+                    .filter(shared_field=NORMAL[1].shared_field)
+                    .delete_translations())
+        with LanguageOverride('en'):
+            qs = Normal.objects.language().fallbacks()
+            with self.assertNumQueries(2):
+                self.assertEqual(qs.count(), self.normal_count)
+                self.assertEqual(len(qs), self.normal_count)
+            with self.assertNumQueries(0):
+                self.assertCountEqual((obj.pk for obj in qs), tuple(self.normal_id.values()))
+                self.assertCountEqual((obj.language_code for obj in qs), self.translations)
 
     def test_all_languages_filter(self):
         with self.assertNumQueries(2):
@@ -366,6 +380,22 @@ class InBulkTests(HvadTestCase, NormalFixture):
                 self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['ja'])
                 self.assertEqual(result[pk1].language_code, 'ja')
 
+    @minimumDjangoVersion(1, 6)
+    def test_fallbacks_in_bulk(self):
+        (Normal.objects.language('en')
+                       .filter(shared_field=NORMAL[2].shared_field)
+                       .delete_translations())
+        with self.assertNumQueries(1):
+            pk1, pk2 = self.normal_id[1], self.normal_id[2]
+            result = Normal.objects.language('en').fallbacks('de', 'ja').in_bulk([pk1, pk2])
+            self.assertCountEqual((pk1, pk2), result)
+            self.assertEqual(result[pk1].shared_field, NORMAL[1].shared_field)
+            self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['en'])
+            self.assertEqual(result[pk1].language_code, 'en')
+            self.assertEqual(result[pk2].shared_field, NORMAL[2].shared_field)
+            self.assertEqual(result[pk2].translated_field, NORMAL[2].translated_field['ja'])
+            self.assertEqual(result[pk2].language_code, 'ja')
+
     def test_all_languages_in_bulk(self):
         with self.assertRaises(ValueError):
             Normal.objects.language('all').in_bulk([self.normal_id[1]])
@@ -491,6 +521,16 @@ class ExcludeTests(HvadTestCase, NormalFixture):
 
     def test_defer(self):
         qs = Normal.objects.language('en').exclude(translated_field=NORMAL[1].translated_field['en'])
+        self.assertEqual(qs.count(), 0)
+
+    @minimumDjangoVersion(1, 6)
+    def test_fallbacks_exclude(self):
+        (Normal.objects.language('en')
+                       .filter(shared_field=NORMAL[1].shared_field)
+                       .delete_translations())
+        qs = (Normal.objects.language('en')
+                            .fallbacks('de', 'ja')
+                            .exclude(shared_field=NORMAL[1].shared_field))
         self.assertEqual(qs.count(), 0)
 
     def test_all_languages_exclude(self):

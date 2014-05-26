@@ -18,6 +18,13 @@ Python and Django versions supported:
 - Python 2.6 is no longer supported. Though it is likely to work for the time
   being, it has been dropped from the tested setups.
 
+New features:
+
+- :ref:`TranslationQueryset <TranslationQueryset-public>` now has a
+  :meth:`~hvad.manager.TranslationQueryset.fallbacks` method when running on
+  Django 1.6 or newer, allowing the queryset to use fallback languages while
+  retaining all its normal functionalities – :issue:`184`.
+
 
 .. release 0.5.0
 

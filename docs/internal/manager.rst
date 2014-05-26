@@ -108,6 +108,14 @@ TranslationQueryset
         - ``'all'``: no language filtering will be applied, a copy of an instance
           will be returned for every translation that matched the query.
 
+    .. attribute:: _language_fallbacks
+
+        A tuple of fallbacks used for this queryset, if fallbacks have been
+        activated by :meth:`fallbacks`, or `None` otherwise.
+
+        A ``None`` value in the tuple will be replaced with current language
+        at query evaluation.
+
     .. attribute:: translations_manager
     
         The (real) manager of the :term:`Translations Model`.
@@ -192,7 +200,7 @@ TranslationQueryset
 
         Apply the language filter to current query. Language is retrieved from
         :attr:`_language_code`, or :func:`~django.utils.translation.get_language` if
-        None.
+        None. If :meth:`fallbacks` have been set, apply the additional join as well.
 
         Special value ``'all'`` will prevent any language filter from being applied,
         resulting in the query considering all translations, possibly returning
@@ -234,6 +242,32 @@ TranslationQueryset
         .. note:: Using ``language('all')`` and :meth:`select_related` on the
                   same queryset is not supported and will raise a
                   :exc:`~exceptions.NotImplementedError`.
+
+    .. method:: fallbacks(self, *languages)
+
+        .. versionadded:: 0.6
+
+        Activates fallbacks for this queryset. This sets the
+        :attr:`_language_fallbacks` attribute, but does not apply any join
+        or filtering until :meth:`_add_language_filter` is called. This allows
+        for query-time resolution of the ``None`` values in the list.
+
+        The following special cases are accepted:
+
+        - ``None`` as a single argument will disable fallbacks on the queryset.
+        - An empty argument list will use :setting:`LANGUAGES` setting as a
+          fallback list.
+        - A ``None`` value a language will be replaced by the current language
+          at query evalution time, by calling
+          :func:`~django.utils.translation.get_language`
+
+        Returns a queryset.
+
+        .. note:: Using ``fallbacks`` and :meth:`select_related` on the
+                  same queryset is not supported and will raise a
+                  :exc:`~exceptions.NotImplementedError`.
+
+        .. note:: This feature requires Django 1.6 or newer.
 
     .. method:: create(self, **kwargs)
     
