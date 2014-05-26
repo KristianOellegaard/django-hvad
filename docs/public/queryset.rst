@@ -55,6 +55,8 @@ delete_translations
     Deletes all :term:`Translations Model` instances in a queryset, without
     deleting the :term:`Shared Model` instances.
 
+.. _select_related-public:
+
 select_related
 --------------
 
@@ -64,7 +66,8 @@ select_related
 
     The ``select_related`` method is limited to a one level depth when selecting
     related translatable models. Passing deeper relations to it will result in
-    an :exc:`~exceptions.NotImplementedError` being raised.
+    a warning being issued to logger `hvad.manager` and the relation being
+    truncated to first level.
 
 
 Not implemented public queryset methods
