@@ -233,6 +233,19 @@ class DeleteTests(NaniTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(Normal.objects._real_manager.count(), 2)
         self.assertEqual(Normal._meta.translations_model.objects.count(), 0)
 
+    def test_filtered_delete_translation(self):
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 4)
+        (Normal.objects.language('en')
+                       .filter(shared_field=DOUBLE_NORMAL[1]['shared_field'])
+                       .delete_translations())
+        self.assertEqual(Normal.objects.untranslated().count(), 2)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 3)
+        (Normal.objects.language('ja')
+                       .filter(translated_field=DOUBLE_NORMAL[2]['translated_field_ja'])
+                       .delete_translations())
+        self.assertEqual(Normal.objects.untranslated().count(), 2)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
+
 
 class GetTranslationFromInstanceTests(NaniTestCase):
     def test_simple(self):
