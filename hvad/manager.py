@@ -469,8 +469,7 @@ class TranslationQueryset(QuerySet):
     
     def delete_translations(self):
         self.update(master=None)
-        qs = self._clone()._add_language_filter()
-        super(TranslationQueryset, qs).delete()
+        self.model.objects.filter(master__isnull=True).delete()
     delete_translations.alters_data = True
         
     def update(self, **kwargs):

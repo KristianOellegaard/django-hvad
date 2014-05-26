@@ -387,6 +387,19 @@ class DeleteTests(HvadTestCase, TwoTranslatedNormalMixin):
         self.assertEqual(Normal.objects.untranslated().count(), 2)
         self.assertEqual(Normal._meta.translations_model.objects.count(), 0)
 
+    def test_filtered_delete_translation(self):
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 4)
+        (Normal.objects.language('en')
+                       .filter(shared_field=DOUBLE_NORMAL[1]['shared_field'])
+                       .delete_translations())
+        self.assertEqual(Normal.objects.untranslated().count(), 2)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 3)
+        (Normal.objects.language('ja')
+                       .filter(translated_field=DOUBLE_NORMAL[2]['translated_field_ja'])
+                       .delete_translations())
+        self.assertEqual(Normal.objects.untranslated().count(), 2)
+        self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
+
     def test_delete_translation_deferred_language(self):
         self.assertEqual(Normal._meta.translations_model.objects.count(), 4)
         with LanguageOverride('ja'):
