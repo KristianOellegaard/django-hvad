@@ -38,6 +38,8 @@ New and Changed Methods
 language
 --------
 
+.. _language-public:
+
 .. method:: language(language_code=None)
 
     Sets the language for the queryset to either the given language code or

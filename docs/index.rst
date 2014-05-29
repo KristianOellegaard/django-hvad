@@ -48,6 +48,7 @@ Contents
     public/queryset
     public/forms
     public/admin
+    public/faq
     public/release_notes
     public/contact
     public/contributing
