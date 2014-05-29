@@ -476,6 +476,15 @@ class NotImplementedTests(HvadTestCase):
         if django.VERSION >= (1, 7):
             self.assertRaises(NotImplementedError, baseqs.update_or_create)
 
+class MinimumVersionTests(HvadTestCase):
+    def test_versions(self):
+        qs = SimpleRelated.objects.language('en')
+        if django.VERSION < (1, 6):
+            self.assertRaises(AttributeError, getattr, qs, 'earliest')
+            self.assertRaises(AttributeError, getattr, qs, 'datetimes')
+        if django.VERSION < (1, 7):
+            self.assertRaises(AttributeError, getattr, qs, 'update_or_create')
+
 
 class ExcludeTests(HvadTestCase):
     SHARED = 'shared'

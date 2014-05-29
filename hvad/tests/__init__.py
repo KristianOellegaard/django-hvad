@@ -20,7 +20,8 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.ordering import OrderingTest
     from hvad.tests.query import (FilterTests, QueryCachingTests, IterTests, UpdateTests,
         ValuesListTests, ValuesTests, InBulkTests, DeleteTests, GetTranslationFromInstanceTests,
-        AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests)
+        AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests,
+        MinimumVersionTests)
     from hvad.tests.related import (NormalToNormalFKTest, StandardToTransFKTest,
         TripleRelationTests, ManyToManyTest, ForwardDeclaringForeignKeyTests,
         SelectRelatedTests)

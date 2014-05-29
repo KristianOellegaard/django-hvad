@@ -1,3 +1,4 @@
+import django
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
@@ -82,3 +83,19 @@ def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs
             not thing in exclude:
             context.update(getattr(instance, thing, lambda x:x)(**extra_kwargs))
     return context
+
+class _MinimumDjangoVersionDescriptor(object):
+    def __init__(self, name, version):
+        self.name = name
+        self.version = version
+
+    def __get__(self, obj, type=None):
+        raise AttributeError('Method %s requires Django %s or newer' %
+                             (self.name, '.'.join(str(x) for x in self.version)))
+
+def minimumDjangoVersion(*args):
+    if django.VERSION >= args:
+        return lambda x: x
+    def decorate(f):
+        return _MinimumDjangoVersionDescriptor(f.__name__, args)
+    return decorate

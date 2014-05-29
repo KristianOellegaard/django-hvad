@@ -12,7 +12,7 @@ except ImportError:
 from django.db.models import Q
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
-from hvad.utils import combine
+from hvad.utils import combine, minimumDjangoVersion
 from hvad.compat.settings import settings_updater
 import logging
 import sys
@@ -414,9 +414,9 @@ class TranslationQueryset(QuerySet):
                     # Re-raise the IntegrityError with its original traceback.
                     raise exc_info[1]
 
-    if django.VERSION >= (1, 7):
-        def update_or_create(self, defaults=None, **kwargs):
-            raise NotImplementedError()
+    @minimumDjangoVersion(1, 7)
+    def update_or_create(self, defaults=None, **kwargs):
+        raise NotImplementedError()
 
     def bulk_create(self, objs, batch_size=None):
         raise NotImplementedError()
@@ -446,11 +446,11 @@ class TranslationQueryset(QuerySet):
         field_name = qs.field_translator.get(field_name or self.shared_model._meta.get_latest_by)
         return super(TranslationQueryset, qs).latest(field_name)
 
-    if django.VERSION >= (1, 6):
-        def earliest(self, field_name=None):
-            qs = self._clone()._add_language_filter()
-            field_name = qs.field_translator.get(field_name or self.shared_model._meta.get_latest_by)
-            return super(TranslationQueryset, qs).earliest(field_name)
+    @minimumDjangoVersion(1, 6)
+    def earliest(self, field_name=None):
+        qs = self._clone()._add_language_filter()
+        field_name = qs.field_translator.get(field_name or self.shared_model._meta.get_latest_by)
+        return super(TranslationQueryset, qs).earliest(field_name)
 
     def in_bulk(self, id_list):
         if not id_list:
@@ -496,10 +496,10 @@ class TranslationQueryset(QuerySet):
         field_name = self.field_translator.get(field_name)
         return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
 
-    if django.VERSION >= (1, 6):
-        def datetimes(self, field, *args, **kwargs):
-            field = self.field_translator.get(field)
-            return super(TranslationQueryset, self).datetimes(field, *args, **kwargs)
+    @minimumDjangoVersion(1, 6)
+    def datetimes(self, field, *args, **kwargs):
+        field = self.field_translator.get(field)
+        return super(TranslationQueryset, self).datetimes(field, *args, **kwargs)
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
