@@ -12,3 +12,11 @@
 .toctree-l1.current > ul.current {
     margin-bottom: 0.6em;
 }
+
+li.toctree-l1 {
+    margin-bottom: 0.2em;
+}
+
+ul.simple>li {
+    margin-bottom: 0.35em;
+}
