@@ -2,6 +2,25 @@
 Release Notes
 #############
 
+.. release 0.4.1
+
+*****************************
+0.4.1
+*****************************
+
+Released on June 1, 2014
+
+Fixes:
+
+- Translations no longer remain in database when deleted depending on
+  the query that deleted them (bug :issue:`183`).
+- :meth:`~hvad.models.TranslatableModel.get_available_languages` now
+  uses translations if they were prefetched with
+  :meth:`~django.db.models.query.QuerySet.prefetch_related`. This
+  dramatically cuts down the number of queries that
+  :meth:`~hvad.admin.TranslatableAdmin.all_translations` generate
+  (bug :issue:`97`).
+
 .. release 0.4
 
 *****************************
