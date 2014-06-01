@@ -36,10 +36,11 @@ A full example of a model with translations::
         )
 
 .. note:: The :djterm:`Meta <meta-options>` class of the model may not use the
-          translatable fields in its options. In particular, using them on
-          :attr:`~django.db.models.Options.ordering` or
-          :attr:`~django.db.models.Options.unique_together` will cause
-          inconsistent query results.
+          translatable fields in those options:
+
+          - :attr:`~django.db.models.Options.unique_together`
+          - :attr:`~django.db.models.Options.index_together`
+          - :attr:`~django.db.models.Options.order_with_respect_to`
 
 ***********************
 New and Changed Methods

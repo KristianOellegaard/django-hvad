@@ -304,6 +304,13 @@ class TranslationQueryset(QuerySet):
                 f1 = {f: language_code}
                 f2 = {f: None}  # Allow select_related() to fetch objects with a relation set to NULL
                 self.query.add_q( Q(**f1) | Q(**f2) )
+
+        # if queryset is about to use the model's default ordering, we
+        # override that now with a translated version of the model's ordering
+        if self.query.default_ordering and not self.query.order_by:
+            ordering = self.shared_model._meta.ordering
+            self.query.order_by = self._translate_fieldnames(ordering or [])
+
         return self
 
     #===========================================================================

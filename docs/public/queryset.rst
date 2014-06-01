@@ -123,6 +123,11 @@ for each instance.
 .. warning:: You may not use any translated fields in any method on this
              queryset class.
 
+.. warning:: If you have a default :attr:`~django.db.models.Options.ordering`
+             defined on your model and it includes any translated field, you
+             must specify an ordering on every query so as not to use the
+             translated fields specified by the default ordering.
+
 New Methods
 ===========
 
