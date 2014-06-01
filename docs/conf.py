@@ -28,7 +28,7 @@ sys.path.extend((
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.intersphinx', 'djangodocs']
+extensions = ['sphinx.ext.intersphinx', 'djangodocs', 'github']
 intersphinx_mapping = {
     'python': ('http://docs.python.org/2.7', None),
     'django': ('http://readthedocs.org/docs/django/en/latest/', None),
@@ -225,3 +225,9 @@ man_pages = [
     ('index', 'project', u'Django Hvad Documentation',
      [u'Kristian Øllegaard, Jonas Obrist & contributors'], 1)
 ]
+
+# -- Options for local extensions ----------------------------------------------
+
+github_owner = 'KristianOellegaard'
+github_repo = 'django-hvad'
+
