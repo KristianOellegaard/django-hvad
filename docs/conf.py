@@ -16,7 +16,10 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+
+sys.path.extend((
+    os.path.abspath(os.path.join(os.path.dirname(__file__), '_ext')),
+))
 
 # -- General configuration -----------------------------------------------------
 
@@ -25,7 +28,7 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.intersphinx']
+extensions = ['sphinx.ext.intersphinx', 'github']
 intersphinx_mapping = {
     'python': ('http://docs.python.org/2.6', None),
     'django': ('http://readthedocs.org/docs/django/en/latest/', None),
@@ -218,3 +221,9 @@ man_pages = [
     ('index', 'project', u'Django Hvad Documentation',
      [u'Kristian Øllegaard, Jonas Obrist & contributors'], 1)
 ]
+
+# -- Options for local extensions ----------------------------------------------
+
+github_owner = 'KristianOellegaard'
+github_repo = 'django-hvad'
+
