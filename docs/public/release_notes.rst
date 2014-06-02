@@ -37,6 +37,9 @@ New features:
 - Abstract models are now supported. The concrete class must still declare a
   :class:`~hvad.models.TranslatedFields` instance, but it can be empty – :issue:`180`.
 - Django-hvad messages are now available in Italian – :issue:`178`.
+- The :attr:`Meta.ordering <django.db.models.Options.ordering>` model setting
+  is now supported on translatable models. It accepts both translated and shared
+  fields – :issue:`185`, :issue:`12`.
 
 Deprecation list:
 
