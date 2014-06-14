@@ -134,6 +134,12 @@ to force it to be in the user's preferred language by adding another query::
 How do I use hvad with MPTT?
 ****************************
 
+.. warning:: Since version 0.5, hvad no longer uses a custom metaclass, making this
+             solution unneeded. Although it will not break the way it is written
+             here, it becomes a verbose no-op and can be removed.
+
+             You might want to keep the manager subclassing at the end though.
+
 The `mptt`_ application implements Modified Preorder Tree Traversal
 for Django models. If you have any model in your project that is organized
 in a hierarchy of items, you should be using it.

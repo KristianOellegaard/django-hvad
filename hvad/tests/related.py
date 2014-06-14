@@ -33,7 +33,12 @@ class NormalToNormalFKTest(HvadTestCase, OneSingleTranslatedNormalMixin):
         related.normal_id = 999
         related.save()
         self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
-        
+
+    def test_reverse_relation(self):
+        normal = Normal.objects.language('en').get(pk=1)
+        related = Related.objects.language('en').create(normal=normal)
+
+        self.assertEqual(normal.rel1.language('en').get().pk, related.pk)
 
 
 class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
@@ -220,10 +225,10 @@ class ManyToManyTest(HvadTestCase, TwoTranslatedNormalMixin):
             self.assertEqual([n.pk for n in normals], [normal1.pk])
             
             # Same thing, another way:
-            normals = many.normals.language() # This query is fetching Normal objects that are not associated with the Many object "many" !
+            normals = many.normals.language()
+            self.assertEqual([normal1.pk], [n.pk for n in normals])
             normals_plain = many.normals.all()
-            # The two queries above should return the same objects, since all normals are translated
-            self.assertEqual([n.pk for n in normals], [n.pk for n in normals_plain])
+            self.assertEqual([normal1.pk], [n.pk for n in normals_plain])
 
 
 class ForwardDeclaringForeignKeyTests(HvadTestCase):

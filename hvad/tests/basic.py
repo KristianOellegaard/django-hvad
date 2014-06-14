@@ -4,8 +4,9 @@ import django
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
+from hvad.compat.metaclasses import with_metaclass
 from hvad.manager import TranslationManager
-from hvad.models import TranslatableModelBase, TranslatableModel
+from hvad.models import TranslatableModel, TranslatableModelBase, TranslatedFields
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
@@ -25,7 +26,7 @@ class DefinitionTests(HvadTestCase):
             'objects': Manager(),
             '__module__': 'hvad.test_utils.project.app',
         }
-        self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
+        self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel', (TranslatableModel,), attrs)
     
     def test_no_translated_fields(self):
@@ -33,7 +34,7 @@ class DefinitionTests(HvadTestCase):
         del attrs['__dict__']
         del attrs['__weakref__']
         bases = (TranslatableModel,InvalidModel2,)
-        self.assertRaises(ImproperlyConfigured, TranslatableModelBase,
+        self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel2', bases, attrs)
     
     def test_abstract_base_model(self):
@@ -43,9 +44,18 @@ class DefinitionTests(HvadTestCase):
             'Meta': Meta,
             '__module__': 'hvad.test_utils.project.app',
         }
-        model = TranslatableModelBase('MyBaseModel', (TranslatableModel,), attrs)
+        model = type('MyBaseModel', (TranslatableModel,), attrs)
         self.assertTrue(model._meta.abstract)
 
+    def test_metaclass_override(self):
+        class CustomMetaclass(TranslatableModelBase):
+            def __new__(*args, **kwargs):
+                return TranslatableModelBase.__new__(*args, **kwargs)
+
+        with self.assertThrowsWarning(DeprecationWarning):
+            class CustomMetaclassModel(with_metaclass(CustomMetaclass, TranslatableModel)):
+                translations = TranslatedFields()
+            self.assertIsInstance(CustomMetaclassModel, TranslatableModelBase)
 
 class OptionsTest(HvadTestCase):
     def test_options(self):

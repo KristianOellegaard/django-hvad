@@ -58,6 +58,9 @@ Deprecation list:
 - The :class:`~hvad.manager.TranslationFallbackManager` is deprecated and will
   be removed in next release. Please use manager's
   :meth:`~hvad.manager.TranslationManager.untranslated` method instead.
+- The :class:`~hvad.models.TranslatableModelBase` metaclass is no longer
+  necessary and will be removed in next release. hvad no longer triggers metaclass
+  conflicts and ``TranslatableModelBase`` can be safely dropped.
 
 Fixes:
 
