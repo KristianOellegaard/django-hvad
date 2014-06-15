@@ -11,9 +11,11 @@ How it works
 Model Definition
 ================
 
-The :class:`hvad.models.TranslatableModelBase` metaclass scans all attributes
-on the model defined for instances of :class:`hvad.models.TranslatedFields`, and
-if it finds one, sets the respective options onto meta.
+Function :func:`hvad.models.prepare_translatable_model` is invoked by Django
+metaclass using :data:`~django.db.models.signals.class_prepared` signal. It
+scans all attributes on the model defined for instances of
+:class:`hvad.models.TranslatedFields`, and if it finds one, sets the respective
+options onto meta.
 
 :class:`~hvad.models.TranslatedFields` both creates the
 :term:`Translations Model` and makes a foreign key from that model to point to

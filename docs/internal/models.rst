@@ -15,6 +15,18 @@
     
     Returns the new model. 
 
+.. function:: contribute_translations(cls, rel)
+
+    Gets called from :func:`prepare_translatable_model` to set the
+    descriptors of the fields on the :term:`Translations Model` onto the
+    model.
+
+.. function:: prepare_translatable_model(sender)
+
+    Gets called from :class:`~django.db.models.Model`'s metaclass to
+    customize model creation. Performs checks, then contributes translations
+    and translation manager onto models that inherit
+    :class:`~hvad.models.TranslatableModel`.
 
 ****************
 TranslatedFields
@@ -51,7 +63,10 @@ TranslatableModelBase
 
 .. class:: TranslatableModelBase
 
-    Metaclass of :class:`TranslatableModel`.
+    .. deprecated:: 0.5
+
+    Metaclass of :class:`TranslatableModel`. It is no longer used and should be
+    removed from metaclass inheritance tree in projects.
 
     .. method:: __new__(cls, name, bases, attrs)
 
@@ -87,16 +102,10 @@ TranslatableModel
     
         A list of field on the :term:`Translations Model`.
     
-    .. classmethod:: contribute_translations(cls, rel)
-    
-        Gets called from the :class:`TranslatableModelBase` to set the
-        descriptors of the fields on the :term:`Translations Model` onto the
-        model.
-
     .. classmethod:: save_translations(cls, instance, **kwargs)
     
-        This classmethod is connected to the model's post save signal from the
-        :class:`TranslatableModelBase` and saves the cached translation if it's
+        This classmethod is connected to the model's post save signal from
+        :func:`prepare_translatable_model` and saves the cached translation if it's
         available.
     
     .. method:: translate(self, language_code)
