@@ -372,11 +372,11 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
             with LanguageOverride('en'):
                 response = self.client.post(url, data_en)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), self.normal_count + 1)
+                self.assertEqual(Normal.objects.untranslated().count(), self.normal_count + 1)
             with LanguageOverride('ja'):
                 response = self.client.post(url, data_ja)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), self.normal_count + 2)
+                self.assertEqual(Normal.objects.untranslated().count(), self.normal_count + 2)
             en = Normal.objects.language('en').get(shared_field=SHARED)
             self.assertEqual(en.shared_field, SHARED)
             self.assertEqual(en.translated_field, TRANS_EN)
@@ -399,7 +399,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                 }
                 response = self.client.post("%s?language=en" % url, data)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), self.normal_count + 1)
+                self.assertEqual(Normal.objects.untranslated().count(), self.normal_count + 1)
                 obj = Normal.objects.language('en').get(shared_field=SHARED)
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)

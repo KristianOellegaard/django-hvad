@@ -86,6 +86,16 @@ class FilterTests(HvadTestCase, NormalFixture):
             self.assertEqual(obj2.shared_field, NORMAL[2].shared_field)
             self.assertEqual(obj2.translated_field, NORMAL[2].translated_field['en'])
 
+
+class ExtraTests(HvadTestCase, NormalFixture):
+    normal_count = 2
+
+    def test_simple_extra(self):
+        qs = Normal.objects.language('en').extra(select={'test_extra': '2 + 2'})
+        self.assertEqual(qs.count(), self.normal_count)
+        self.assertEqual(int(qs[0].test_extra), 4)
+
+
 class QueryCachingTests(HvadTestCase, NormalFixture):
     normal_count = 2
 

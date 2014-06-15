@@ -24,6 +24,10 @@ New features:
   :meth:`~hvad.manager.TranslationQueryset.fallbacks` method when running on
   Django 1.6 or newer, allowing the queryset to use fallback languages while
   retaining all its normal functionalities – :issue:`184`.
+- Passing additional ``select`` items in method
+  :meth:`~django.db.models.query.QuerySet.extra` is now supported. — :issue:`207`.
+- It is now possible to use :ref:`TranslationQueryset <TranslationQueryset-public>`
+  as default queryset for translatable models. — :issue:`207`.
 
 Fixes:
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
-from hvad.test_utils.data import NORMAL, STANDARD, CONCRETEAB, DATE
-from hvad.test_utils.project.app.models import Normal, Standard, ConcreteAB, Date
+from hvad.test_utils.data import NORMAL, STANDARD, CONCRETEAB, DATE, QONORMAL
+from hvad.test_utils.project.app.models import Normal, Standard, ConcreteAB, Date, QONormal
 
 
 class Fixture(object):
@@ -47,6 +47,26 @@ class StandardFixture(NormalFixture):
             normal_field=data.normal_field,
             normal_id=self.normal_id[data.normal],
         )
+        return obj
+
+
+class QONormalFixture(Fixture):
+    qonormal_count = 0
+
+    def create_fixtures(self):
+        super(QONormalFixture, self).create_fixtures()
+        assert self.qonormal_count <= len(QONORMAL), 'Not enough fixtures in data'
+
+        self.qonormal_id = {}
+        for i in range(1, self.qonormal_count + 1):
+            self.qonormal_id[i] = self.create_qonormal(QONORMAL[i]).pk
+
+    def create_qonormal(self, data, translations=None):
+        obj = QONormal(shared_field=data.shared_field)
+        for code in translations or self.translations:
+            obj.translate(code)
+            obj.translated_field = data.translated_field[code]
+            obj.save()
         return obj
 
 
