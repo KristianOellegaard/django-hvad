@@ -13,6 +13,9 @@ from hvad.compat.settings import settings_updater
 import sys
 import warnings
 
+#===============================================================================
+
+# Global settings, wrapped so they react to SettingsOverride
 @settings_updater
 def update_settings(*args, **kwargs):
     global FALLBACK_LANGUAGES, TABLE_NAME_SEPARATOR
@@ -26,6 +29,7 @@ def update_settings(*args, **kwargs):
                       'be removed. Please rename it to HVAD_TABLE_NAME_SEPARATOR.',
                       DeprecationWarning)
 
+#===============================================================================
 
 def create_translations_model(model, related_name, meta, **fields):
     """
@@ -130,9 +134,6 @@ class BaseTranslationModel(models.Model):
     Needed for detection of translation models. Due to the way dynamic classes
     are created, we cannot put the 'language_code' field on here.
     """
-    def __init__(self, *args, **kwargs):
-        super(BaseTranslationModel, self).__init__(*args, **kwargs)
-        
     class Meta:
         abstract = True
 
@@ -266,6 +267,7 @@ class TranslatableModel(models.Model):
         return getattr(translation, name, default)
 
     def get_available_languages(self):
+        """ Get a list of all available language_code in db. """
         qs = getattr(self, self._meta.translations_accessor).all()
         if qs._result_cache is not None:
             return [obj.language_code for obj in qs]
