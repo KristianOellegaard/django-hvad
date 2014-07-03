@@ -136,7 +136,7 @@ How do I use hvad with MPTT?
 
 .. warning:: Since version 0.5, hvad no longer uses a custom metaclass, making this
              solution unneeded. Although it will not break the way it is written
-             here, it becomes a verbose no-op and can be removed.
+             here, it becomes a verbose no-op and should be removed.
 
              You might want to keep the manager subclassing at the end though.
 
@@ -167,7 +167,7 @@ This is because both `MPTTModel` and :class:`~hvad.models.TranslatableModel`
 use metaclasses and Python is confused: which should it use for the Folder model?
 We need to create one by ourselves, like this::
 
-    class FolderBase(TranslatableModel.__class__, MPTTModel.__class__):
+    class FolderBase(TranslatableModelBase, MPTTModelBase):
         pass
 
     class Folder(MPTTModel, TranslatableModel):
@@ -189,6 +189,65 @@ the MPTT manager as well. Doing so is relatively straightforward::
 
 The same principle would work with a custom queryset too, but MPTT does not
 define one.
+
+***********************************************
+How do I separate translatable fields in admin?
+***********************************************
+
+This comes froms :issue:`68`.
+
+We need to separate the fields in fieldsets. Unfortunately, technical
+restrictions on Django < 1.6 make support for translated fields directly
+on ModelAdmin difficult. Therefore, it must be worked around by defining a
+custom :meth:`~django.contrib.admin.ModelAdmin.get_fieldsets` as such::
+
+    class MyModelAdmin(TranslatableAdmin):
+        # ... other admin stuff
+        def get_fieldsets(self, request, obj=None):
+            return (
+                (_('Common fields'), {
+                    'fields': ('owner', 'is_published',),
+                }),
+                (_('Translated fields'), {
+                    'fields': ('name', 'slug', 'description',),
+                }),
+            )
+
+The model admin will then be generated with two fieldsets, one for common fields
+and one for translated fields. At the point though, language tabs still appear
+at the top, with both fieldsets beneath. This can be changed by providing a
+custom template for rendering the form. This is a 2-step process. First, we
+specify a custom template on the admin::
+
+    class MyModelAdmin(TranslatableAdmin):
+        # ... ohter admin stuff
+        change_form_template = 'myapp/change_form.html'
+
+Then we create the template, by extending the base admin change form. Only, we
+place the language tabs where we want them to be:
+
+.. code-block:: django
+
+    {% extends "admin/change_form.html" %}
+
+    {% block field_sets %}
+        {% for fieldset in adminform %}
+            {% include "admin/includes/fieldset.html" %}
+            {% if forloop.first %}
+                {% include "admin/hvad/includes/translation_tabs.html" %}
+            {% endif %}
+        {% endfor %}
+    {% endblock %}
+
+In that example, the language tabs will end up in between the first and second
+fieldsets. We are mostly done, all we miss is some CSS rules to have the tabs
+look right. We may simply copy-paste the ``extrahead`` block straight from
+``hvad/templates/admin/hvad/change_form.html``.
+
+.. note:: Remember that language tabs are links to other pages. This means that
+          clicking them without saving the form will not save anything, not even
+          common fields. Basically, a new, fresh form will be built from DB
+          values. If adding new object, common fields will be blanked as well.
 
 
 .. _mptt: https://github.com/django-mptt/django-mptt/
