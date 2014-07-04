@@ -66,10 +66,11 @@ select_related
 
     Inherited from :meth:`~django.db.models.query.QuerySet.select_related`.
 
-    The ``select_related`` method is limited to a one level depth when selecting
-    related translatable models. Passing deeper relations to it will result in
-    a warning being issued to logger `hvad.manager` and the relation being
-    truncated to first level.
+    The ``select_related`` method also selects translations of translatable
+    models when it encounters some.
+
+    .. note:: ``select_related`` is not supported in combination with
+              ``language('all')``.
 
 
 Not implemented public queryset methods

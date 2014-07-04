@@ -40,6 +40,12 @@ New features:
 - The :attr:`Meta.ordering <django.db.models.Options.ordering>` model setting
   is now supported on translatable models. It accepts both translated and shared
   fields – :issue:`185`, :issue:`12`.
+- The :meth:`~hvad.manager.TranslationQueryset.select_related` method is no longer
+  limited to 1 level depth.
+- The :meth:`~hvad.manager.TranslationQueryset.select_related` method semantics
+  is now consistent with that of regular querysets. It supports passing ``None``
+  to clear the list and mutiple calls mimic Django behavior. That is: cumulative
+  starting from Django 1.7 and substitutive before.
 
 Deprecation list:
 
@@ -71,12 +77,6 @@ Fixes:
   queries allowed in Django 1.6 and newer to use only one query to resolve
   fallbacks. Old behavior can be forced by adding ``HVAD_LEGACY_FALLBACKS = True``
   to your settings.
-- Using :ref:`select_related() <select_related-public>` with deep relations on a
-  :ref:`TranslationQueryset <TranslationQueryset-public>` no longers raises an
-  :exc:`~exceptions.NotImplementedError`. Rather, it logs a warning and truncates
-  the relation to the first level. This is more consistent with Django
-  behavior – :issue:`115`.
-
 
 .. release 0.4.1
 

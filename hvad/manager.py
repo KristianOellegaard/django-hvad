@@ -163,6 +163,7 @@ class TranslationQueryset(QuerySet):
     }
     if django.VERSION >= (1, 6):
         override_classes[DateTimeQuerySet] = SkipMasterSelectMixin
+    _skip_master_select = False
 
     def __init__(self, model, *args, **kwargs):
         if hasattr(model._meta, 'translations_model'):
@@ -173,14 +174,10 @@ class TranslationQueryset(QuerySet):
         self._local_field_names = None
         self._field_translator = None
         self._language_code = None
-        self._related_model_extra_filters = [] # Used for select_related
+        self._raw_select_related = []
         self._forced_unique_fields = []  # Used for select_related
+        self._language_filter_tag = False
         super(TranslationQueryset, self).__init__(model, *args, **kwargs)
-
-        # After super(), make sure we retrieve the shared model:
-        if not getattr(self, '_skip_master_select', False) and not self.query.select_related:
-            self.query.add_select_related(('master',))
-
 
     #===========================================================================
     # Helpers and properties (INTERNAL!)
@@ -195,8 +192,9 @@ class TranslationQueryset(QuerySet):
             '_local_field_names': self._local_field_names,
             '_field_translator': self._field_translator,
             '_language_code': self._language_code,
-            '_related_model_extra_filters': list(self._related_model_extra_filters),
+            '_raw_select_related': self._raw_select_related,
             '_forced_unique_fields': list(self._forced_unique_fields),
+            '_language_filter_tag': getattr(self, '_language_filter_tag', False)
         })
         klass = self.__class__ if klass is None else self._get_class(klass)
         return super(TranslationQueryset, self)._clone(klass, setup, **kwargs)
@@ -310,20 +308,95 @@ class TranslationQueryset(QuerySet):
         # update using the real manager
         return QuerySet(self.shared_model, using=self.db).filter(**{'%s__in' % accessor: qs})
 
+    def _add_select_related(self, language_code):
+        fields = self._raw_select_related
+        related_queries = [] if self._skip_master_select else ['master']
+        language_filters = []
+        force_unique_fields = []
+
+        for query_key in fields:
+            bits = query_key.split('__')
+            model = self.shared_model
+
+            for depth, bit in enumerate(bits):
+                # Resolve the field
+                try:                             # lookup the field on the shared model
+                    field, _, direct, _ = model._meta.get_field_by_name.real(bit)
+                    translated = False
+                except models.FieldDoesNotExist: # nope, that's from translations
+                    field, _, direct, _ = (model._meta.translations_model
+                                                ._meta.get_field_by_name(bit))
+                    translated = True
+
+                # Adjust current path bit
+                if depth == 0 and not translated:
+                    # on initial depth we must key to shared model
+                    bits[depth] = 'master__%s' % bit
+                elif depth > 0 and translated:
+                    # on deeper levels we must key to translations model
+                    # this will work because translations will be seen as _unique
+                    # at query time
+                    bits[depth] = '%s__%s' % (model._meta.translations_accessor, bit)
+
+
+                # Find out target model
+                if direct:  # field is on model
+                    if field.rel:    # field is a foreign key, follow it
+                        target = field.rel.to
+                    else:            # field is a regular field
+                        raise ValueError('Cannot select_related: %s is a regular field' % query_key)
+                else:       # field is a m2m or reverse fk, follow it
+                    target = field.model
+
+                # If target is a translated model, select its translations
+                if hasattr(target._meta, 'translations_accessor'):
+                    # Add the model
+                    target_query = '__'.join(bits[:depth+1])
+                    related_queries.append('%s__%s' % (
+                        target_query,
+                        target._meta.translations_accessor
+                    ))
+
+                    # Add a language filter for the translation
+                    target_translations = target._meta.translations_accessor
+                    language_filters.append('%s__%s__language_code' % (
+                        target_query,
+                        target_translations,
+                    ))
+
+                    # Remember to mark the field unique so JOIN is generated
+                    # and row decoder gets cached items
+                    target_transfield = getattr(target, target_translations).related.field
+                    force_unique_fields.append(target_transfield)
+
+                model = target
+            related_queries.append('__'.join(bits))
+
+        # Apply results to query
+        self.query.add_select_related(related_queries)
+        for language_filter in language_filters:
+            self.query.add_q(Q(**{language_filter: language_code}) |
+                             Q(**{language_filter: None}))
+
+        self._forced_unique_fields = force_unique_fields
+
     def _add_language_filter(self):
+        if self._language_filter_tag:
+            raise RuntimeError('Queryset is already tagged. This is a bug in hvad')
+        self._language_filter_tag = True
+
         if self._language_code == 'all':
-            if self._related_model_extra_filters:
+            if self._raw_select_related:
                 raise NotImplementedError('Using select_related along with '
                                           'language(\'all\') is not supported')
+            self.query.add_select_related(('master',))
+
         else:
             language_code = self._language_code or get_language()
             if not self._scan_for_language_where_node(self.query.where.children):
                 self.query.add_filter(('language_code', language_code))
 
-            for f in self._related_model_extra_filters:
-                f1 = {f: language_code}
-                f2 = {f: None}  # Allow select_related() to fetch objects with NULL relation
-                self.query.add_q(Q(**f1) | Q(**f2))
+            self._add_select_related(language_code)
 
         # if queryset is about to use the model's default ordering, we
         # override that now with a translated version of the model's ordering
@@ -333,29 +406,34 @@ class TranslationQueryset(QuerySet):
 
         return self
 
-    def _use_related_translations(self, obj, relations_dict, follow_relations=True):
+    def _use_related_translations(self, obj, relations_dict, depth=0):
         """
         Ensure that we use cached translations brought in via select_related if
         available. Necessary since the database select_related query caches the
         related translation models in a different place than hvad expects it.
         """
-        for related_field_name in relations_dict:
-            if related_field_name == "master" and follow_relations:
-                self._use_related_translations(
-                    obj.master,
-                    relations_dict[related_field_name],
-                    follow_relations=False
-                )
+
+        # First, set translation for current object,
+        try:
+            accessor = obj._meta.translations_accessor
+        except AttributeError:
+            pass
+        else:
+            cache = getattr(obj.__class__, accessor).related.get_cache_name()
+            try:
+                translation = getattr(obj, cache)
+            except AttributeError:
+                pass
             else:
-                related_obj = getattr(obj, related_field_name)
-                if related_obj and hasattr(related_obj._meta, 'translations_cache'):
-                    # This is a related translated model included using select_related:
-                    # The following is a generic version of
-                    # "related_obj.translations_cache = related_obj._translations_cache"
-                    trans_rel = getattr(related_obj.__class__,
-                                        related_obj._meta.translations_accessor)
-                    new_cache = getattr(related_obj, trans_rel.related.get_cache_name(), None)
-                    setattr(related_obj, related_obj._meta.translations_cache, new_cache)
+                delattr(obj, cache)
+                setattr(obj, obj._meta.translations_cache, translation)
+
+        # Then recurse in the relation dict
+        for field, sub_dict in relations_dict.items():
+            target = getattr(obj, field)
+            if target is not None:
+                self._use_related_translations(target, sub_dict, depth+1)
+
 
     #===========================================================================
     # Queryset/Manager API
@@ -407,17 +485,6 @@ class TranslationQueryset(QuerySet):
             else:
                 yield combine(obj, qs.shared_model)
 
-    def __getitem__(self, k):
-        """
-        Handle getitem special since self.iterator is called *after* the
-        slicing happens, when it's no longer possible to filter a queryest.
-        Therefore the check for _language_code must be done here.
-        """
-        if self._result_cache is None:
-            qs = self._clone()._add_language_filter()
-            return super(TranslationQueryset, qs).__getitem__(k)
-        return super(TranslationQueryset, self).__getitem__(k)
-
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
             kwargs['language_code'] = self._language_code or get_language()
@@ -441,33 +508,6 @@ class TranslationQueryset(QuerySet):
             return super(TranslationQueryset, qs).exists()
         else:
             return bool(self._result_cache)
-
-    def get(self, *args, **kwargs):
-        """
-        Get an object by querying the translations model and returning a
-        combined instance.
-        """
-        qs = self._clone()
-        newargs, newkwargs = qs._translate_args_kwargs(*args, **kwargs)
-
-        if 'language_code' in newkwargs:
-            language_code = newkwargs.pop('language_code')
-            if language_code == 'all': # it would work, but make future evolutions hard
-                raise ValueError('Special value \'all\' can only be passed through '
-                                 'the language() method.')
-            qs.language(language_code)
-            qs._add_language_filter()
-        elif any(qs._find_language_code(arg) for arg in args if isinstance(arg, Q)):
-            if self._related_model_extra_filters:
-                raise NotImplementedError(
-                    'Cannot use select_related along with language_code field in Q objects'
-                )
-            # language code in *args, no related fields, do not call _add_language_filter
-        else:
-            qs._add_language_filter()
-
-        # self.iterator already combines! Isn't that nice?
-        return QuerySet.get(qs, *newargs, **newkwargs)
 
     def get_or_create(self, **kwargs):
         """
@@ -533,15 +573,13 @@ class TranslationQueryset(QuerySet):
         return qs._reverse_translate_fieldnames_dict(response)
 
     def latest(self, field_name=None):
-        qs = self._clone()._add_language_filter()
-        field_name = qs.field_translator(field_name or self.shared_model._meta.get_latest_by)
-        return super(TranslationQueryset, qs).latest(field_name)
+        field_name = self.field_translator(field_name or self.shared_model._meta.get_latest_by)
+        return super(TranslationQueryset, self).latest(field_name)
 
     @minimumDjangoVersion(1, 6)
     def earliest(self, field_name=None):
-        qs = self._clone()._add_language_filter()
-        field_name = qs.field_translator(field_name or self.shared_model._meta.get_latest_by)
-        return super(TranslationQueryset, qs).earliest(field_name)
+        field_name = self.field_translator(field_name or self.shared_model._meta.get_latest_by)
+        return super(TranslationQueryset, self).earliest(field_name)
 
     def in_bulk(self, id_list):
         if not id_list:
@@ -580,10 +618,14 @@ class TranslationQueryset(QuerySet):
     #===========================================================================
 
     def filter(self, *args, **kwargs):
+        if 'language_code' in kwargs and kwargs['language_code'] == 'all':
+            raise ValueError('Value "all" is invalid for language_code')
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).filter(*newargs, **newkwargs)
 
     def exclude(self, *args, **kwargs):
+        if 'language_code' in kwargs and kwargs['language_code'] == 'all':
+            raise ValueError('Value "all" is invalid for language_code')
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).exclude(*newargs, **newkwargs)
 
@@ -605,88 +647,16 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).datetimes(field, *args, **kwargs)
 
     def select_related(self, *fields):
-        """
-        Include other models in this query.
-        This is complex but allows retreiving related models and their
-        translations with a single query.
-        """
         if not fields:
             raise NotImplementedError('To use select_related on a translated model, '
                                       'you must provide a list of fields.')
-        related_model_keys = ['master']
-        related_model_explicit_joins = []
-        forced_unique_fields = []
-        for query_key in fields:
-            bits = query_key.split('__')
-            try:
-                field, model, direct, _ = self.shared_model._meta.get_field_by_name.real(bits[0])
-                query_key, translated = 'master__%s' % query_key, False
-            except models.FieldDoesNotExist:
-                field, model, direct, _ = self.model._meta.get_field_by_name(bits[0])
-                translated = True
-
-            if direct:  # field is on model
-                if field.rel:    # field is a foreign key, follow it
-                    model = field.rel.to
-                else:            # field is a regular field
-                    raise AssertionError('Cannot select_related: %s is a regular field' % query_key)
-            else:       # field is a m2m or reverse fk, follow it
-                model = field.model
-
-            if hasattr(model._meta, 'translations_accessor'): # if translatable model
-                # This is a relation to a translated model,
-                # so we need to select_related both the model and its translation model
-                if len(bits) > 1:
-                    if query_key not in _warned_for_select_related_keys:
-                        _warned_for_select_related_keys.add(query_key)
-                        caller = '%s:%d, in %s()' % _logger.findCaller()
-                        _logger.warning('From %s: deep select_related with translated '
-                                        'models it not supported, truncating %s',
-                                        caller, query_key)
-                    del bits[1:]
-                    query_key = '__'.join(bits if translated else ['master'] + bits)
-                related_model_keys.append(query_key)  # Select the related model
-                related_model_keys.append(            # and its translation model
-                    '%s__%s' % (query_key, model._meta.translations_accessor)
-                )
-
-                # We need to force this to be a LEFT OUTER join, so we explicitly add the join.
-                # Django 1.6 changes the footprint of the Query.join method.
-                # See https://code.djangoproject.com/ticket/19385
-                if django.VERSION < (1, 6):
-                    join_data = (field.model._meta.db_table, model._meta.db_table,
-                                 bits[0] + "_id", 'id')
-                else:
-                    join_data = (field, (field.model._meta.db_table, model._meta.db_table,
-                                         ((bits[0] + "_id", 'id'),)))
-                related_model_explicit_joins.append(join_data)
-                # And we are going to force the query to treat the language join as one-to-one,
-                # so we need to filter for the desired language:
-                self._related_model_extra_filters.append(
-                    '%s__%s__language_code' % (query_key, model._meta.translations_accessor),
-                )
-                rel_field_to_force = getattr(model, model._meta.translations_accessor).related.field
-                if not rel_field_to_force._unique:
-                    # The filter that we set up above essentially makes the related translations table
-                    # a one-to-one join with the related shared table, so we need to use a hack that
-                    # forces the query compiler to treat the join as one-to-one:
-                    # The following will defer "model.translations.related.field._unique = True"
-                    forced_unique_fields.append(rel_field_to_force)
-            else:
-                related_model_keys.append(query_key)
-        obj = self._clone()
-        obj.query.get_compiler(obj.db).fill_related_selections()  # seems to be necessary
-        for j in related_model_explicit_joins:
-            if django.VERSION >= (1, 6):
-                kwargs = {'join_field': j[0]}
-                j = j[1]
-            else:
-                kwargs = {}
-            obj.query.join(j, nullable=True, **kwargs)
-        obj._forced_unique_fields.extend(forced_unique_fields)
-        obj.query.add_select_related(related_model_keys)
-
-        return obj
+        if fields == (None,):
+            self._raw_select_related = []
+        elif django.VERSION >= (1, 7):  # in newer versions, calls are cumulative
+            self._raw_select_related.extend(fields)
+        else:                           # in older versions, they overwrite each other
+            self._raw_select_related = list(fields)
+        return self
 
     def complex_filter(self, filter_obj):
         # Don't know how to handle Q object yet, but it is probably doable...
