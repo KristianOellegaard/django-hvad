@@ -52,6 +52,7 @@ class RelatedProxy(Related):
     class Meta:
         proxy = True
 
+
 class SimpleRelated(TranslatableModel):
     normal = models.ForeignKey(Normal, related_name='simplerel')
     
@@ -63,6 +64,16 @@ class SimpleRelated(TranslatableModel):
 class SimpleRelatedProxy(SimpleRelated):
     class Meta:
         proxy = True
+
+
+class RelatedRelated(TranslatableModel):
+    related = models.ForeignKey(Related, related_name='+', null=True)
+    simple = models.ForeignKey(SimpleRelated, related_name='+', null=True)
+
+    translated_fields = TranslatedFields(
+        trans_related = models.ForeignKey(Related, related_name='+', null=True),
+        trans_simple = models.ForeignKey(SimpleRelated, related_name='+', null=True),
+    )
 
 
 class AbstractA(TranslatableModel):

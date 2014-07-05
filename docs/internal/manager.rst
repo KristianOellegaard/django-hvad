@@ -204,6 +204,14 @@ TranslationQueryset
         field, as well as any related model translation set up by
         :meth:`select_related`.
 
+    .. method:: _add_select_related(self, language_code)
+
+        .. versionadded:: 0.5
+
+        Applies the related selections to current query. This includes the basic
+        selection of ``master``, any relation specified through :meth:`select_related`
+        and the translations of any translatable models it navigates through.
+
     .. method:: language(self, language_code=None)
     
         Specifies a language for this queryset. This sets the

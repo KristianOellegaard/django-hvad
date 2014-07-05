@@ -24,7 +24,7 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
         MinimumVersionTests)
     from hvad.tests.related import (NormalToNormalFKTest, StandardToTransFKTest,
         TripleRelationTests, ManyToManyTest, ForwardDeclaringForeignKeyTests,
-        SelectRelatedTests)
+        SelectRelatedTests, DeepSelectRelatedTests)
     from hvad.tests.forms_inline import TestBasicInline, TestTranslationsInline
     from hvad.tests.views import ViewsTest
     from hvad.tests.limit_choices_to import LimitChoicesToTests
