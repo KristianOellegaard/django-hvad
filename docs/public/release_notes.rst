@@ -77,6 +77,8 @@ Fixes:
   queries allowed in Django 1.6 and newer to use only one query to resolve
   fallbacks. Old behavior can be forced by adding ``HVAD_LEGACY_FALLBACKS = True``
   to your settings.
+- Assigning value to translatable foreign keys through its ``_id`` field no
+  longer results in assigned value being ignored – :issue:`193`.
 
 .. release 0.4.1
 
