@@ -1,8 +1,9 @@
 import django
 if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner instead
-    from hvad.tests.admin import (NormalAdminTests, AdminEditTests,
-        AdminNoFixturesTests, AdminDeleteTranslationsTests, AdminRelationTests,
-        TranslatableInlineAdminTests)
+    from hvad.tests.admin import (ModelHelpersTests, AdminMethodsTests,
+                                  NormalAdminTests, AdminEditTests,
+                                  AdminNoFixturesTests, AdminDeleteTranslationsTests,
+                                  AdminRelationTests, TranslatableInlineAdminTests)
     from hvad.tests.basic import (OptionsTest, BasicQueryTest, AlternateCreateTest,
                                   CreateTest, GetTest, TranslatedTest,
                                   DeleteLanguageCodeTest, GetByLanguageTest,
