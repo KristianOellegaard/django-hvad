@@ -12,7 +12,7 @@ from hvad.test_utils.data import DOUBLE_NORMAL
 from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin, 
     TwoTranslatedNormalMixin)
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
-from hvad.test_utils.project.app.models import Normal, MultipleFields, Boolean
+from hvad.test_utils.project.app.models import Normal, Related, MultipleFields, Boolean
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 
 
@@ -323,7 +323,7 @@ class DeleteLanguageCodeTest(HvadTestCase, OneSingleTranslatedNormalMixin):
 
                               
 class DescriptorTests(HvadTestCase):
-    def test_translated_attribute_set(self):
+    def test_translated_attribute_get(self):
         # 'MyDescriptorTestModel' should return the default field value, in case there is no translation
         from hvad.models import TranslatedFields
         from django.db import models
@@ -334,7 +334,23 @@ class DescriptorTests(HvadTestCase):
                 hello = models.CharField(default=DEFAULT, max_length=128)
             )
         self.assertEqual(MyDescriptorTestModel.hello, DEFAULT)
-    
+
+    def test_translated_foreignkey_set(self):
+        cache = Related._meta.translations_cache
+
+        normal = Normal(language_code='en')
+        normal.save()
+        related = Related(language_code='en')
+        related.translated = normal
+        self.assertNotIn('translated_id', related.__dict__)
+        self.assertIn('translated_id', getattr(related, cache).__dict__)
+        self.assertEqual(getattr(related, cache).__dict__['translated_id'], normal.pk)
+
+        related.translated_id = 4242
+        self.assertNotIn('translated_id', related.__dict__)
+        self.assertIn('translated_id', getattr(related, cache).__dict__)
+        self.assertEqual(getattr(related, cache).__dict__['translated_id'], 4242)
+
     def test_translated_attribute_delete(self):    
         # Its not possible to delete the charfield, which should result in an AttributeError
         obj = Normal.objects.language("en").create(shared_field="test", translated_field="en")

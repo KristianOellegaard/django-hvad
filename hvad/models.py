@@ -316,6 +316,9 @@ def contribute_translations(cls, rel):
             attr = LanguageCodeAttribute(opts)
         else:
             attr = TranslatedAttribute(opts, field.name)
+            attname = field.get_attname()
+            if attname and attname != field.name:
+                setattr(cls, attname, TranslatedAttribute(opts, attname))
         setattr(cls, field.name, attr)
 
 
