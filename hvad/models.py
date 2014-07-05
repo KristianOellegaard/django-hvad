@@ -2,6 +2,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.db import models
 from django.db.models.base import ModelBase
+from django.db.models.fields import FieldDoesNotExist
 from django.db.models.manager import Manager
 from django.db.models.signals import post_save, class_prepared
 from django.utils.translation import get_language
@@ -280,12 +281,30 @@ class TranslatableModel(models.Model):
     @property
     def _shared_field_names(self):
         if getattr(self, '_shared_field_names_cache', None) is None:
-            self._shared_field_names_cache = self._meta.get_all_field_names()
+            opts = self._meta
+            self._shared_field_names_cache = opts.get_all_field_names()
+            for name in tuple(self._shared_field_names_cache):
+                try:
+                    attname = opts.get_field(name).get_attname()
+                except FieldDoesNotExist:
+                    pass
+                else:
+                    if attname and attname != name:
+                        self._shared_field_names_cache.append(attname)
         return self._shared_field_names_cache
     @property
     def _translated_field_names(self):
         if getattr(self, '_translated_field_names_cache', None) is None:
-            self._translated_field_names_cache = self._meta.translations_model._meta.get_all_field_names()
+            opts = self._meta.translations_model._meta
+            self._translated_field_names_cache = opts.get_all_field_names()
+            for name in tuple(self._translated_field_names_cache):
+                try:
+                    attname = opts.get_field(name).get_attname()
+                except FieldDoesNotExist:
+                    pass
+                else:
+                    if attname and attname != name:
+                        self._translated_field_names_cache.append(attname)
         return self._translated_field_names_cache
 
 
