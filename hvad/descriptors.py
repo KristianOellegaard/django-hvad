@@ -48,7 +48,7 @@ class TranslatedAttribute(BaseDescriptor):
                 return self.opts.translations_model._meta.get_field_by_name(
                                                         self.name)[0].default
             except FieldDoesNotExist as e:
-                raise AttributeError(e.message)
+                raise AttributeError(*e.args)
         return getattr(self.translation(instance), self.name)
     
     def __set__(self, instance, value):

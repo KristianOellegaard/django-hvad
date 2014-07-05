@@ -9,11 +9,10 @@ from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin, 
-    OneSingleTranslatedNormalMixin)
+from hvad.test_utils.fixtures import NormalFixture, SuperuserFixture
 from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
-from hvad.test_utils.project.app.models import Normal, SimpleRelated, Other, AutoPopulated
+from hvad.test_utils.project.app.models import Normal, SimpleRelated, AutoPopulated
 
 PREFETCH_RELATED = (django.VERSION >= (1, 4))
 
@@ -22,7 +21,7 @@ class BaseAdminTests(object):
         return admin.site._registry[model]
 
 
-class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
+class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture):
 
     def test_lazy_translation_getter(self):
         danish_string = u"rød grød med fløde"
@@ -44,7 +43,6 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
         default_si.translated_field = english_string
         default_si.save()
 
-        Other.objects.create(normal=normal)
         self.assertEqual(normal.lazy_translation_getter("translated_field"), danish_string)
 
         with LanguageOverride('da'):
@@ -371,8 +369,9 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 self.assertEqual(obj.translated_field, TRANS)
     
 
-class AdminEditTests(HvadTestCase, BaseAdminTests, TwoTranslatedNormalMixin,
-                     SuperuserMixin):
+class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, SuperuserFixture):
+    normal_count = 2
+
     def test_changelist(self):
         url = reverse('admin:app_normal_changelist')
         request = self.request_factory.get(url)
@@ -385,7 +384,7 @@ class AdminEditTests(HvadTestCase, BaseAdminTests, TwoTranslatedNormalMixin,
             self.assertEqual(queryset.count(), 2)
 
 
-class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
+class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserFixture):
     def test_delete_last_translation(self):
         en = Normal.objects.language('en').create(shared_field='shared',
                                                   translated_field='english')
@@ -453,7 +452,7 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
     def test_language_tabs(self):
         obj = Normal.objects.language("en").create(shared_field="shared",
                                                    translated_field="english")
-        url = reverse('admin:app_normal_change', args=(1,))
+        url = reverse('admin:app_normal_change', args=(obj.pk,))
         request = self.request_factory.get(url)
         normaladmin = self._get_admin(Normal)
         available_languages = []
@@ -499,11 +498,11 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
         self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
 
-class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserMixin,
-                         OneSingleTranslatedNormalMixin):
+class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+    normal_count = 1
+
     def test_adding_related_object(self):
         url = reverse('admin:app_simplerelated_add')
-        expected_url = reverse('admin:app_simplerelated_change', args=(1,))
         TRANS_FIELD = "English Content" 
         with LanguageOverride('en'):
             en = Normal.objects.all()[0]
@@ -514,15 +513,17 @@ class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserMixin,
                     '_continue': '1',
                 }
                 response = self.client.post(url, data)
+
+                simplerel = SimpleRelated.objects.all()[0]
+                self.assertEqual(simplerel.normal.pk, en.pk)
+                self.assertEqual(simplerel.translated_field, TRANS_FIELD)
+
+                expected_url = reverse('admin:app_simplerelated_change', args=(simplerel.pk,))
                 self.assertRedirects(response, expected_url)
-            
-            simplerel = SimpleRelated.objects.all()[0]
-            self.assertEqual(simplerel.normal.pk, en.pk)
-            self.assertEqual(simplerel.translated_field, TRANS_FIELD)
 
 
 @minimumDjangoVersion(1, 4)
-class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
+class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture):
     def test_correct_id_in_inline(self):
         LANGUAGES = (
             ('en', u'English'),
@@ -532,11 +533,22 @@ class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin)
         )
         with self.settings(LANGUAGES=LANGUAGES):
             with LanguageOverride('en'):
-                normal = Normal.objects.language().create(shared_field="whatever1", translated_field="whatever in another language1")
-                normal2 = Normal.objects.language().create(shared_field="whatever2", translated_field="whatever in another language2")
-                normal3 = Normal.objects.language().create(shared_field="whatever3", translated_field="whatever in another language3")
+                normal = Normal.objects.language().create(
+                    shared_field="whatever1",
+                    translated_field="whatever in another language1"
+                )
+                normal2 = Normal.objects.language().create(
+                    shared_field="whatever2",
+                    translated_field="whatever in another language2"
+                )
+                normal3 = Normal.objects.language().create(
+                    shared_field="whatever3",
+                    translated_field="whatever in another language3"
+                )
 
-            simple1 = SimpleRelated.objects.language("en").create(normal=normal3, translated_field="inline whatever translated")
+            simple1 = SimpleRelated.objects.language("en").create(
+                normal=normal3, translated_field="inline whatever translated"
+            )
 
             simple1.translate("ja")
             simple1.translated_field ="japanese stuff"

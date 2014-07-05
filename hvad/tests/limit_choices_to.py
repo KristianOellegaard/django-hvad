@@ -3,24 +3,13 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 
 from hvad.test_utils.testcase import HvadTestCase
-from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
+from hvad.test_utils.fixtures import NormalFixture, SuperuserFixture
 
 from hvad.test_utils.project.app.models import LimitedChoice
 
 
-class LimitChoicesToTests(HvadTestCase, TwoTranslatedNormalMixin):
-    def create_fixtures(self):
-        su = User(
-            email='admin@admin.com',
-            is_staff=True,
-            is_superuser=True,
-            is_active=True,
-            username='admin',
-        )
-        su.set_password('admin')
-        su.save()
-        self.user = su
-        super(LimitChoicesToTests, self).create_fixtures()
+class LimitChoicesToTests(HvadTestCase, SuperuserFixture, NormalFixture):
+    normal_count = 2
 
     def test_limit_choices_to(self):
         """
@@ -28,20 +17,17 @@ class LimitChoicesToTests(HvadTestCase, TwoTranslatedNormalMixin):
         """
 
         limited_choice_admin = admin.site._registry[LimitedChoice]
-        
-        with self.login_user_context(
-            username='admin',
-            password='admin'
-        ):
+
+        with self.login_user_context(username='admin', password='admin'):
             rf = self.request_factory
             get_request = rf.get('/admin/app/limitedchoice/add')
-            
+
             # We need to attach the client's session to the request,
             # otherwise admin won't let us in 
             get_request.session = self.client.session 
 
             # in django 1.4 request.user is required
-            get_request.user = self.user
+            get_request.user = self.superuser
 
             # Let's construct the relevant admin form...
             Form = limited_choice_admin.get_form(get_request)

@@ -6,16 +6,17 @@ from django.db.models.query_utils import Q
 from hvad.exceptions import WrongManager
 from hvad.models import (TranslatedFields, TranslatableModel)
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.data import DOUBLE_NORMAL
-from hvad.test_utils.fixtures import (OneSingleTranslatedNormalMixin,
-    TwoNormalOneStandardMixin, TwoTranslatedNormalMixin)
+from hvad.test_utils.data import NORMAL, STANDARD
+from hvad.test_utils.fixtures import NormalFixture, StandardFixture
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.utils import get_translation_aware_manager
 from hvad.test_utils.project.app.models import (Normal, Related, SimpleRelated,
-                                                RelatedRelated, Standard, Other)
+                                                RelatedRelated, Standard)
 
 
-class NormalToNormalFKTest(HvadTestCase, OneSingleTranslatedNormalMixin):
+class NormalToNormalFKTest(HvadTestCase, NormalFixture):
+    normal_count = 1
+
     def test_relation(self):
         """
         'normal' (aka 'shared') relations are relations from the shared (or
@@ -23,7 +24,7 @@ class NormalToNormalFKTest(HvadTestCase, OneSingleTranslatedNormalMixin):
 
         They should behave like normal foreign keys in Django
         """
-        normal = Normal.objects.language('en').get(pk=1)
+        normal = Normal.objects.language('en').get(pk=self.normal_id[1])
         related = Related.objects.create(normal=normal)
         self.assertEqual(related.normal.pk, normal.pk)
         self.assertEqual(related.normal.shared_field, normal.shared_field)
@@ -37,17 +38,20 @@ class NormalToNormalFKTest(HvadTestCase, OneSingleTranslatedNormalMixin):
         self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
 
     def test_reverse_relation(self):
-        normal = Normal.objects.language('en').get(pk=1)
+        normal = Normal.objects.language('en').get(pk=self.normal_id[1])
         related = Related.objects.language('en').create(normal=normal)
 
         self.assertEqual(normal.rel1.language('en').get().pk, related.pk)
 
 
-class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
+class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
+    normal_count = 2
+    standard_count = 1
+
     def test_relation(self):
-        en = Normal.objects.language('en').get(pk=1)
-        ja = Normal.objects.language('ja').get(pk=1)
-        related = Standard.objects.get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
+        ja = Normal.objects.language('ja').get(pk=self.normal_id[1])
+        related = Standard.objects.get(pk=self.standard_id[1])
         with LanguageOverride('en'):
             related = self.reload(related)
             self.assertEqual(related.normal.pk, en.pk)
@@ -63,9 +67,9 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
 
     def test_num_queries(self):
         with LanguageOverride('en'):
-            en = Normal.objects.language('en').get(pk=1)
+            en = Normal.objects.language('en').get(pk=self.normal_id[1])
             with self.assertNumQueries(1):
-                related = Standard.objects.select_related('normal').get(pk=1)
+                related = Standard.objects.select_related('normal').get(pk=self.standard_id[1])
                 self.assertEqual(related.normal.pk, en.pk)
             with self.assertNumQueries(0):
                 self.assertEqual(related.normal.shared_field, en.shared_field)
@@ -73,7 +77,7 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
                 self.assertEqual(related.normal.translated_field, en.translated_field)
 
     def test_lookup_by_pk(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         by_pk = Standard.objects.get(normal__pk=en.pk)
         with LanguageOverride('en'):
             self.assertEqual(by_pk.normal.pk, en.pk)
@@ -82,7 +86,7 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
             self.assertTrue(by_pk in en.standards.all())
 
     def test_lookup_by_shared_field(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         by_shared_field = Standard.objects.get(normal__shared_field=en.shared_field)
         with LanguageOverride('en'):
             self.assertEqual(by_shared_field.normal.pk, en.pk)
@@ -91,33 +95,34 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
             self.assertTrue(by_shared_field in en.standards.all())
 
     def test_lookup_by_translated_field(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
         with LanguageOverride('en'):
-            by_translated_field = translation_aware_manager.get(normal__translated_field=en.translated_field)
+            by_translated_field = translation_aware_manager.get(
+                normal__translated_field=en.translated_field
+            )
             self.assertEqual(by_translated_field.normal.pk, en.pk)
             self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
             self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
             self.assertTrue(by_translated_field in en.standards.all())
 
     def test_lookup_by_translated_field_requires_translation_aware_manager(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.get,
                               normal__translated_field=en.translated_field)
-    
+
     def test_lookup_by_non_existing_field(self):
         with LanguageOverride('en'):
             if django.VERSION >= (1, 7):
                 self.assertRaises(TypeError, Standard.objects.get,
-                                normal__non_existing_field=1)
+                                  normal__non_existing_field=1)
             else:
                 self.assertRaises(FieldError, Standard.objects.get,
-                                normal__non_existing_field=1)
-        
+                                  normal__non_existing_field=1)
 
     def test_lookup_by_translated_field_using_q_objects(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
         with LanguageOverride('en'):
             q = Q(normal__translated_field=en.translated_field)
@@ -128,7 +133,7 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
             self.assertTrue(by_translated_field in en.standards.all())
 
     def test_filter_by_shared_field(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         with LanguageOverride('en'):
             by_shared_field = Standard.objects.filter(normal__shared_field=en.shared_field)
             normals = [obj.normal.pk for obj in by_shared_field]
@@ -144,10 +149,12 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
                 self.assertTrue(obj in en.standards.all())
 
     def test_filter_by_translated_field(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
         with LanguageOverride('en'):
-            by_translated_field = translation_aware_manager.filter(normal__translated_field=en.translated_field)
+            by_translated_field = translation_aware_manager.filter(
+                normal__translated_field=en.translated_field
+            )
             normals = [obj.normal.pk for obj in by_translated_field]
             expected = [en.pk]
             self.assertEqual(normals, expected)
@@ -161,13 +168,13 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
                 self.assertTrue(obj in en.standards.all())
 
     def test_filter_by_translated_field_requires_translation_aware_manager(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         with LanguageOverride('en'):
             self.assertRaises(WrongManager, Standard.objects.filter,
                               normal__translated_field=en.translated_field)
 
     def test_filter_by_translated_field_using_q_objects(self):
-        en = Normal.objects.language('en').get(pk=1)
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
         with LanguageOverride('en'):
             q = Q(normal__translated_field=en.translated_field)
@@ -185,40 +192,45 @@ class StandardToTransFKTest(HvadTestCase, TwoNormalOneStandardMixin):
                 self.assertTrue(obj in en.standards.all())
 
 
-class TripleRelationTests(HvadTestCase):
+class TripleRelationTests(HvadTestCase, StandardFixture, NormalFixture):
+    normal_count = 1
+    standard_count = 1
+
     def test_triple(self):
-        normal = Normal.objects.language('en').create(shared_field='SHARED', translated_field='English')
-        other = Other.objects.create(normal=normal)
-        standard = Standard.objects.create(normal=normal, normal_field='NORMAL FIELD')
+        normal = Normal.objects.language('en').get(pk=self.normal_id[1])
+        standard = Standard.objects.get(pk=self.standard_id[1])
+        simple = SimpleRelated.objects.language('en').create(normal=normal)
 
         obj = Normal.objects.language('en').get(standards__pk=standard.pk)
         self.assertEqual(obj.pk, normal.pk)
 
-        obj = Normal.objects.language('en').get(others__pk=other.pk)
+        obj = Normal.objects.language('en').get(simplerel__pk=simple.pk)
         self.assertEqual(obj.pk, normal.pk)
 
         # We created an english Normal object, so we want to make sure that we use 'en'
         with LanguageOverride('en'):
-            obj = get_translation_aware_manager(Standard).get(normal__others__pk=other.pk)
+            obj = get_translation_aware_manager(Standard).get(normal__simplerel__pk=simple.pk)
             self.assertEqual(obj.pk, standard.pk)
 
         # If we don't use language 'en', it should give DoesNotExist, when using the
         # translation aware manager
         with LanguageOverride('ja'):
             manager = get_translation_aware_manager(Standard)
-            self.assertRaises(Standard.DoesNotExist, manager.get, normal__others__pk=other.pk)
+            self.assertRaises(Standard.DoesNotExist, manager.get, normal__simplerel__pk=simple.pk)
 
         # However, if we don't use the translation aware manager, we can query any
         # the shared fields in any language, and it should return the object,
         # even though there is no translated Normal objects
         with LanguageOverride('ja'):
-            obj = Standard.objects.get(normal__others__pk=other.pk)
+            obj = Standard.objects.get(normal__simplerel__pk=simple.pk)
             self.assertEqual(obj.pk, standard.pk)
 
 
-class ManyToManyTest(HvadTestCase, TwoTranslatedNormalMixin):
+class ManyToManyTest(HvadTestCase, NormalFixture):
+    normal_count = 2
+
     def test_triple(self):
-        normal1 = Normal.objects.language('en').get(pk=1)
+        normal1 = Normal.objects.language('en').get(pk=self.normal_id[1])
         many = normal1.manyrels.create(name="many1")
         
         with LanguageOverride('en'):
@@ -262,12 +274,14 @@ class ForwardDeclaringForeignKeyTests(HvadTestCase):
             )
 
 
-class SelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
+class SelectRelatedTests(HvadTestCase, NormalFixture):
+    normal_count = 2
+
     def create_fixtures(self):
         super(SelectRelatedTests, self).create_fixtures()
         with LanguageOverride('en'):
-            self.normal1 = Normal.objects.language().get(pk=1)
-            self.normal2 = Normal.objects.language().get(pk=2)
+            self.normal1 = Normal.objects.language().get(pk=self.normal_id[1])
+            self.normal2 = Normal.objects.language().get(pk=self.normal_id[2])
             SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1")
 
     def test_select_related_semantics(self):
@@ -291,8 +305,8 @@ class SelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
                 rel_objects = SimpleRelated.objects.language().select_related('normal').order_by('normal__shared_field')
 
                 check = [
-                    (DOUBLE_NORMAL[1]['shared_field'], DOUBLE_NORMAL[1]['translated_field_en']),
-                    (DOUBLE_NORMAL[2]['shared_field'], DOUBLE_NORMAL[2]['translated_field_en']),
+                    (NORMAL[1].shared_field, NORMAL[1].translated_field['en']),
+                    (NORMAL[2].shared_field, NORMAL[2].translated_field['en']),
                 ]
                 self.assertEqual(list((obj.normal.shared_field, obj.normal.translated_field)
                                       for obj in rel_objects),
@@ -308,7 +322,7 @@ class SelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
         with LanguageOverride('en'):  
             with self.assertNumQueries(1):
                 r = SimpleRelated.objects.language().select_related('normal').get(translated_field="test1")
-                self.assertEqual(r.normal.pk, 1)
+                self.assertEqual(r.normal.pk, self.normal_id[1])
                 self.assertEqual(self.normal1.shared_field, r.normal.shared_field)
                 self.assertEqual(self.normal1.translated_field, r.normal.translated_field)
                 
@@ -317,7 +331,7 @@ class SelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
             Related.objects.language().create(pk=1, translated=self.normal1).save()
             with self.assertNumQueries(1):
                 r = Related.objects.language().select_related('translated').get(translated=self.normal1)
-                self.assertEqual(r.translated.pk, 1)
+                self.assertEqual(r.translated.pk, self.normal_id[1])
                 self.assertEqual(self.normal1.shared_field, r.translated.shared_field)
                 self.assertEqual(self.normal1.translated_field, r.translated.translated_field)
 
@@ -342,16 +356,15 @@ class SelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
                     else:
                         self.fail("Invalid Related object; ID is %s" % r.id)
 
-class DeepSelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
+class DeepSelectRelatedTests(HvadTestCase, NormalFixture):
+    normal_count = 2
+
     def create_fixtures(self):
         super(DeepSelectRelatedTests, self).create_fixtures()
         with LanguageOverride('en'):
-            self.normal1 = Normal.objects.language().get(
-                shared_field=DOUBLE_NORMAL[1]['shared_field']
-            )
-            self.normal2 = Normal.objects.language().get(
-                shared_field=DOUBLE_NORMAL[2]['shared_field']
-            )
+            self.normal1 = Normal.objects.language().get(pk=self.normal_id[1])
+            self.normal2 = Normal.objects.language().get(pk=self.normal_id[2])
+
             self.simplerel = SimpleRelated.objects.language().create(
                 normal=self.normal1, translated_field="test1"
             )
@@ -380,37 +393,39 @@ class DeepSelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
                 for obj in qs:
                     if obj.pk == self.relrel1.pk:
                         self.assertEqual(obj.related.pk, self.related1.pk)
-                        self.assertEqual(obj.related.normal.pk, self.normal1.pk)
+                        self.assertEqual(obj.related.normal.pk, self.normal_id[1])
                         self.assertEqual(obj.related.normal.translated_field,
-                                         DOUBLE_NORMAL[1]['translated_field_en'])
+                                         NORMAL[1].translated_field['en'])
                         self.assertEqual(obj.simple.pk, self.simplerel.pk)
                         self.assertEqual(obj.simple.translated_field,
                                          self.simplerel.translated_field)
-                        self.assertEqual(obj.simple.normal.pk, self.normal1.pk)
+                        self.assertEqual(obj.simple.normal.pk, self.normal_id[1])
                         self.assertEqual(obj.simple.normal.translated_field,
-                                         DOUBLE_NORMAL[1]['translated_field_en'])
+                                         NORMAL[1].translated_field['en'])
                     if obj.pk == self.relrel2.pk:
                         self.assertEqual(obj.related.pk, self.related2.pk)
-                        self.assertEqual(obj.related.normal.pk, self.normal2.pk)
+                        self.assertEqual(obj.related.normal.pk, self.normal_id[2])
                         self.assertEqual(obj.related.normal.translated_field,
-                                         DOUBLE_NORMAL[2]['translated_field_en'])
+                                         NORMAL[2].translated_field['en'])
                         self.assertEqual(obj.simple, None)
 
     def test_deep_select_related_using_get(self):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
-                obj = RelatedRelated.objects.language().select_related('related__normal', 'simple__normal').get(pk=self.relrel1.pk)
+                obj = (RelatedRelated.objects.language()
+                                             .select_related('related__normal', 'simple__normal')
+                                             .get(pk=self.relrel1.pk))
             with self.assertNumQueries(0):
                 self.assertEqual(obj.related.pk, self.related1.pk)
-                self.assertEqual(obj.related.normal.pk, self.normal1.pk)
+                self.assertEqual(obj.related.normal.pk, self.normal_id[1])
                 self.assertEqual(obj.related.normal.translated_field,
-                                    DOUBLE_NORMAL[1]['translated_field_en'])
+                                 NORMAL[1].translated_field['en'])
                 self.assertEqual(obj.simple.pk, self.simplerel.pk)
                 self.assertEqual(obj.simple.translated_field,
                                  self.simplerel.translated_field)
-                self.assertEqual(obj.simple.normal.pk, self.normal1.pk)
+                self.assertEqual(obj.simple.normal.pk, self.normal_id[1])
                 self.assertEqual(obj.simple.normal.translated_field,
-                                    DOUBLE_NORMAL[1]['translated_field_en'])
+                                 NORMAL[1].translated_field['en'])
 
     def test_deep_select_related_from_translated_field(self):
         with LanguageOverride('en'):
@@ -422,18 +437,18 @@ class DeepSelectRelatedTests(HvadTestCase, TwoTranslatedNormalMixin):
                 for obj in qs:
                     if obj.pk == self.relrel1.pk:
                         self.assertEqual(obj.trans_related.pk, self.related2.pk)
-                        self.assertEqual(obj.trans_related.normal.pk, self.normal2.pk)
+                        self.assertEqual(obj.trans_related.normal.pk, self.normal_id[2])
                         self.assertEqual(obj.trans_related.normal.translated_field,
-                                         DOUBLE_NORMAL[2]['translated_field_en'])
+                                         NORMAL[2].translated_field['en'])
                         self.assertEqual(obj.trans_simple, None)
                     if obj.pk == self.relrel2.pk:
                         self.assertEqual(obj.trans_related.pk, self.related1.pk)
-                        self.assertEqual(obj.trans_related.normal.pk, self.normal1.pk)
+                        self.assertEqual(obj.trans_related.normal.pk, self.normal_id[1])
                         self.assertEqual(obj.trans_related.normal.translated_field,
-                                         DOUBLE_NORMAL[1]['translated_field_en'])
+                                         NORMAL[1].translated_field['en'])
                         self.assertEqual(obj.trans_simple.pk, self.simplerel.pk)
                         self.assertEqual(obj.trans_simple.translated_field,
                                          self.simplerel.translated_field)
-                        self.assertEqual(obj.trans_simple.normal.pk, self.normal1.pk)
+                        self.assertEqual(obj.trans_simple.normal.pk, self.normal_id[1])
                         self.assertEqual(obj.trans_simple.normal.translated_field,
-                                            DOUBLE_NORMAL[1]['translated_field_en'])
+                                         NORMAL[1].translated_field['en'])
