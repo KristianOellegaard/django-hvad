@@ -10,6 +10,9 @@ else: # older versions do not run on py3, so we know we are running py2
         klass.__str__ = lambda self: self.__unicode__().encode('utf-8')
         return klass
 
+#===============================================================================
+# Basic models
+
 @python_2_unicode_compatible
 class Normal(TranslatableModel):
     shared_field = models.CharField(max_length=255)
@@ -22,51 +25,54 @@ class Normal(TranslatableModel):
 
 @python_2_unicode_compatible
 class NormalProxy(Normal):
-
     def __str__(self):
-        return u'proxied %s' % self.safe_translation_getter('translated_field', self.shared_field)
+        return u'proxied %s' % super(NormalProxy, self).__str__()
 
     class Meta:
         proxy = True
-
 
 @python_2_unicode_compatible
 class NormalProxyProxy(NormalProxy):
-
     def __str__(self):
-        return u'proxied^2 %s' % self.safe_translation_getter('translated_field', self.shared_field)
+        return u'proxied^2 %s' % super(NormalProxyProxy, self).__str__()
 
     class Meta:
         proxy = True
 
-    
+#===============================================================================
+# Models for testing relations
+
 class Related(TranslatableModel):
+    """ Model with foreign keys to Normal, both shared and translatable """
     normal = models.ForeignKey(Normal, related_name='rel1', null=True)
-    
     translated_fields = TranslatedFields(
         translated = models.ForeignKey(Normal, related_name='rel3', null=True),
         translated_to_translated = models.ForeignKey(Normal, related_name='rel4', null=True),
     )
 
 class RelatedProxy(Related):
+    """ Proxy to model with foreign keys to Normal, both shared and translatable """
     class Meta:
         proxy = True
 
 
 class SimpleRelated(TranslatableModel):
+    """ Model with foreign key to Normal, shared only and regular translatable field """
     normal = models.ForeignKey(Normal, related_name='simplerel')
-    
     translated_fields = TranslatedFields(
         translated_field = models.CharField(max_length=255),
     )
 
-
 class SimpleRelatedProxy(SimpleRelated):
+    """ Proxy to model with foreign key to Normal, shared only and regular translatable field """
     class Meta:
         proxy = True
 
 
 class RelatedRelated(TranslatableModel):
+    """ Model with foreign keys to Related and SimpleRelated, both shared and transltable.
+        This is used to test deep relations to Normal
+    """
     related = models.ForeignKey(Related, related_name='+', null=True)
     simple = models.ForeignKey(SimpleRelated, related_name='+', null=True)
 
@@ -75,6 +81,36 @@ class RelatedRelated(TranslatableModel):
         trans_simple = models.ForeignKey(SimpleRelated, related_name='+', null=True),
     )
 
+
+@python_2_unicode_compatible
+class Many(models.Model):
+    """ Untranslatable Model with M2M key to Normal """
+    name = models.CharField(max_length=128)
+    normals = models.ManyToManyField(Normal, related_name="manyrels")
+
+    def __str__(self):
+        return self.name
+
+
+class Standard(models.Model):
+    """ Untranslatable Model with foreign key to Normal """
+    normal_field = models.CharField(max_length=255)
+    normal = models.ForeignKey(Normal, related_name='standards')
+
+
+#===============================================================================
+# Models for testing abstract model support
+#
+# This creates an abstract hierarchy like this:
+#
+# AbstractA
+#     |
+# AbstractAA      AbstractB
+#     \_______________/
+#             |
+#         ConcreteAB
+#             |
+#      ConcreteABProxy
 
 class AbstractA(TranslatableModel):
     translations = TranslatedFields(
@@ -121,39 +157,25 @@ class ConcreteABProxy(ConcreteAB):
     class Meta:
         proxy = True
 
-
-class Many(models.Model):
-    name = models.CharField(max_length=128)
-    normals = models.ManyToManyField(Normal, related_name="manyrels")
-
-class Standard(models.Model):
-    normal_field = models.CharField(max_length=255)
-    normal = models.ForeignKey(Normal, related_name='standards')
-
-class Other(models.Model):
-    normal = models.ForeignKey(Normal, related_name='others')
-    
+#===============================================================================
+# Models for testing choice limiting in foreign keys
 
 class LimitedChoice(models.Model):
-    choice_fk = models.ForeignKey(
-        Normal,
-        limit_choices_to={
-            'shared_field__startswith': 'Shared1',
-        },
-        related_name='limitedchoices_fk'
+    choice_fk = models.ForeignKey(Normal,
+        limit_choices_to={'shared_field__startswith': 'Shared1',},
+        related_name='limitedchoices_fk',
+    )
+    choice_mm = models.ManyToManyField(Normal,
+        limit_choices_to={'shared_field__startswith': 'Shared2',},
+        related_name='limitedchoices_mm',
     )
 
-    choice_mm = models.ManyToManyField(
-        Normal,
-        limit_choices_to={
-            'shared_field__startswith': 'Shared2'
-        },
-        related_name='limitedchoices_mm'
-    )
+#===============================================================================
+# Model for testing miscellaneous data and query types
 
 class Date(TranslatableModel):
+    """ Model for testing Date manipulation """
     shared_date = models.DateTimeField()
-    
     translated_fields = TranslatedFields(
         translated_date = models.DateTimeField()
     )
@@ -161,7 +183,10 @@ class Date(TranslatableModel):
     class Meta:
         get_latest_by = 'shared_date'
 
+#===============================================================================
+
 class AggregateModel(TranslatableModel):
+    """ Model for testing queryset aggregation """
     number = models.IntegerField()
     translated_fields = TranslatedFields(
         translated_number = models.IntegerField(),
@@ -169,6 +194,7 @@ class AggregateModel(TranslatableModel):
 
 
 class MultipleFields(TranslatableModel):
+    """ Model for testing multi-field queries """
     first_shared_field = models.CharField(max_length=255)
     second_shared_field = models.CharField(max_length=255)
     translations = TranslatedFields(
@@ -178,6 +204,7 @@ class MultipleFields(TranslatableModel):
 
 
 class Boolean(TranslatableModel):
+    """ Model for testing boolean data manipulation """
     shared_flag = models.BooleanField(default=False)
     translations = TranslatedFields(
         translated_flag = models.BooleanField(default=False)
@@ -185,14 +212,13 @@ class Boolean(TranslatableModel):
 
 
 class AutoPopulated(TranslatableModel):
-    slug = models.SlugField(max_length=255, blank=True)
+    """ Model for testing custom save method """
     translations = TranslatedFields(
-        translated_name = models.CharField(max_length=255)
+        slug = models.SlugField(max_length=255, blank=True),
+        translated_name = models.CharField(max_length=255),
     )
 
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.translated_name[:125])
         super(AutoPopulated, self).save(*args, **kwargs)
-
-

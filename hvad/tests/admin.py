@@ -3,161 +3,189 @@ import django
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.context_managers import LanguageOverride
-from hvad.test_utils.fixtures import (TwoTranslatedNormalMixin, SuperuserMixin, 
-    OneSingleTranslatedNormalMixin)
+from hvad.test_utils.fixtures import NormalFixture, SuperuserFixture
+from hvad.test_utils.data import NORMAL
 from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
-from hvad.test_utils.project.app.models import Normal, SimpleRelated, Other, AutoPopulated
+from hvad.test_utils.project.app.models import Normal, SimpleRelated, AutoPopulated
 
-PREFETCH_RELATED = (django.VERSION >= (1, 4))
 
 class BaseAdminTests(object):
     def _get_admin(self, model):
         return admin.site._registry[model]
 
 
-class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
+class ModelHelpersTests(HvadTestCase, NormalFixture):
+    normal_count = 1
+    translations = ('en', 'ja')
 
-    def test_lazy_translation_getter(self):
-        danish_string = u"rød grød med fløde"
-        slovenian_string = u'pozdravčki čćžđš'
-        normal = Normal.objects.language("da").create(
-            shared_field = "shared field",
-            translated_field = danish_string,
-        )
-        normal_si = Normal.objects.get(pk=normal.pk).translate('sl')
-        normal_si.translated_field = slovenian_string
-        normal_si.save()
-        
-        english_string = u'English test string'
-        Normal.objects.language("en").create(
-            shared_field = "shared field",
-            translated_field = english_string,
-        )
-        default_si = Normal.objects.get(pk=normal.pk).translate('us-en')
-        default_si.translated_field = english_string
-        default_si.save()
+    def test_translation_getters_cached(self):
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
 
-        Other.objects.create(normal=normal)
-        self.assertEqual(normal.lazy_translation_getter("translated_field"), danish_string)
+        # Translation getters should use the cached translation
+        with self.assertNumQueries(0):
+            self.assertEqual(obj.safe_translation_getter('translated_field'),
+                             NORMAL[1].translated_field['en'])
+            self.assertEqual(obj.lazy_translation_getter('translated_field'),
+                             NORMAL[1].translated_field['en'])
 
-        with LanguageOverride('da'):
-            n2 =  Normal.objects.get(pk=normal.pk)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-            self.assertEqual(n2.lazy_translation_getter("translated_field"), danish_string)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), danish_string)
+        # Translation getters should use the cached translation
+        # regardless of current language settings
+        with LanguageOverride('ja'):
+            with self.assertNumQueries(0):
+                self.assertEqual(obj.safe_translation_getter('translated_field'),
+                                 NORMAL[1].translated_field['en'])
+                self.assertEqual(obj.lazy_translation_getter('translated_field'),
+                                 NORMAL[1].translated_field['en'])
 
-        with LanguageOverride('sl'):
-            n2 =  Normal.objects.get(pk=normal.pk)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-            self.assertEqual(n2.lazy_translation_getter("translated_field"), slovenian_string)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), slovenian_string)
-        
-        # This tests a langauge that we do not currently have, so don't add Japanese translations, please.
-        with LanguageOverride('jp'):
-            n2 = Normal.objects.get(pk=normal.pk)
-            self.assertEqual(n2.safe_translation_getter("translated_field"), None)
-            value = n2.lazy_translation_getter("translated_field")
-            # since we didn't configure fallbacks, this could be any of th above.
-            possible_values = [english_string, slovenian_string, danish_string]
-            self.assertTrue(value in possible_values, "%s not in %r" % (value, possible_values))
-            # This should work because when 'jp' isn't found, it will then try
-            # the default language, which is en, in this case.
-            self.assertEqual(n2.safe_translation_getter("translated_field"), value)
+    def test_translation_getters_uncached(self):
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+
+        with LanguageOverride('ja'):
+            # Safe translation getter must not trigger a query
+            with self.assertNumQueries(0):
+                self.assertEqual(obj.safe_translation_getter('translated_field'),
+                                 None)
+            # Lazy translation getter must find something
+            with self.assertNumQueries(1):
+                self.assertEqual(obj.lazy_translation_getter('translated_field'),
+                                 NORMAL[1].translated_field['ja'])
+            # Lazy must have cached the translations
+            with self.assertNumQueries(0):
+                self.assertEqual(obj.safe_translation_getter('translated_field'),
+                                 NORMAL[1].translated_field['ja'])
+
+    @minimumDjangoVersion(1, 4)
+    def test_translation_getters_missing(self):
+        # Try when both current language and first fallbacks are missing
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.settings(LANGUAGE_CODE='xx',
+                           LANGUAGES=(('xx', 'Missing'),
+                                      ('en', 'English'),
+                                      ('ja', 'Japanese'))):
+            with LanguageOverride('zh'):
+                self.assertEqual(obj.lazy_translation_getter('translated_field'),
+                                    NORMAL[1].translated_field['en'])
+
+        # Now try with a different fallback priority
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.settings(LANGUAGE_CODE='xx',
+                           LANGUAGES=(('xx', 'Missing'),
+                                      ('ja', 'Japanese'),
+                                      ('en', 'English'))):
+            with LanguageOverride('zh'):
+                self.assertEqual(obj.lazy_translation_getter('translated_field'),
+                                    NORMAL[1].translated_field['ja'])
+
+
+class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
+    normal_count = 1
 
     def test_all_translations(self):
         # Create an unstranslated model and get the translations
         myadmin = self._get_admin(Normal)
-        obj = Normal.objects.untranslated().create(
-            shared_field="shared",
-        )
+
+        obj = Normal.objects.untranslated().create(shared_field="shared")
         self.assertEqual(myadmin.all_translations(obj), "")
-        
+
         # Create a english translated model and make sure the active language
         # is highlighted in admin with <strong></strong>
-        obj = Normal.objects.language("en").create(
-            shared_field="shared",
-        )
-
-        # Get the object back from db to test the use of prefetch_related
-        qs = Normal.objects.language('en')
-        if PREFETCH_RELATED:
-            qs = qs.prefetch_related('translations')
-        obj = qs.get(pk=obj.pk)
+        obj = Normal.objects.language("en").get(pk=self.normal_id[1])
         with LanguageOverride('en'):
-            with self.assertNumQueries(0 if PREFETCH_RELATED else 2):
+            # make sure no the call will not generate a spurious query in assertNumQueries
+            ContentType.objects.get_for_model(Normal)
+            with self.assertNumQueries(1):
+                self.assertTrue(myadmin.all_translations(obj).find("<strong>") != -1)
+            with self.assertNumQueries(1):
+                # Entries should be linked to the corresponding translation page
+                self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
+
+        with LanguageOverride('zh'):
+            with self.assertNumQueries(1):
+                self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
+
+        # An unsaved object, shouldn't have any translations
+        obj = Normal()
+        self.assertEqual(myadmin.all_translations(obj), "")
+
+    @minimumDjangoVersion(1, 4)
+    def test_all_translations_prefetch_related(self):
+        myadmin = self._get_admin(Normal)
+
+        qs = Normal.objects.untranslated().prefetch_related('translations')
+        obj = qs.get(pk=self.normal_id[1])
+        with LanguageOverride('en'):
+            # make sure no the call will not generate a spurious query in assertNumQueries
+            ContentType.objects.get_for_model(Normal)
+            with self.assertNumQueries(0):
                 self.assertTrue(myadmin.all_translations(obj).find("<strong>") != -1)
                 # Entries should be linked to the corresponding translation page
                 self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
 
-        with LanguageOverride('ja'):
-            with self.assertNumQueries(0 if PREFETCH_RELATED else 1):
+        with LanguageOverride('zh'):
+            with self.assertNumQueries(0):
                 self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
 
-        # An unsaved object, shouldn't have any translations
-        
-        obj = Normal()
-        self.assertEqual(myadmin.all_translations(obj), "")
-
     def test_get_available_languages(self):
-        en = Normal.objects.language('en').create(shared_field='shared',
-                                                  translated_field='english')
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
         admin = self._get_admin(Normal)
-        self.assertEqual(list(admin.get_available_languages(en)), ['en'])
-        self.assertEqual(list(admin.get_available_languages(None)), [])
-            
+        self.assertCountEqual(list(admin.get_available_languages(obj)), self.translations)
+        self.assertCountEqual(list(admin.get_available_languages(None)), [])
+
     def test_get_object(self):
         # Check if it returns a model, if there is at least one translation
         myadmin = self._get_admin(Normal)
         rf = RequestFactory()
         get_request = rf.get('/admin/app/normal/')
-        
-        obj = Normal.objects.language("en").create(
-            shared_field="shared",
-            translated_field="translated_en",
-        )
+
+        obj = Normal.objects.language("en").get(pk=self.normal_id[1])
+        with LanguageOverride('en'):
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk,
+                             self.normal_id[1])
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field,
+                             NORMAL[1].shared_field)
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'en')
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field,
+                             NORMAL[1].translated_field['en'])
+
+        with LanguageOverride('zh'):
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk,
+                             self.normal_id[1])
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field,
+                             NORMAL[1].shared_field)
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'zh')
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
+
+        # Check what happens if there is no translations at all
+        obj = Normal.objects.untranslated().create(shared_field="shared")
         with LanguageOverride('en'):
             self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
             self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
             self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'en')
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, obj.translated_field)
-
-        with LanguageOverride('ja'):
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'ja')
             self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
 
-        # Check what happens if there is no translations at all
-        obj = Normal.objects.untranslated().create(
-            shared_field="shared",
-        )
-        with LanguageOverride('ja'):
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'ja')
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
-
-            
     def test_get_object_nonexisting(self):
         # In case the object doesnt exist, it should return None
         myadmin = self._get_admin(Normal)
         rf = RequestFactory()
         get_request = rf.get('/admin/app/normal/')
-        
-        self.assertEqual(myadmin.get_object(get_request, 1231), None)
-            
+        self.assertEqual(myadmin.get_object(get_request, -1), None)
+
+class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+    normal_count = 1
+
     def test_admin_simple(self):
         with LanguageOverride('en'):
             with self.login_user_context(username='admin', password='admin'):
-                SHARED = 'shared'
-                TRANS = 'trans'
+                SHARED = 'shared_new'
+                TRANS = 'trans_new'
                 url = reverse('admin:app_normal_add')
                 data = {
                     'shared_field': SHARED,
@@ -168,8 +196,8 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 }
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), 1)
-                obj = Normal.objects.language('en')[0]
+                self.assertEqual(Normal.objects.count(), self.normal_count + 1)
+                obj = Normal.objects.language('en').get(shared_field=SHARED)
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
 
@@ -188,23 +216,16 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                     'translated_name': danish_string,
                 }
                 response = self.client.post(url, data)
-                if response.status_code != 302:
-                    self.assertEqual(response.status_code, 302,
-                        "Response was unexpectedly not a redirect: %s" %
-                        response.context['adminform'].form.errors)
+                self.assertEqual(response.status_code, 302)
                 self.assertEqual(AutoPopulated.objects.count(), 1)
-                obj = AutoPopulated.objects.language('en')[0]
+                obj = AutoPopulated.objects.language('en').get()
                 self.assertEqual(obj.translated_name, danish_string)
                 self.assertEqual(obj.slug, "rd-grd-med-flde")
-    
+
     def test_admin_change_form_title(self):
         with LanguageOverride('en'):
             with self.login_user_context(username='admin', password='admin'):
-                obj = Normal.objects.language('en').create(
-                    shared_field="shared",
-                    translated_field='English',
-                )
-                url = reverse('admin:app_normal_change', args=(obj.pk,))
+                url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue('en' in response.content.decode('utf-8'))
@@ -212,11 +233,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
     def test_admin_change_form_language_tabs_urls(self):
         with LanguageOverride('en'):
             with self.login_user_context(username='admin', password='admin'):
-                obj = Normal.objects.language('en').create(
-                    shared_field="shared",
-                    translated_field='English',
-                )
-                get_url = reverse('admin:app_normal_change', args=(obj.pk,))
+                get_url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 response = self.client.get(get_url)
                 self.assertEqual(response.status_code, 200)
                 tabs = response.context['language_tabs']
@@ -226,19 +243,16 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                     expected_tab_url = '%s?%s' % (get_url,
                         urlencode({'language': key}))
                     self.assertEqual(expected_tab_url, actual_tab_url)
-    
+
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'
         with LanguageOverride('ja'):
             with self.login_user_context(username='admin', password='admin'):
-                obj = Normal.objects.language(lang).create(
-                    shared_field="shared",
-                    translated_field='English',
-                )
-                url = '%s?language=%s' % (reverse('admin:app_normal_change', args=(obj.pk,)), lang)
+                url = '%s?language=%s' % (reverse('admin:app_normal_change',
+                                                  args=(self.normal_id[1],)), lang)
                 data = {
                     'translated_field': 'English NEW',
-                    'shared_field': obj.shared_field,
+                    'shared_field': NORMAL[1].shared_field,
                     '_addanother': '1',
                     
                     'simplerel-TOTAL_FORMS': '0',
@@ -250,21 +264,18 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 self.assertEqual(response.status_code, 302, response.content)
                 expected_url = '%s?language=%s' % (reverse('admin:app_normal_add'), lang)
                 self.assertTrue(response['Location'].endswith(expected_url))
-                obj = Normal.objects.language('en').get(pk=obj.pk)
+                obj = Normal.objects.language('en').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "English NEW")
     
     def test_admin_change_form_redirect_continue_edit(self):
         lang = 'en'
         with LanguageOverride('ja'):
             with self.login_user_context(username='admin', password='admin'):
-                obj = Normal.objects.language(lang).create(
-                    shared_field="shared",
-                    translated_field='English',
-                )
-                url = '%s?language=%s' % (reverse('admin:app_normal_change', args=(obj.pk,)), lang)
+                url = '%s?language=%s' % (reverse('admin:app_normal_change',
+                                                  args=(self.normal_id[1],)), lang)
                 data = {
                     'translated_field': 'English NEW',
-                    'shared_field': obj.shared_field,
+                    'shared_field': NORMAL[1].shared_field,
                     '_continue': '1',
                     'simplerel-TOTAL_FORMS': '0',
                     'simplerel-INITIAL_FORMS': '0',
@@ -273,12 +284,12 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 response = self.client.post(url, data)
                 self.assertEqual(response.status_code, 302, response.content)
                 self.assertTrue(response['Location'].endswith(url))
-                obj = Normal.objects.language('en').get(pk=obj.pk)
+                obj = Normal.objects.language('en').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "English NEW")
-                url2 = reverse('admin:app_normal_change', args=(obj.pk,))
+                url2 = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 data = {
                     'translated_field': 'Japanese',
-                    'shared_field': obj.shared_field,
+                    'shared_field': NORMAL[1].shared_field,
                     '_continue': '1',
                     'simplerel-TOTAL_FORMS': '0',
                     'simplerel-INITIAL_FORMS': '0',
@@ -287,23 +298,19 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 response = self.client.post(url2, data)
                 self.assertEqual(response.status_code, 302, response.content)
                 self.assertTrue(response['Location'].endswith(url2))
-                obj = Normal.objects.language('ja').get(pk=obj.pk)
+                obj = Normal.objects.language('ja').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "Japanese")
-                obj = Normal.objects.language('en').get(pk=obj.pk)
+                obj = Normal.objects.language('en').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "English NEW")
-    
+
     def test_admin_change_form(self):
         lang = 'en'
         with LanguageOverride(lang):
             with self.login_user_context(username='admin', password='admin'):
-                obj = Normal.objects.language(lang).create(
-                    shared_field="shared",
-                    translated_field='English',
-                )
-                url = reverse('admin:app_normal_change', args=(obj.pk,))
+                url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 data = {
                     'translated_field': 'English NEW',
-                    'shared_field': obj.shared_field,
+                    'shared_field': NORMAL[1].shared_field,
                     'simplerel-TOTAL_FORMS': '0',
                     'simplerel-INITIAL_FORMS': '0',
                     'simplerel-MAX_NUM_FORMS': '0',
@@ -312,11 +319,11 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 expected_url = reverse('admin:app_normal_changelist')
                 self.assertEqual(response.status_code, 302, response.content)
                 self.assertTrue(response['Location'].endswith(expected_url))
-                obj = Normal.objects.language('en').get(pk=obj.pk)
+                obj = Normal.objects.language('en').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "English NEW")
-    
+
     def test_admin_dual(self):
-        SHARED = 'shared'
+        SHARED = 'shared_new'
         TRANS_EN = 'English'
         TRANS_JA = u'日本語'
         with self.login_user_context(username='admin', password='admin'):
@@ -338,22 +345,22 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
             with LanguageOverride('en'):
                 response = self.client.post(url, data_en)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), 1)
+                self.assertEqual(Normal.objects.count(), self.normal_count + 1)
             with LanguageOverride('ja'):
                 response = self.client.post(url, data_ja)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), 2)
-            en = Normal.objects.language('en').get()
+                self.assertEqual(Normal.objects.count(), self.normal_count + 2)
+            en = Normal.objects.language('en').get(shared_field=SHARED)
             self.assertEqual(en.shared_field, SHARED)
             self.assertEqual(en.translated_field, TRANS_EN)
-            ja = Normal.objects.language('ja').get()
+            ja = Normal.objects.language('ja').get(shared_field=SHARED)
             self.assertEqual(ja.shared_field, SHARED)
             self.assertEqual(ja.translated_field, TRANS_JA)
-    
+
     def test_admin_with_param(self):
         with LanguageOverride('ja'):
             with self.login_user_context(username='admin', password='admin'):
-                SHARED = 'shared'
+                SHARED = 'shared_new'
                 TRANS = 'trans'
                 url = reverse('admin:app_normal_add')
                 data = {
@@ -365,14 +372,15 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
                 }
                 response = self.client.post("%s?language=en" % url, data)
                 self.assertEqual(response.status_code, 302)
-                self.assertEqual(Normal.objects.count(), 1)
-                obj = Normal.objects.language('en')[0]
+                self.assertEqual(Normal.objects.count(), self.normal_count + 1)
+                obj = Normal.objects.language('en').get(shared_field=SHARED)
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
-    
 
-class AdminEditTests(HvadTestCase, BaseAdminTests, TwoTranslatedNormalMixin,
-                     SuperuserMixin):
+
+class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, SuperuserFixture):
+    normal_count = 2
+
     def test_changelist(self):
         url = reverse('admin:app_normal_changelist')
         request = self.request_factory.get(url)
@@ -382,68 +390,52 @@ class AdminEditTests(HvadTestCase, BaseAdminTests, TwoTranslatedNormalMixin,
                 queryset = normaladmin.get_queryset(request)
             else:
                 queryset = normaladmin.queryset(request)
-            self.assertEqual(queryset.count(), 2)
+            self.assertEqual(queryset.count(), self.normal_count)
 
 
-class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
+class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+    normal_count = 1
+    translations = ('en', 'ja')
+
     def test_delete_last_translation(self):
-        en = Normal.objects.language('en').create(shared_field='shared',
-                                                  translated_field='english')
-        url = reverse('admin:app_normal_delete_translation', args=(en.pk, 'en'))
+        Normal.objects.language('ja').delete_translations()
+        url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
         with self.login_user_context(username='admin', password='admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(response, 'admin/hvad/deletion_not_allowed.html')
-        self.assertTrue(Normal.objects.language('en').get(pk=en.pk))
-            
+        self.assertTrue(Normal.objects.language('en').filter(pk=self.normal_id[1]).exists())
+
     def test_delete_translation_get(self):
-        en = Normal.objects.language('en').create(shared_field='shared',
-                                                  translated_field='english')
-        ja = en.translate('ja')
-        ja.translated_field = 'japanese'
-        ja.save()
-        url = reverse('admin:app_normal_delete_translation', args=(en.pk, 'en'))
-        
+        url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
         with self.login_user_context(username='admin', password='admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(response, 'admin/delete_confirmation.html')
-        self.assertTrue(Normal.objects.language('en').get(pk=en.pk))
-        self.assertTrue(Normal.objects.language('ja').get(pk=ja.pk))
-    
+        self.assertTrue(Normal.objects.language('en').filter(pk=self.normal_id[1]).exists())
+        self.assertTrue(Normal.objects.language('ja').filter(pk=self.normal_id[1]).exists())
+
     def test_delete_translation_post(self):
-        en = Normal.objects.language('en').create(shared_field='shared',
-                                                  translated_field='english')
-        ja = en.translate('ja')
-        ja.translated_field = 'japanese'
-        ja.save()
-        url = reverse('admin:app_normal_delete_translation', args=(en.pk, 'en'))
-        
+        url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
         with self.login_user_context(username='admin', password='admin'):
             response = self.client.post(url, {'post': 'yes'})
             self.assertEqual(response.status_code, HttpResponseRedirect.status_code)
-        self.assertRaises(Normal.DoesNotExist, Normal.objects.language('en').get, pk=en.pk)
-        self.assertTrue(Normal.objects.language('ja').get(pk=ja.pk))
-    
+            self.assertRaises(Normal.DoesNotExist,
+                              Normal.objects.language('en').get, pk=self.normal_id[1])
+        self.assertTrue(Normal.objects.language('ja').filter(pk=self.normal_id[1]).exists())
+
     def test_delete_translation_no_obj(self):
-        url = reverse('admin:app_normal_delete_translation', args=(1, 'en'))
-        
+        url = reverse('admin:app_normal_delete_translation', args=(-1, 'en'))
         with self.login_user_context(username='admin', password='admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 404)
-    
+
     def test_delete_no_perms(self):
         user = User(username='staff', is_active=True, is_staff=True)
         user.set_password('staff')
         user.save()
-        
-        en = Normal.objects.language('en').create(shared_field='shared',
-                                                  translated_field='english')
-        ja = en.translate('ja')
-        ja.translated_field = 'japanese'
-        ja.save()
-        url = reverse('admin:app_normal_delete_translation', args=(en.pk, 'en'))
-        
+
+        url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
         with self.login_user_context(username='staff', password='staff'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, HttpResponseForbidden.status_code)
@@ -453,7 +445,7 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
     def test_language_tabs(self):
         obj = Normal.objects.language("en").create(shared_field="shared",
                                                    translated_field="english")
-        url = reverse('admin:app_normal_change', args=(1,))
+        url = reverse('admin:app_normal_change', args=(obj.pk,))
         request = self.request_factory.get(url)
         normaladmin = self._get_admin(Normal)
         available_languages = []
@@ -499,30 +491,32 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
         self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
         
 
-class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserMixin,
-                         OneSingleTranslatedNormalMixin):
+class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+    normal_count = 1
+
     def test_adding_related_object(self):
         url = reverse('admin:app_simplerelated_add')
-        expected_url = reverse('admin:app_simplerelated_change', args=(1,))
         TRANS_FIELD = "English Content" 
         with LanguageOverride('en'):
-            en = Normal.objects.all()[0]
+            en = Normal.objects.get(pk=self.normal_id[1])
             with self.login_user_context(username='admin', password='admin'):
                 data = {
-                    'normal': en.pk,
+                    'normal': self.normal_id[1],
                     'translated_field': TRANS_FIELD,
                     '_continue': '1',
                 }
                 response = self.client.post(url, data)
+
+                simplerel = SimpleRelated.objects.all()[0]
+                self.assertEqual(simplerel.normal.pk, en.pk)
+                self.assertEqual(simplerel.translated_field, TRANS_FIELD)
+
+                expected_url = reverse('admin:app_simplerelated_change', args=(simplerel.pk,))
                 self.assertRedirects(response, expected_url)
-            
-            simplerel = SimpleRelated.objects.all()[0]
-            self.assertEqual(simplerel.normal.pk, en.pk)
-            self.assertEqual(simplerel.translated_field, TRANS_FIELD)
 
 
 @minimumDjangoVersion(1, 4)
-class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin):
+class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture):
     def test_correct_id_in_inline(self):
         LANGUAGES = (
             ('en', u'English'),
@@ -532,11 +526,22 @@ class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserMixin)
         )
         with self.settings(LANGUAGES=LANGUAGES):
             with LanguageOverride('en'):
-                normal = Normal.objects.language().create(shared_field="whatever1", translated_field="whatever in another language1")
-                normal2 = Normal.objects.language().create(shared_field="whatever2", translated_field="whatever in another language2")
-                normal3 = Normal.objects.language().create(shared_field="whatever3", translated_field="whatever in another language3")
+                normal = Normal.objects.language().create(
+                    shared_field="whatever1",
+                    translated_field="whatever in another language1"
+                )
+                normal2 = Normal.objects.language().create(
+                    shared_field="whatever2",
+                    translated_field="whatever in another language2"
+                )
+                normal3 = Normal.objects.language().create(
+                    shared_field="whatever3",
+                    translated_field="whatever in another language3"
+                )
 
-            simple1 = SimpleRelated.objects.language("en").create(normal=normal3, translated_field="inline whatever translated")
+            simple1 = SimpleRelated.objects.language("en").create(
+                normal=normal3, translated_field="inline whatever translated"
+            )
 
             simple1.translate("ja")
             simple1.translated_field ="japanese stuff"

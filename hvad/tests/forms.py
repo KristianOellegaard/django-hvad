@@ -4,8 +4,8 @@ from hvad.forms import TranslatableModelForm, TranslatableModelFormMetaclass
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, SimpleRelated
-from hvad.test_utils.data import DOUBLE_NORMAL
-from hvad.test_utils.fixtures import TwoTranslatedNormalMixin
+from hvad.test_utils.data import NORMAL
+from hvad.test_utils.fixtures import NormalFixture
 from django.db import models
 from django import forms
 
@@ -34,11 +34,12 @@ class SimpleRelatedForm(TranslatableModelForm):
         model = SimpleRelated
         fields = ['normal', 'translated_field']
 
-class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
-    
+class FormTests(HvadTestCase, NormalFixture):
+    normal_count = 2
+
     def test_nontranslatablemodelform(self):
         # Make sure that TranslatableModelForm won't accept a regular model
-        
+
         # "Fake" model to use for the TranslatableModelForm
         class NonTranslatableModel(models.Model):
             field = models.CharField(max_length=128)
@@ -52,7 +53,7 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
             'NonTranslatableModelForm', (TranslatableModelForm,),
             {'Meta': Meta}
         )
-    
+
     def test_normal_model_form_instantiation(self):
         # Basic example and checking it gives us all the fields needed
         form = NormalForm()
@@ -61,17 +62,16 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
         self.assertTrue("translated_field" in form.base_fields)
         self.assertTrue("shared_field" in form.base_fields)
         self.assertFalse(form.is_valid())
-        
+
         # Check if it works with media argument too
         form = NormalMediaForm()
         self.assertFalse(form.is_valid())
         self.assertTrue("layout.css" in str(form.media))
-        
+
         # Check if it works with an instance of Normal
         form = NormalForm(instance=Normal())
         self.assertFalse(form.is_valid())
-        
-        
+
     def test_normal_model_form_valid(self):
         SHARED = 'Shared'
         TRANSLATED = 'English'
@@ -86,7 +86,7 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
         self.assertTrue("shared_field" in form.fields)
         self.assertTrue(TRANSLATED in form.clean()["translated_field"])
         self.assertTrue(SHARED in form.clean()["shared_field"])
-        
+
     def test_normal_model_form_initaldata_instance(self):
         # Check if it accepts inital data and instance
         SHARED = 'Shared'
@@ -98,18 +98,19 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
         }
         form = NormalForm(data, instance=Normal(), initial=data)
         self.assertTrue(form.is_valid(), form.errors.as_text())
-        
+
     def test_normal_model_form_existing_instance(self):
         # Check if it works with an existing instance of Normal
         SHARED = 'Shared'
         TRANSLATED = 'English'
-        instance = Normal.objects.language("en").create(shared_field=SHARED, translated_field=TRANSLATED)
+        instance = Normal.objects.language("en").create(
+            shared_field=SHARED, translated_field=TRANSLATED
+        )
         form = NormalForm(instance=instance)
         self.assertFalse(form.is_valid())
         self.assertTrue(SHARED in form.as_p())
         self.assertTrue(TRANSLATED in form.as_p())
-        
-    
+
     def test_normal_model_form_save(self):
         with LanguageOverride('en'):
             SHARED = 'Shared'
@@ -162,7 +163,7 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
             self.assertFalse("language_code" in form.fields)
 
     def test_form_wrong_field_in_class(self):
-        with LanguageOverride("en"):            
+        with LanguageOverride("en"):
             def create_wrong_form():
                 class WrongForm(TranslatableModelForm):
                     class Meta:
@@ -174,11 +175,11 @@ class FormTests(HvadTestCase, TwoTranslatedNormalMixin):
         with LanguageOverride('en'):
             form = SimpleRelatedForm()
             rendered = form['normal'].as_widget()
-            self.assertIn(DOUBLE_NORMAL[1]['translated_field_en'], rendered)
-            self.assertIn(DOUBLE_NORMAL[2]['translated_field_en'], rendered)
+            self.assertIn(NORMAL[1].translated_field['en'], rendered)
+            self.assertIn(NORMAL[2].translated_field['en'], rendered)
 
         with LanguageOverride('ja'):
             form = SimpleRelatedForm()
             rendered = form['normal'].as_widget()
-            self.assertIn(DOUBLE_NORMAL[1]['translated_field_ja'], rendered)
-            self.assertIn(DOUBLE_NORMAL[2]['translated_field_ja'], rendered)
+            self.assertIn(NORMAL[1].translated_field['ja'], rendered)
+            self.assertIn(NORMAL[2].translated_field['ja'], rendered)

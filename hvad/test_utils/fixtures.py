@@ -1,79 +1,105 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
-from hvad.test_utils.data import DOUBLE_NORMAL, D1, D3, D2
-from hvad.test_utils.project.app.models import Normal, Date, Standard, ConcreteAB
+from hvad.test_utils.data import NORMAL, STANDARD, CONCRETEAB, DATE
+from hvad.test_utils.project.app.models import Normal, Standard, ConcreteAB, Date
 
 
 class Fixture(object):
+    translations = ('en', 'ja')
     def create_fixtures(self):
         pass
 
+#===============================================================================
 
-class OneSingleTranslatedNormalMixin(Fixture):
+class NormalFixture(Fixture):
+    normal_count = 0
+
     def create_fixtures(self):
-        Normal.objects.language('en').create(
-            shared_field='shared',
-            translated_field='English'
-        )
-        super(OneSingleTranslatedNormalMixin, self).create_fixtures()
+        super(NormalFixture, self).create_fixtures()
+        assert self.normal_count <= len(NORMAL), 'Not enough fixtures in data'
+
+        self.normal_id = {}
+        for i in range(1, self.normal_count + 1):
+            self.normal_id[i] = self.create_normal(NORMAL[i]).pk
+
+    def create_normal(self, data, translations=None):
+        obj = Normal(shared_field=data.shared_field)
+        for code in translations or self.translations:
+            obj.translate(code)
+            obj.translated_field = data.translated_field[code]
+            obj.save()
+        return obj
 
 
-class TwoTranslatedNormalMixin(Fixture):
+class StandardFixture(NormalFixture):
+    standard_count = 0
+
     def create_fixtures(self):
-        en1 = Normal.objects.language('en').create(
-            shared_field = 'Shared1',
-            translated_field = 'English1',
+        super(StandardFixture, self).create_fixtures()
+        assert self.standard_count <= len(STANDARD)
+
+        self.standard_id = {}
+        for i in range(1, self.standard_count + 1):
+            self.standard_id[i] = self.create_standard(STANDARD[i]).pk
+
+    def create_standard(self, data):
+        obj = Standard.objects.create(
+            normal_field=data.normal_field,
+            normal_id=self.normal_id[data.normal],
         )
-        ja1 = en1.translate('ja')
-        ja1.translated_field = u'日本語一'
-        ja1.save()
-        
-        en2 = Normal.objects.language('en').create(
-            shared_field = 'Shared2',
-            translated_field = 'English2',
-        )
-        ja2 = en2.translate('ja')
-        ja2.translated_field = u'日本語二'
-        ja2.save()
-        super(TwoTranslatedNormalMixin, self).create_fixtures()
+        return obj
 
 
-class TwoTranslatedConcreteABMixin(TwoTranslatedNormalMixin):
+class ConcreteABFixture(NormalFixture):
+    concreteab_count = 0
+
     def create_fixtures(self):
-        super(TwoTranslatedConcreteABMixin, self).create_fixtures()
-        normal1 = Normal.objects.language('en').get(shared_field='Shared1')
-        normal2 = Normal.objects.language('en').get(shared_field='Shared2')
+        super(ConcreteABFixture, self).create_fixtures()
+        assert self.concreteab_count <= len(CONCRETEAB)
 
-        ab1 = ConcreteAB.objects.language('en').create(
-            shared_field_a = DOUBLE_NORMAL[1]['shared_field'],
-            shared_field_b = normal1,
-            shared_field_ab = DOUBLE_NORMAL[1]['shared_field'],
-            translated_field_a = normal1,
-            translated_field_b = DOUBLE_NORMAL[1]['translated_field_en'],
-            translated_field_ab = DOUBLE_NORMAL[1]['translated_field_en'],
+        self.concreteab_id = {}
+        for i in range(1, self.concreteab_count + 1):
+            self.concreteab_id[i] = self.create_concreteab(CONCRETEAB[i]).pk
+
+    def create_concreteab(self, data, translations=None):
+        obj = ConcreteAB(
+            shared_field_a=data.shared_field_a,
+            shared_field_b_id=self.normal_id[data.shared_field_b],
+            shared_field_ab=data.shared_field_ab,
         )
-        ab1.translate('ja')
-        ab1.translated_field_a = normal2
-        ab1.translated_field_b = DOUBLE_NORMAL[1]['translated_field_ja']
-        ab1.translated_field_ab = DOUBLE_NORMAL[1]['translated_field_ja']
-        ab1.save()
+        for code in translations or self.translations:
+            obj.translate(code)
+            obj.translated_field_a_id = self.normal_id[data.translated_field_a[code]]
+            obj.translated_field_b = data.translated_field_b[code]
+            obj.translated_field_ab = data.translated_field_ab[code]
+            obj.save()
+        return obj
 
-        ab2 = ConcreteAB.objects.language('ja').create(
-            shared_field_a = DOUBLE_NORMAL[2]['shared_field'],
-            shared_field_b = normal2,
-            shared_field_ab = DOUBLE_NORMAL[2]['shared_field'],
-            translated_field_a = normal2,
-            translated_field_b = DOUBLE_NORMAL[2]['translated_field_ja'],
-            translated_field_ab = DOUBLE_NORMAL[2]['translated_field_ja'],
-        )
-        ab2.translate('en')
-        ab2.translated_field_a = normal1
-        ab2.translated_field_b = DOUBLE_NORMAL[2]['translated_field_en']
-        ab2.translated_field_ab = DOUBLE_NORMAL[2]['translated_field_en']
-        ab2.save()
 
-class SuperuserMixin(Fixture):
+class DateFixture(Fixture):
+    date_count = 0
+
     def create_fixtures(self):
+        super(DateFixture, self).create_fixtures()
+        assert self.date_count <= len(DATE)
+
+        self.date_id = {}
+        for i in range(1, self.date_count + 1):
+            self.date_id[i] = self.create_date(DATE[i]).pk
+
+    def create_date(self, data, translations=None):
+        obj = Date(shared_date=data.shared_date)
+        for code in translations or self.translations:
+            obj.translate(code)
+            obj.translated_date = data.translated_date[code]
+            obj.save()
+        return obj
+
+
+class SuperuserFixture(Fixture):
+    def create_fixtures(self):
+        super(SuperuserFixture, self).create_fixtures()
+
         su = User(
             email='admin@admin.com',
             is_staff=True,
@@ -83,36 +109,4 @@ class SuperuserMixin(Fixture):
         )
         su.set_password('admin')
         su.save()
-        super(SuperuserMixin, self).create_fixtures()
-
-
-class DatesMixin(Fixture):
-    def create_fixtures(self):
-        en1 = Date.objects.language('en').create(shared_date=D1,
-                                                translated_date=D3)
-        ja1 = en1.translate('ja')
-        ja1.translated_date = D2
-        ja1.save()
-        en2 = Date.objects.language('en').create(shared_date=D3,
-                                                translated_date=D2)
-        ja2 = en2.translate('ja')
-        ja2.translated_date = D1
-        ja2.save()
-        en3 = Date.objects.language('en').create(shared_date=D2,
-                                                translated_date=D1)
-        ja3 = en3.translate('ja')
-        ja3.translated_date = D3
-        ja3.save()
-        super(DatesMixin, self).create_fixtures()
-
-class TwoNormalOneStandardMixin(Fixture):
-    def create_fixtures(self):
-        en = Normal.objects.language('en').create(
-            shared_field='shared',
-            translated_field='English'
-        )
-        ja = en.translate('ja')
-        ja.translated_field = u'日本語'
-        ja.save()
-        Standard.objects.create(normal_field="normal", normal=en) 
-        super(TwoNormalOneStandardMixin, self).create_fixtures()
+        self.superuser = su
