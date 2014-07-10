@@ -319,12 +319,15 @@ class BaseTranslationFormSet(BaseInlineFormSet):
         for form in self.forms:
             form.instance.master = master
             combined = combine(form.instance, master.__class__)
+            exclusions = form._get_validation_exclusions()
+            # fields from the shared model should not be validated
+            exclusions.extend(f.name for f in combined._meta.fields)
             try:
                 if django.VERSION >= (1, 6):
-                    combined.full_clean(exclude=form._get_validation_exclusions(),
+                    combined.full_clean(exclude=exclusions,
                                         validate_unique=form._validate_unique)
                 else:
-                    combined.full_clean(exclude=form._get_validation_exclusions())
+                    combined.full_clean(exclude=exclusions)
             except ValidationError as e:
                 form._update_errors(e)
 
