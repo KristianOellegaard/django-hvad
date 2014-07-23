@@ -272,7 +272,7 @@ class TranslationQueryset(QuerySet):
             try:
                 field_name = get_where_node_field_name(node)
             except (TypeError, AttributeError):
-                if node.children:
+                if getattr(node, 'children', None):     # all WhereNodes don't have children
                     found = self._scan_for_language_where_node(node.children)
             else:
                 found = (field_name == 'language_code')
