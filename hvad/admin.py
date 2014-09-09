@@ -230,7 +230,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         current_is_translated = lang_code in available_languages
         context['current_is_translated'] = current_is_translated
         if not current_is_translated:
-            add = False
+            add = True
 
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
