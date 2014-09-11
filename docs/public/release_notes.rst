@@ -8,9 +8,7 @@ Release Notes
 0.5.0
 *****************************
 
-.. note:: This version is being developed. If you feel like helping, or want the
-          very latest feature, you can install it from the `github
-          repository`_.
+Released on September 11, 2014
 
 Python and Django versions supported:
 
