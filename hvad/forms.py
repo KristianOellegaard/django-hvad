@@ -338,10 +338,11 @@ class BaseTranslationFormSet(BaseInlineFormSet):
 
         # Validate that at least one translation exists
         forms_to_delete = self.deleted_forms
-        valid = [((form.instance and form.instance.pk is not None) or
-                  (form.is_valid() and form.has_changed()))
-                 and not form in forms_to_delete for form in self.forms]
-        if valid.count(True) < 1:
+        provided = [form for form in self.forms
+                    if (getattr(form.instance, 'pk', None) is not None or
+                        form.has_changed())
+                       and not form in forms_to_delete]
+        if len(provided) < 1:
             raise ValidationError(_('At least one translation must be provided'),
                                   code='notranslation')
 
