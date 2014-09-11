@@ -12,6 +12,12 @@ Release Notes
           very latest feature, you can install it from the `github
           repository`_.
 
+Python and Django versions supported:
+
+- This version will be the last to support Django 1.3.
+- This version will be the last to support Python 2.6. Though it may
+  still work for the time being, it will be removed from the tested setups.
+
 New features:
 
 - New :ref:`translationformset_factory <translationformset>` and its companion
@@ -41,11 +47,11 @@ New features:
   is now supported on translatable models. It accepts both translated and shared
   fields – :issue:`185`, :issue:`12`.
 - The :meth:`~hvad.manager.TranslationQueryset.select_related` method is no longer
-  limited to 1 level depth.
+  limited to 1 level depth – :issue:`192`.
 - The :meth:`~hvad.manager.TranslationQueryset.select_related` method semantics
   is now consistent with that of regular querysets. It supports passing ``None``
   to clear the list and mutiple calls mimic Django behavior. That is: cumulative
-  starting from Django 1.7 and substitutive before.
+  starting from Django 1.7 and substitutive before – :issue:`192`.
 
 Deprecation list:
 
@@ -66,7 +72,13 @@ Deprecation list:
   :meth:`~hvad.manager.TranslationManager.untranslated` method instead.
 - The :class:`~hvad.models.TranslatableModelBase` metaclass is no longer
   necessary and will be removed in next release. hvad no longer triggers metaclass
-  conflicts and ``TranslatableModelBase`` can be safely dropped.
+  conflicts and ``TranslatableModelBase`` can be safely dropped – :issue:`188`.
+- Overriding the language in :meth:`QuerySet.get() <django.db.models.query.QuerySet.get>`
+  and :meth:`QuerySet.filter() <django.db.models.query.QuerySet.filter>` is now
+  deprecated. Either use the :meth:`~hvad.manager.TranslationManager.language`
+  method to set the correct language, or specify
+  :meth:`language('all') <hvad.manager.TranslationManager.language>` to filter
+  manually through ``get`` and ``filter`` – :issue:`182`.
 
 Fixes:
 
@@ -79,6 +91,7 @@ Fixes:
   to your settings.
 - Assigning value to translatable foreign keys through its ``_id`` field no
   longer results in assigned value being ignored – :issue:`193`.
+- Tests were refactored to fully support PostgreSQL – :issue:`194`
 
 .. release 0.4.1
 

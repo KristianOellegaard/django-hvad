@@ -186,6 +186,14 @@ class CreateTest(HvadTestCase):
             with self.assertRaises(AttributeError):
                 ut.language_code
 
+    def test_create_lang_deprecation(self):
+        with self.assertThrowsWarning(DeprecationWarning, 1):
+            en = Normal.objects.language('en').create(
+                language_code="en",
+                shared_field="shared",
+                translated_field='English',
+            )
+
 
 class TranslatedTest(HvadTestCase, NormalFixture):
     normal_count = 1
@@ -250,20 +258,26 @@ class GetByLanguageTest(HvadTestCase, NormalFixture):
     def test_args(self):
         with LanguageOverride('en'):
             q = Q(language_code='ja', pk=self.normal_id[1])
-            obj = Normal.objects.language().get(q)
+            obj = Normal.objects.language('all').get(q)
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
     def test_kwargs(self):
         with LanguageOverride('en'):
             kwargs = {'language_code':'ja', 'pk':self.normal_id[1]}
-            obj = Normal.objects.language().get(**kwargs)
+            obj = Normal.objects.language('all').get(**kwargs)
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
     def test_language(self):
         with LanguageOverride('en'):
             obj = Normal.objects.language('ja').get(pk=self.normal_id[1])
+            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
+
+    def test_args_override_deprecation(self):
+        with self.assertThrowsWarning(DeprecationWarning, 1):
+            obj = Normal.objects.language('en').get(language_code='ja', pk=self.normal_id[1])
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
@@ -548,6 +562,16 @@ class GetOrCreateTest(HvadTestCase):
         self.assertEqual(ja.second_translated_field,  u'日本語-二')
         self.assertEqual(ja.language_code, "ja")
         self.assertNotEqual(en.pk, ja.pk)
+
+    def test_get_or_create_lang_deprecation(self):
+        with self.assertThrowsWarning(DeprecationWarning, 1):
+            en = Normal.objects.language('en').get_or_create(
+                shared_field="shared",
+                translated_field='English',
+                defaults={
+                    'language_code': 'en',
+                }
+            )
 
 
 class BooleanTests(HvadTestCase):

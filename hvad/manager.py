@@ -395,6 +395,11 @@ class TranslationQueryset(QuerySet):
             language_code = self._language_code or get_language()
             if not self._scan_for_language_where_node(self.query.where.children):
                 self.query.add_filter(('language_code', language_code))
+            else:
+                warnings.warn('Overriding language_code in get() or filter() is deprecated. '
+                              'Please set the language in Model.objects.language() instead, '
+                              'or use language("all") to do manual filtering on languages.',
+                              DeprecationWarning, stacklevel=3)
 
             self._add_select_related(language_code)
 
@@ -488,6 +493,10 @@ class TranslationQueryset(QuerySet):
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
             kwargs['language_code'] = self._language_code or get_language()
+        else:
+            warnings.warn('Overriding language_code in create() is deprecated. '
+                          'Please set the language in Model.objects.language() instead.',
+                          DeprecationWarning, stacklevel=2)
         if kwargs['language_code'] == 'all':
             raise ValueError('Cannot create an object with language \'all\'')
         obj = self.shared_model(**kwargs)
@@ -532,6 +541,10 @@ class TranslationQueryset(QuerySet):
                 # START PATCH
                 if 'language_code' not in params:
                     params['language_code'] = self._language_code or get_language()
+                else:
+                    warnings.warn('Overriding language_code in get_or_create() is deprecated. '
+                                  'Please set the language in Model.objects.language() instead.',
+                                  DeprecationWarning, stacklevel=2)
                 if params['language_code'] == 'all':
                     raise ValueError('Cannot create an object with language \'all\'')
                 obj = self.shared_model(**params)

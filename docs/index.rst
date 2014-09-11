@@ -27,9 +27,9 @@ Notes on Django versions
 django-hvad is tested on the following configurations:
 
 - Django 1.3.7, running Python 2.6 or 2.7.
-- Django 1.4.12, running Python 2.6 or 2.7.
-- Django 1.5.7, running Python 2.6, 2.7 or 3.3.
-- Django 1.6.4, running Python 2.7 or 3.3.
+- Django 1.4.15, running Python 2.6 or 2.7.
+- Django 1.5.10, running Python 2.6, 2.7 or 3.3.
+- Django 1.6.7, running Python 2.7 or 3.3.
 - Django 1.7.0, running Python 2.7, 3.3 or 3.4.
 
 
