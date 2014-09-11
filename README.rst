@@ -33,7 +33,7 @@ Although we focus on keeping the code stable and clean even on the development
 branch, django-hvad is still in beta. Please use it with caution and report any
 bug you might encounter on the `issue tracker`_. If stability is
 critical, stick to `packaged releases`_ and explicitly prevent automatic
-upgrades to next branch (e.g. put ``django-hvad>=0.4,<0.5`` in your requirements).
+upgrades to next branch (e.g. put ``django-hvad>=0.5,<0.6`` in your requirements).
 
 
 Releases
@@ -43,7 +43,8 @@ Starting from v0.4, django-hvad uses the same release pattern as Django. The
 following versions are thus available:
 
 * Stable branch 0.4, available through `PyPI`_ and git branch ``releases/0.4.x``.
-* Development branch 0.5, available through git branch ``master``.
+* Stable branch 0.5, available through `PyPI`_ and git branch ``releases/0.5.x``.
+* Development branch 0.6, available through git branch ``master``.
 
 See the `installation guide`_ for details, or have a look at the
 `release notes`_.

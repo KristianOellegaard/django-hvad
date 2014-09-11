@@ -2,15 +2,30 @@
 Release Notes
 #############
 
-.. release 0.5.0
+.. release 0.6.0
 
 *****************************
-0.5.0
+0.6.0 - upcoming release
 *****************************
 
 .. note:: This version is being developed. If you feel like helping, or want the
-          very latest feature, you can install it from the `github
-          repository`_.
+          very latest feature, you can install it from the `github repository`_.
+          Otherwise, please get a `packaged release`_ instead.
+
+Python and Django versions supported:
+
+- Django 1.3 is no longer supported.
+- Python 2.6 is no longer supported. Though it is likely to work for the time
+  being, it has been dropped from the tested setups.
+
+
+.. release 0.5.0
+
+*****************************
+0.5.0 - current release
+*****************************
+
+Released on September 11, 2014
 
 Python and Django versions supported:
 
@@ -285,3 +300,4 @@ Released on May 13, 2011.
 
 .. _django-polymorphic: https://github.com/bconstantin/django_polymorphic
 .. _github repository: https://github.com/KristianOellegaard/django-hvad
+.. _packaged release: https://pypi.python.org/pypi/django-hvad
