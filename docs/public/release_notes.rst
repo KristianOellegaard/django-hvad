@@ -2,6 +2,17 @@
 Release Notes
 #############
 
+.. release 0.5.1
+
+*****************************
+0.5.1
+*****************************
+
+Fixes:
+
+- Language tabs URI are now correctly generated when changelist filters are used.
+  — :issue:`203`.
+
 .. release 0.5.0
 
 *****************************

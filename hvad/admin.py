@@ -108,11 +108,11 @@ class TranslatableModelAdminMixin(object):
 
     def get_language_tabs(self, request, available_languages):
         tabs = []
-        get = dict(request.GET)
+        get = request.GET.copy()
         language = self._language(request)
         for key, name in settings.LANGUAGES:
-            get.update({'language': key})
-            url = '%s?%s' % (request.path, urlencode(get))
+            get['language'] = key
+            url = '%s?%s' % (request.path, get.urlencode())
             if language == key:
                 status = 'current'
             elif key in available_languages:
