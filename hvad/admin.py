@@ -1,7 +1,9 @@
 import functools
+from urlparse import urlparse
 import django
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
+
 if django.VERSION >= (1, 7):
     from django.contrib.admin.utils import (flatten_fieldsets, unquote,
         get_deleted_objects)
@@ -128,11 +130,11 @@ class TranslatableModelAdminMixin(object):
 
 class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     form = TranslatableModelForm
-    
+
     change_form_template = 'admin/hvad/change_form.html'
-    
+
     deletion_not_allowed_template = 'admin/hvad/deletion_not_allowed.html'
-    
+
     def __init__(self, *args, **kwargs):
         super(TranslatableAdmin, self).__init__(*args, **kwargs)
         self.reverse = functools.partial(reverse, current_app=self.admin_site.name)
@@ -151,8 +153,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         try:
             from django.conf.urls import patterns, url
         except ImportError:
-            from django.conf.urls.defaults import patterns, url            
-        
+            from django.conf.urls.defaults import patterns, url
+
         urlpatterns = super(TranslatableAdmin, self).get_urls()
 
         def wrap(view):
@@ -171,13 +173,13 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 name='%s_%s_delete_translation' % info),
         ) + urlpatterns
         return urlpatterns
-    
+
     def get_form(self, request, obj=None, **kwargs):
         """
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        
+
         if django.VERSION >= (1, 6):
             # From v1.6 on, using get_fieldsets is ok, as long as no 'fields'
             # argument was given. It allows dynamic fieldsets on admin form.
@@ -201,7 +203,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         # Exclude language_code, adding it again to the instance is done by
         # the LanguageAwareCleanMixin (see translatable_modelform_factory)
         exclude.append('language_code')
-        old_formfield_callback = curry(self.formfield_for_dbfield, 
+        old_formfield_callback = curry(self.formfield_for_dbfield,
                                        request=request)
         defaults = {
             "form": self.form,
@@ -212,11 +214,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         defaults.update(kwargs)
         language = self._language(request)
         return translatable_modelform_factory(language, self.model, **defaults)
-    
 
-    
     def render_change_form(self, request, context, add=False, change=False,
                            form_url='', obj=None):
+
         lang_code = self._language(request)
         lang = get_language_name(lang_code)
         available_languages = self.get_available_languages(obj)
@@ -225,11 +226,22 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
+        # Preserve 'language' param when using filter fields from django's change list view
+        if request.GET.get('language'):
+            if not form_url:
+                form_url = request.get_full_path()
+            else:
+                _form_url = urlparse(form_url)
+                if not 'language' in _form_url.query:
+                    if _form_url.query:
+                        _form_url.query += '&'
+                    _form_url.query += 'language=%s' % request.GET.get('language')
+                form_url = _form_url.geturl()
         return super(TranslatableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,
                                                                   form_url, obj)
-        
+
     def response_change(self, request, obj):
         redirect = super(TranslatableAdmin, self).response_change(request, obj)
         uri = iri_to_uri(request.path)
@@ -242,7 +254,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
                     self.query_language_key, request.GET[self.query_language_key])
         return redirect
-    
+
     @csrf_protect_m
     @atomic
     def delete_translation(self, request, object_id, language_code):
@@ -250,7 +262,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         opts = self.model._meta
         app_label = opts.app_label
         translations_model = opts.translations_model
-        
+
         try:
             obj = translations_model.objects.select_related('maser').get(
                                                 master__pk=unquote(object_id),
@@ -260,7 +272,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
         if not self.has_delete_permission(request, obj):
             raise PermissionDenied
-        
+
         if len(self.get_available_languages(obj.master)) <= 1:
             return self.deletion_not_allowed(request, obj, language_code)
 
@@ -268,13 +280,13 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
         # Populate deleted_objects, a data structure of all related objects that
         # will also be deleted.
-        
+
         protected = False
         deleted_objects, perms_needed, protected = get_deleted_objects(
             [obj], translations_model._meta, request.user, self.admin_site, using)
-        
-        lang = get_language_name(language_code) 
-            
+
+        lang = get_language_name(language_code)
+
 
         if request.POST: # The user has already confirmed the deletion.
             if perms_needed:
@@ -322,12 +334,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             "admin/%s/delete_confirmation.html" % app_label,
             "admin/delete_confirmation.html"
         ], context, RequestContext(request))
-    
+
     def deletion_not_allowed(self, request, obj, language_code):
         opts = self.model._meta
         app_label = opts.app_label
         object_name = force_unicode(opts.verbose_name)
-        
+
         context = RequestContext(request)
         context['object'] = obj.master
         context['language_code'] = language_code
@@ -336,10 +348,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['language_name'] = get_language_name(language_code)
         context['object_name'] = object_name
         return render_to_response(self.deletion_not_allowed_template, context)
-        
+
     def delete_model_translation(self, request, obj):
         obj.delete()
-    
+
     def get_object(self, request, object_id):
         obj = super(TranslatableAdmin, self).get_object(request, object_id)
         if obj is None: # object was not in queryset, bail out
