@@ -25,6 +25,10 @@ New features:
   Django 1.6 or newer, allowing the queryset to use fallback languages while
   retaining all its normal functionalities – :issue:`184`.
 
+Fixes:
+
+- Language tabs URI are now correctly generated when changelist filters are used.
+  — :issue:`203`.
 
 .. release 0.5.0
 
