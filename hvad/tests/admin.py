@@ -231,18 +231,25 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                 self.assertTrue('en' in response.content.decode('utf-8'))
 
     def test_admin_change_form_language_tabs_urls(self):
+        from hvad.compat.urls import urlencode
+
         with LanguageOverride('en'):
             with self.login_user_context(username='admin', password='admin'):
                 get_url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
-                response = self.client.get(get_url)
-                self.assertEqual(response.status_code, 200)
-                tabs = response.context['language_tabs']
+                urls = [
+                    get_url,
+                    '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam'),
+                ]
 
-                from hvad.compat.urls import urlencode
-                for actual_tab_url, name, key, status in tabs:
-                    expected_tab_url = '%s?%s' % (get_url,
-                        urlencode({'language': key}))
-                    self.assertEqual(expected_tab_url, actual_tab_url)
+                for url in urls:
+                    response = self.client.get(url)
+                    self.assertEqual(response.status_code, 200)
+                    tabs = response.context['language_tabs']
+
+                    for actual_tab_url, name, key, status in tabs:
+                        connector = '&' if '?' in url else '?'
+                        expected_tab_url = '%s%s%s' % (url, connector, urlencode({'language': key}))
+                        self.assertEqual(expected_tab_url, actual_tab_url)
 
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'
@@ -254,7 +261,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                     'translated_field': 'English NEW',
                     'shared_field': NORMAL[1].shared_field,
                     '_addanother': '1',
-                    
+
                     'simplerel-TOTAL_FORMS': '0',
                     'simplerel-INITIAL_FORMS': '0',
                     'simplerel-MAX_NUM_FORMS': '0',
@@ -266,7 +273,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                 self.assertTrue(response['Location'].endswith(expected_url))
                 obj = Normal.objects.language('en').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "English NEW")
-    
+
     def test_admin_change_form_redirect_continue_edit(self):
         lang = 'en'
         with LanguageOverride('ja'):
@@ -462,7 +469,7 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
                 self.assertEqual(status, 'current')
             elif lang == "ja":
                 self.assertEqual(status, 'available')
-                
+
         with self.assertNumQueries(0):
             with LanguageOverride('en'):
                 normaladmin.get_language_tabs(request, [])
@@ -471,32 +478,32 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
         normaladmin = self._get_admin(Normal)
         template = normaladmin.get_change_form_base_template()
         self.assertEqual(template, 'admin/change_form.html')
-        
+
     def test_translatable_modelform_factory(self):
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
-        
+
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
-        
+
         class TestForm(TranslatableModelForm):
             class Meta:
-                fields = ['shared_field'] 
+                fields = ['shared_field']
                 exclude = ['id']
-               
+
         t = translatable_modelform_factory('en', Normal, form=TestForm)
         self.assertEqual(t.Meta.fields, ['shared_field'])
         self.assertEqual(t.Meta.exclude, ['id', 'language_code'])
-        
+
 
 class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
     normal_count = 1
 
     def test_adding_related_object(self):
         url = reverse('admin:app_simplerelated_add')
-        TRANS_FIELD = "English Content" 
+        TRANS_FIELD = "English Content"
         with LanguageOverride('en'):
             en = Normal.objects.get(pk=self.normal_id[1])
             with self.login_user_context(username='admin', password='admin'):
