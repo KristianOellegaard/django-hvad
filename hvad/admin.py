@@ -1,5 +1,4 @@
 import functools
-from urlparse import urlparse
 import django
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
@@ -29,7 +28,7 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from hvad.compat.force_unicode import force_unicode
-from hvad.compat.urls import urlencode
+from hvad.compat.urls import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 from hvad.utils import get_cached_translation, get_translation
 from hvad.manager import FALLBACK_LANGUAGES
@@ -226,21 +225,33 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
-        # Preserve 'language' param when using filter fields from django's change list view
-        if request.GET.get('language'):
+
+        if django.VERSION < (1, 7) and request.GET.get('language'):
+            # Starting from v1.7, Django admin has a get_preserved_filters for the very purpose of carrying along
+            # filters from request.GET to form_url. This method did not exist in previous versions, so we have to set
+            # form_url manually. This part of code can be removed once support for versions < 1.7 is removed.
             if not form_url:
                 form_url = request.get_full_path()
             else:
                 _form_url = urlparse(form_url)
-                if not 'language' in _form_url.query:
+                if 'language=' not in _form_url.query:
                     if _form_url.query:
                         _form_url.query += '&'
                     _form_url.query += 'language=%s' % request.GET.get('language')
                 form_url = _form_url.geturl()
+
         return super(TranslatableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,
                                                                   form_url, obj)
+
+    def get_preserved_filters(self, request):
+        preserved_filters = super(TranslatableAdmin, self).get_preserved_filters(request)
+        if request.GET.get('language') and 'language=' not in preserved_filters:
+            if preserved_filters:
+                preserved_filters += '&'
+            preserved_filters += 'language=%s' % request.GET.get('language')
+        return preserved_filters
 
     def response_change(self, request, obj):
         redirect = super(TranslatableAdmin, self).response_change(request, obj)
