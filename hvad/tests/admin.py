@@ -5,7 +5,8 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseForbidden, HttpResponseRedirect
+from django.utils.http import urlencode
+from django.http import HttpResponseForbidden, HttpResponseRedirect, QueryDict
 from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
 from hvad.forms import TranslatableModelForm
@@ -231,25 +232,27 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                 self.assertTrue('en' in response.content.decode('utf-8'))
 
     def test_admin_change_form_language_tabs_urls(self):
-        from hvad.compat.urls import urlencode
+        from hvad.compat.urls import urlparse
 
         with LanguageOverride('en'):
             with self.login_user_context(username='admin', password='admin'):
                 get_url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
-                urls = [
-                    get_url,
+                test_urls = [
                     '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam'),
                 ]
 
-                for url in urls:
-                    response = self.client.get(url)
+                for test_url in test_urls:
+                    response = self.client.get(test_url)
                     self.assertEqual(response.status_code, 200)
                     tabs = response.context['language_tabs']
 
+                    test_querydict = QueryDict(urlparse(test_url).query, mutable=True)
+
                     for actual_tab_url, name, key, status in tabs:
-                        connector = '&' if '?' in url else '?'
-                        expected_tab_url = '%s%s%s' % (url, connector, urlencode({'language': key}))
-                        self.assertEqual(expected_tab_url, actual_tab_url)
+                        expected_querydict = test_querydict.copy()
+                        expected_querydict['language'] = key
+                        actual_querydict = QueryDict(urlparse(actual_tab_url).query)
+                        self.assertEqual(expected_querydict, actual_querydict)
 
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'
