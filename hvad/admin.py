@@ -226,8 +226,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
 
-        if django.VERSION < (1, 7) and request.GET.get('language'):
-            # Starting from v1.7, Django admin has a get_preserved_filters for the very purpose of carrying along
+        if django.VERSION < (1, 6) and request.GET.get('language'):
+            # Starting from v1.6, Django admin has a get_preserved_filters for the very purpose of carrying along
             # filters from request.GET to form_url. This method did not exist in previous versions, so we have to set
             # form_url manually. This part of code can be removed once support for versions < 1.7 is removed.
             if not form_url:
