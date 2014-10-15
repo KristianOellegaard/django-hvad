@@ -148,19 +148,19 @@ class FallbackIterTests(HvadTestCase, NormalFixture):
     def test_simple_iter_fallbacks(self):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
-                for index, obj in enumerate(Normal.objects.untranslated(), 1):
+                for index, obj in enumerate(Normal.objects.untranslated().order_by('pk'), 1):
                     self.assertEqual(obj.shared_field, NORMAL[index].shared_field)
                     with self.assertNumQueries(1):
                         self.assertEqual(obj.translated_field, NORMAL[index].translated_field['en'])
 
     def test_simple_iter_fallbacks(self):
         with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
-            for index, obj in enumerate(Normal.objects.untranslated().use_fallbacks('en', 'ja'), 1):
+            for index, obj in enumerate(Normal.objects.untranslated().use_fallbacks('en', 'ja').order_by('pk'), 1):
                 self.assertEqual(obj.shared_field, NORMAL[index].shared_field)
                 self.assertEqual(obj.translated_field, NORMAL[index].translated_field['en'])
 
         with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
-            for index, obj in enumerate(Normal.objects.untranslated().use_fallbacks('ja', 'en'), 1):
+            for index, obj in enumerate(Normal.objects.untranslated().use_fallbacks('ja', 'en').order_by('pk'), 1):
                 self.assertEqual(obj.shared_field, NORMAL[index].shared_field)
                 self.assertEqual(obj.translated_field, NORMAL[index].translated_field['ja'])
 
