@@ -9,6 +9,7 @@ from django.utils.http import urlencode
 from django.http import HttpResponseForbidden, HttpResponseRedirect, QueryDict
 from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
+from hvad.compat.urls import urlparse
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.fixtures import NormalFixture, SuperuserFixture
@@ -232,13 +233,12 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                 self.assertTrue('en' in response.content.decode('utf-8'))
 
     def test_admin_change_form_language_tabs_urls(self):
-        from hvad.compat.urls import urlparse
-
         with LanguageOverride('en'):
             with self.login_user_context(username='admin', password='admin'):
                 get_url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 test_urls = [
                     '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam'),
+                    '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam&language=fr'),
                 ]
 
                 for test_url in test_urls:
@@ -246,13 +246,30 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                     self.assertEqual(response.status_code, 200)
                     tabs = response.context['language_tabs']
 
-                    test_querydict = QueryDict(urlparse(test_url).query, mutable=True)
+                    expected_querydict = QueryDict(urlparse(test_url).query, mutable=True)
 
                     for actual_tab_url, name, key, status in tabs:
-                        expected_querydict = test_querydict.copy()
                         expected_querydict['language'] = key
                         actual_querydict = QueryDict(urlparse(actual_tab_url).query)
                         self.assertEqual(expected_querydict, actual_querydict)
+
+    def test_admin_change_form_action_url(self):
+        with LanguageOverride('en'):
+            with self.login_user_context(username='admin', password='admin'):
+                url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
+                tests = (
+                    '',
+                    'language=fr',
+                    '_changelist_filters=q%3Dparam&language=fr',
+                )
+                for query_string in tests:
+                    expected_dict = QueryDict(query_string)
+                    full_url = '%s?%s' % (url, query_string) if query_string else url
+                    response = self.client.get(full_url)
+                    form_url = urlparse(response.context['form_url'])
+                    self.assertEqual(expected_dict, QueryDict(form_url.query),
+                                     'query_string=%r' % query_string)
+
 
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'

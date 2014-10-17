@@ -29,6 +29,8 @@ Fixes:
 
 - Language tabs URI are now correctly generated when changelist filters are used.
   — :issue:`203`.
+- Admin language tab selection is no longer lost when change filters are active.
+  — :issue:`202`.
 
 .. release 0.5.0
 

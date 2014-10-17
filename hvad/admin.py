@@ -17,7 +17,7 @@ if django.VERSION >= (1, 7):
     from django.forms.utils import ErrorList
 else:
     from django.forms.util import ErrorList
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect, QueryDict
 from django.shortcuts import render_to_response
 from django.template import TemplateDoesNotExist
 from django.template.context import RequestContext
@@ -27,7 +27,7 @@ from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from hvad.compat.force_unicode import force_unicode
-from hvad.compat.urls import urlencode
+from hvad.compat.urls import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 from hvad.utils import get_cached_translation, get_translation
 from hvad.manager import FALLBACK_LANGUAGES
@@ -225,6 +225,16 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
+
+        # Ensure form action url carries over tab language
+        qs_language = request.GET.get('language')
+        if qs_language:
+            form_url = urlparse(form_url or request.get_full_path())
+            query = QueryDict(form_url.query, mutable=True)
+            if 'language' not in query:
+                query['language'] = qs_language
+            form_url = form_url._replace(query=query.urlencode()).geturl()
+
         return super(TranslatableAdmin, self).render_change_form(request,
                                                                   context,
                                                                   add, change,
