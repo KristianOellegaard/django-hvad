@@ -98,6 +98,14 @@ class Standard(models.Model):
     normal = models.ForeignKey(Normal, related_name='standards')
 
 
+class StandardRelated(TranslatableModel):
+    """ Translatable mode with foreign key to untranslatable """
+    shared_field = models.CharField(max_length=255)
+    standard = models.ForeignKey(Standard, related_name='related')
+    translations = TranslatedFields(
+        translated_field = models.CharField(max_length=255),
+    )
+
 #===============================================================================
 # Models for testing abstract model support
 #
