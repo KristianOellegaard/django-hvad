@@ -11,7 +11,7 @@ from hvad.test_utils.fixtures import NormalFixture, StandardFixture
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.utils import get_translation_aware_manager
 from hvad.test_utils.project.app.models import (Normal, Related, SimpleRelated,
-                                                RelatedRelated, Standard)
+                                                RelatedRelated, Standard, StandardRelated)
 
 
 class NormalToNormalFKTest(HvadTestCase, NormalFixture):
@@ -356,14 +356,16 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
                     else:
                         self.fail("Invalid Related object; ID is %s" % r.id)
 
-class DeepSelectRelatedTests(HvadTestCase, NormalFixture):
+class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
     normal_count = 2
+    standard_count = 1
 
     def create_fixtures(self):
         super(DeepSelectRelatedTests, self).create_fixtures()
         with LanguageOverride('en'):
             self.normal1 = Normal.objects.language().get(pk=self.normal_id[1])
             self.normal2 = Normal.objects.language().get(pk=self.normal_id[2])
+            self.standard1 = Standard.objects.get(pk=self.standard_id[1])
 
             self.simplerel = SimpleRelated.objects.language().create(
                 normal=self.normal1, translated_field="test1"
@@ -381,6 +383,10 @@ class DeepSelectRelatedTests(HvadTestCase, NormalFixture):
             self.relrel2 = RelatedRelated.objects.language().create(
                 related=self.related2, simple=None,
                 trans_related=self.related1, trans_simple=self.simplerel
+            )
+            self.standardrel1 = StandardRelated.objects.language().create(
+                shared_field='shared1', translated_field='translated1',
+                standard=self.standard1
             )
 
     def test_deep_select_related(self):
@@ -408,6 +414,17 @@ class DeepSelectRelatedTests(HvadTestCase, NormalFixture):
                         self.assertEqual(obj.related.normal.translated_field,
                                          NORMAL[2].translated_field['en'])
                         self.assertEqual(obj.simple, None)
+
+    def test_deep_select_related_through_vanilla(self):
+        with LanguageOverride('en'):
+            with self.assertNumQueries(1):
+                obj = (StandardRelated.objects.language()
+                                              .select_related('standard__normal')
+                                              .get(pk=self.standardrel1.pk))
+            with self.assertNumQueries(0):
+                self.assertEqual(obj.standard.pk, self.standard_id[1])
+                self.assertEqual(obj.standard.normal.pk, self.normal_id[STANDARD[1].normal])
+
 
     def test_deep_select_related_using_get(self):
         with LanguageOverride('en'):
