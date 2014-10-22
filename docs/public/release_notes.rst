@@ -10,6 +10,8 @@ Release Notes
 
 Fixes:
 
+- Ecountering a regular (un-translatable) model in a deep `select_related` does
+  not break anymore. — :issue:`206`.
 - Language tabs URI are now correctly generated when changelist filters are used.
   — :issue:`203`.
 

@@ -327,6 +327,9 @@ class TranslationQueryset(QuerySet):
                     field, _, direct, _ = (model._meta.translations_model
                                                 ._meta.get_field_by_name(bit))
                     translated = True
+                except AttributeError:           # model is not translatable anyway
+                    field, _, direct, _ = model._meta.get_field_by_name(bit)
+                    translated = False
 
                 # Adjust current path bit
                 if depth == 0 and not translated:
