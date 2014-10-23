@@ -8,6 +8,14 @@ Release Notes
 0.5.1
 *****************************
 
+Released on October 24, 2014
+
+Python and Django versions supported (reminder):
+
+- Version 0.5.x will be the last to support Django 1.3.
+- Version 0.5.x will be the last to support Python 2.6. Though it may
+  still work for the time being, it will be removed from the tested setups.
+
 Fixes:
 
 - Ecountering a regular (un-translatable) model in a deep `select_related` does
@@ -27,8 +35,8 @@ Released on September 11, 2014
 
 Python and Django versions supported:
 
-- This version will be the last to support Django 1.3.
-- This version will be the last to support Python 2.6. Though it may
+- Version 0.5.x will be the last to support Django 1.3.
+- Version 0.5.x will be the last to support Python 2.6. Though it may
   still work for the time being, it will be removed from the tested setups.
 
 New features:
