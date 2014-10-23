@@ -1002,56 +1002,46 @@ class TranslationAwareQueryset(QuerySet):
         super(TranslationAwareQueryset, self).__init__(*args, **kwargs)
         self._language_code = None
 
+    def _translate(self, key, model, language_joins):
+        ''' Translate a key on a model.
+            language_joins must be a set that will be updated with required
+            language joins for given key
+        '''
+        newkey, joins = translate(key, model)
+        language_joins.update(joins)
+        return newkey
+
     def _translate_args_kwargs(self, *args, **kwargs):
         self.language(self._language_code)
-        language_joins = []
-        newkwargs = {}
+        language_joins = set()
         extra_filters = Q()
-        for key, value in kwargs.items():
-            newkey, langjoins = translate(key, self.model)
-            for langjoin in langjoins:
-                if langjoin not in language_joins:
-                    language_joins.append(langjoin)
-            newkwargs[newkey] = value
-        newargs = []
-        for q in args:
-            new_q, langjoins = self._recurse_q(q)
-            newargs.append(new_q)
-            for langjoin in langjoins:
-                if langjoin not in language_joins:
-                    language_joins.append(langjoin)
+        newkwargs = dict(
+            (self._translate(key, self.model, language_joins), value)
+            for key, value in kwargs.items()
+        )
+        newargs = tuple(self._recurse_q(q, language_joins) for q in args)
+
         for langjoin in language_joins:
             extra_filters &= Q(**{langjoin: self._language_code})
         return newargs, newkwargs, extra_filters
 
-    def _recurse_q(self, q):
-        newchildren = []
-        language_joins = []
-        for child in q.children:
-            if isinstance(child, Q):
-                newq, langjoins = self._recurse_q(child)
-                newchildren.append(newq)
-            else:
-                key, value = child
-                newkey, langjoins = translate(key, self.model)
-                newchildren.append((newkey, value))
-            for langjoin in langjoins:
-                if langjoin not in language_joins:
-                    language_joins.append(langjoin)
-        q.children = newchildren
-        return q, language_joins
+    def _recurse_q(self, q, language_joins):
+        q.children = [
+            self._recurse_q(child, language_joins) if isinstance(child, Q) else
+            (self._translate(child[0], self.model, language_joins), child[1])
+            for child in q.children
+        ]
+        return q
 
     def _translate_fieldnames(self, fields):
         self.language(self._language_code)
-        newfields = []
         extra_filters = Q()
-        language_joins = []
-        for field in fields:
-            newfield, langjoins = translate(field, self.model)
-            newfields.append(newfield)
-            for langjoin in langjoins:
-                if langjoin not in language_joins:
-                    language_joins.append(langjoin)
+        language_joins = set()
+        newfields = tuple(
+            self._translate(field, self.model, language_joins)
+            for field in fields
+        )
+
         for langjoin in language_joins:
             extra_filters &= Q(**{langjoin: self._language_code})
         return newfields, extra_filters
@@ -1078,17 +1068,30 @@ class TranslationAwareQueryset(QuerySet):
         raise NotImplementedError()
 
     def latest(self, field_name=None):
-        extra_filters = Q()
+        extra = Q()
         if field_name:
-            field_name, extra_filters = translate(self, field_name)
-        return self._filter_extra(extra_filters).latest(field_name)
+            language_joins = set()
+            field_name = self._translate(self, field_name, language_joins)
+            for join in language_joins:
+                extra &= Q(**{join: self._language_code})
+        return self._filter_extra(extra).latest(field_name)
+
+    @minimumDjangoVersion(1, 6)
+    def earliest(self, field_name=None):
+        extra = Q()
+        if field_name:
+            language_joins = set()
+            field_name = self._translate(self, field_name, language_joins)
+            for join in language_joins:
+                extra &= Q(**{join: self._language_code})
+        return self._filter_extra(extra).earliest(field_name)
 
     def in_bulk(self, id_list):
         if not id_list:
             return {}
         qs = self.filter(pk__in=id_list)
         qs.query.clear_ordering(force_empty=True)
-        return dict([(obj._get_pk_val(), obj) for obj in qs.iterator()])
+        return dict((obj._get_pk_val(), obj) for obj in qs.iterator())
 
     def values(self, *fields):
         fields, extra_filters = self._translate_fieldnames(fields)
@@ -1099,6 +1102,10 @@ class TranslationAwareQueryset(QuerySet):
         return self._filter_extra(extra_filters).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind, order='ASC'):
+        raise NotImplementedError()
+
+    @minimumDjangoVersion(1, 6)
+    def datetimes(self, field, *args, **kwargs):
         raise NotImplementedError()
 
     def exclude(self, *args, **kwargs):
