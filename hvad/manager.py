@@ -12,9 +12,10 @@ except ImportError:
 from django.db.models import Q
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
+from hvad.query import q_children, where_node_children
 from hvad.utils import combine, minimumDjangoVersion
-from hvad.compat.query import get_where_node_field_name
 from hvad.compat.settings import settings_updater
+from copy import deepcopy
 import logging
 import sys
 import warnings
@@ -222,7 +223,10 @@ class TranslationQueryset(QuerySet):
     def _translate_args_kwargs(self, *args, **kwargs):
         # Translate args (Q objects) from '<shared_field>' to
         # 'master__<shared_field>' where necessary.
-        newargs = [self._recurse_q(q) for q in args]
+        newargs = deepcopy(args)
+        for q in newargs:
+            for child, children, index in q_children(q):
+                children[index] = (self.field_translator(child[0]), child[1])
         # Translated kwargs from '<shared_field>' to 'master__<shared_field>'
         # where necessary.
         newkwargs = dict((self.field_translator(key), value)
@@ -246,47 +250,6 @@ class TranslationQueryset(QuerySet):
             (key[len(prefix):] if key.startswith(prefix) else key, value)
             for key, value in fieldname_dict.items()
         )
-
-    def _recurse_q(self, q):
-        """ Recursively translate fieldnames in a Q object. """
-        newchildren = []
-        for child in q.children:
-            if isinstance(child, Q):
-                newq = self._recurse_q(child)
-                newchildren.append(newq)
-            else:
-                key, value = child
-                newchildren.append((self.field_translator(key), value))
-        q.children = newchildren
-        return q
-
-    def _find_language_code(self, q):
-        """ Recursively checks if a language_code exists in a Q object """
-        language_code = None
-        for child in q.children:
-            if isinstance(child, Q):
-                language_code = self._find_language_code(child)
-            elif isinstance(child, tuple):
-                key, value = child
-                if key == 'language_code':
-                    language_code = value
-            if language_code:
-                break
-        return language_code
-
-    def _scan_for_language_where_node(self, children):
-        found = False
-        for node in children:
-            try:
-                field_name = get_where_node_field_name(node)
-            except (TypeError, AttributeError):
-                if getattr(node, 'children', None):     # all WhereNodes don't have children
-                    found = self._scan_for_language_where_node(node.children)
-            else:
-                found = (field_name == 'language_code')
-            if found: # No need to continue
-                break
-        return found
 
     def _split_kwargs(self, **kwargs):
         """
@@ -423,14 +386,16 @@ class TranslationQueryset(QuerySet):
 
         else:
             language_code = self._language_code or get_language()
-            if not self._scan_for_language_where_node(self.query.where.children):
-                self.query.add_filter(('language_code', language_code))
+            for _, field_name in where_node_children(self.query.where):
+                if field_name == 'language_code':
+                    warnings.warn(
+                        'Overriding language_code in get() or filter() is deprecated. '
+                        'Please set the language in Model.objects.language() instead, '
+                        'or use language("all") to do manual filtering on languages.',
+                        DeprecationWarning, stacklevel=3)
+                    break
             else:
-                warnings.warn('Overriding language_code in get() or filter() is deprecated. '
-                              'Please set the language in Model.objects.language() instead, '
-                              'or use language("all") to do manual filtering on languages.',
-                              DeprecationWarning, stacklevel=3)
-
+                self.query.add_filter(('language_code', language_code))
             self._add_select_related(language_code)
 
         # if queryset is about to use the model's default ordering, we
@@ -1019,19 +984,14 @@ class TranslationAwareQueryset(QuerySet):
             (self._translate(key, self.model, language_joins), value)
             for key, value in kwargs.items()
         )
-        newargs = tuple(self._recurse_q(q, language_joins) for q in args)
-
+        newargs = deepcopy(args)
+        for q in newargs:
+            for child, children, index in q_children(q):
+                children[index] = (self._translate(child[0], self.model, language_joins),
+                                   child[1])
         for langjoin in language_joins:
             extra_filters &= Q(**{langjoin: self._language_code})
         return newargs, newkwargs, extra_filters
-
-    def _recurse_q(self, q, language_joins):
-        q.children = [
-            self._recurse_q(child, language_joins) if isinstance(child, Q) else
-            (self._translate(child[0], self.model, language_joins), child[1])
-            for child in q.children
-        ]
-        return q
 
     def _translate_fieldnames(self, fields):
         self.language(self._language_code)
