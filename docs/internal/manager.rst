@@ -116,6 +116,14 @@ TranslationQueryset
         A ``None`` value in the tuple will be replaced with current language
         at query evaluation.
 
+    .. attribute:: _hvad_switch_fields
+
+        A tuple of attributes to move from the :term:`Translations Model` to the
+        :term:`Shared Model` instance before returning objects to the caller. It
+        is mostly used by :meth:`~django.db.models.query.QuerySet.extra` so
+        additional values collected by the ``select`` argument are available on
+        the final instance.
+
     .. attribute:: translations_manager
     
         The (real) manager of the :term:`Translations Model`.

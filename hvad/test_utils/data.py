@@ -17,6 +17,8 @@ NORMAL = {
     ),
 }
 
+QONORMAL = NORMAL
+
 #===============================================================================
 
 StandardData = namedtuple('StandardData', 'normal_field normal')

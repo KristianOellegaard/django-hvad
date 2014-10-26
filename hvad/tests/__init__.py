@@ -19,7 +19,7 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.fieldtranslator import FieldtranslatorTests
     from hvad.tests.forms import FormTests
     from hvad.tests.ordering import OrderingTest, DefaultOrderingTest
-    from hvad.tests.query import (FilterTests, QueryCachingTests, IterTests, UpdateTests,
+    from hvad.tests.query import (FilterTests, ExtraTests, QueryCachingTests, IterTests, UpdateTests,
         ValuesListTests, ValuesTests, InBulkTests, DeleteTests, GetTranslationFromInstanceTests,
         AggregateTests, NotImplementedTests, ExcludeTests, ComplexFilterTests,
         MinimumVersionTests)
@@ -32,3 +32,5 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
     from hvad.tests.serialization import PicklingTest
     from hvad.tests.proxy import ProxyTests
     from hvad.tests.abstract import AbstractTests
+    from hvad.tests.queryset_override import (BasicTests, FilterTests, RelatedManagerTests,
+                                              PrefetchRelatedTests)

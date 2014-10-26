@@ -185,6 +185,7 @@ class TranslationQueryset(QuerySet):
         self._raw_select_related = []
         self._forced_unique_fields = []  # Used for select_related
         self._language_filter_tag = False
+        self._hvad_switch_fields = ()
         super(TranslationQueryset, self).__init__(model, *args, **kwargs)
 
     #===========================================================================
@@ -203,7 +204,8 @@ class TranslationQueryset(QuerySet):
             '_language_fallbacks': self._language_fallbacks,
             '_raw_select_related': self._raw_select_related,
             '_forced_unique_fields': list(self._forced_unique_fields),
-            '_language_filter_tag': getattr(self, '_language_filter_tag', False)
+            '_language_filter_tag': getattr(self, '_language_filter_tag', False),
+            '_hvad_switch_fields': self._hvad_switch_fields,
         })
         klass = self.__class__ if klass is None else self._get_class(klass)
         return super(TranslationQueryset, self)._clone(klass, setup, **kwargs)
@@ -273,8 +275,6 @@ class TranslationQueryset(QuerySet):
     def _get_shared_queryset(self):
         qs = super(TranslationQueryset, self)._clone()
         qs.__class__ = QuerySet
-        # un-select-related the 'master' relation
-        del qs.query.select_related['master']
         accessor = self.shared_model._meta.translations_accessor
         # update using the real manager
         return QuerySet(self.shared_model, using=self.db).filter(**{'%s__in' % accessor: qs})
@@ -466,6 +466,7 @@ class TranslationQueryset(QuerySet):
         Model.objects.untranslated()
         """
         qs = self._clone()._add_language_filter()
+        qs._known_related_objects = {}  # super's iterator will attempt to set them
 
         if qs._forced_unique_fields:
             # HACK: In order for select_related to properly load data from
@@ -493,7 +494,32 @@ class TranslationQueryset(QuerySet):
             if not obj.master:
                 yield obj
             else:
-                yield combine(obj, qs.shared_model)
+                for name in self._hvad_switch_fields:
+                    try:
+                        setattr(obj.master, name, getattr(obj, name))
+                    except AttributeError:
+                        pass
+                    else:
+                        delattr(obj, name)
+                obj = combine(obj, qs.shared_model)
+                # use known objects from self, not qs as we cleared it earlier
+                if django.VERSION >= (1, 6):
+                    for field, rel_objs in self._known_related_objects.items():
+                        if hasattr(obj, field.get_cache_name()):
+                            continue # field was already cached
+                        pk = getattr(obj, field.get_attname())
+                        try:
+                            rel_obj = rel_objs[pk]
+                        except KeyError:
+                            pass
+                        else:
+                            setattr(obj, field.name, rel_obj)
+                else:
+                    kro_attname, kro_instance = (getattr(self, 'known_related_object', None)
+                                                 or (None, None))
+                    if kro_instance:
+                        setattr(obj, kro_attname, kro_instance)
+                yield obj
 
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
@@ -646,6 +672,16 @@ class TranslationQueryset(QuerySet):
             raise ValueError('Value "all" is invalid for language_code')
         newargs, newkwargs = self._translate_args_kwargs(*args, **kwargs)
         return super(TranslationQueryset, self).exclude(*newargs, **newkwargs)
+
+    def extra(self, select=None, where=None, params=None, tables=None,
+              order_by=None, select_params=None):
+        qs = super(TranslationQueryset, self).extra(select, where, params, tables,
+                                                    order_by, select_params)
+        if select:
+            switch_fields = set(self._hvad_switch_fields)
+            switch_fields.update(select.keys())
+            qs._hvad_switch_fields = tuple(switch_fields)
+        return qs
 
     def values(self, *fields):
         fields = self._translate_fieldnames(fields)
@@ -930,23 +966,29 @@ class TranslationManager(models.Manager):
             qs = qs._next_is_sticky().filter(**(self.core_filters))
         return qs
 
-    def _make_queryset(self, klass):
+    def _make_queryset(self, klass, core_filters):
+        ''' Builds a queryset of given class.
+            core_filters tells whether the queryset will bypass RelatedManager
+            mechanics and therefore needs to reapply the filters on its own.
+        '''
         if django.VERSION >= (1, 7):
             qs = klass(self.model, using=self.db, hints=self._hints)
         else:
             qs = klass(self.model, using=self.db)
-        if hasattr(self, 'core_filters'):
-            qs = qs._next_is_sticky().filter(**(self.core_filters))
+        core_filters = getattr(self, 'core_filters', None) if core_filters else None
+        if core_filters:
+            qs = qs._next_is_sticky().filter(**core_filters)
         return qs
 
     def language(self, language_code=None):
-        return self._make_queryset(self.queryset_class).language(language_code)
+        return self._make_queryset(self.queryset_class, True).language(language_code)
 
     def untranslated(self):
-        return self._make_queryset(self.fallback_class)
+        return self._make_queryset(self.fallback_class, True)
 
     def get_queryset(self):
-        return self._make_queryset(self.default_class)
+        return self._make_queryset(self.default_class, False)
+    get_query_set = get_queryset        # old name for Django < 1.6
 
     #===========================================================================
     # Internals

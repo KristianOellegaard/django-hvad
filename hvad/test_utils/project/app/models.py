@@ -2,6 +2,7 @@ import django
 from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
+from hvad.manager import TranslationManager, TranslationQueryset
 if django.VERSION >= (1, 4, 2):
     from django.utils.encoding import python_2_unicode_compatible
 else: # older versions do not run on py3, so we know we are running py2
@@ -105,6 +106,33 @@ class StandardRelated(TranslatableModel):
     translations = TranslatedFields(
         translated_field = models.CharField(max_length=255),
     )
+
+
+class FullTranslationManager(TranslationManager):
+    use_for_related_fields = True
+    default_class = TranslationQueryset
+
+class QONormal(TranslatableModel):
+    shared_field = models.CharField(max_length=255)
+    translations = TranslatedFields(
+        translated_field = models.CharField(max_length=255)
+    )
+    objects = FullTranslationManager()
+
+class QOSimpleRelated(TranslatableModel):
+    normal = models.ForeignKey(QONormal, related_name='simplerel', null=True)
+    translations = TranslatedFields(
+        translated_field = models.CharField(max_length=255),
+    )
+    objects = FullTranslationManager()
+
+class QOMany(TranslatableModel):
+    normals = models.ManyToManyField(QONormal, related_name="manyrels")
+    translations = TranslatedFields(
+        translated_field = models.CharField(max_length=255),
+    )
+    objects = FullTranslationManager()
+
 
 #===============================================================================
 # Models for testing abstract model support
