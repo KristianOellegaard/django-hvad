@@ -16,7 +16,6 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
                                       FallbackIterTests, FallbackValuesListTests,
                                       FallbackValuesTests, FallbackInBulkTests,
                                       FallbackNotImplementedTests)
-    from hvad.tests.fieldtranslator import FieldtranslatorTests
     from hvad.tests.forms import (FormDeclarationTests, FormInstantiationTests,
                                   FormValidationTests, FormCommitTests, FormsetTests)
     from hvad.tests.ordering import OrderingTest, DefaultOrderingTest

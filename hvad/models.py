@@ -10,7 +10,7 @@ from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
 from hvad.utils import (get_cached_translation, set_cached_translation,
-                        SmartGetFieldByName, settings_updater)
+                        SmartGetFieldByName, SmartGetField, settings_updater)
 from hvad.compat import MethodType
 import sys
 import warnings
@@ -288,15 +288,24 @@ class TranslatableModel(models.Model):
     def _translated_field_names(self):
         if getattr(self, '_translated_field_names_cache', None) is None:
             opts = self._meta.translations_model._meta
-            self._translated_field_names_cache = set(opts.get_all_field_names())
-            for name in tuple(self._translated_field_names_cache):
-                try:
-                    attname = opts.get_field(name).get_attname()
-                except FieldDoesNotExist:
-                    pass
-                else: # add attribute name for related fields
-                    if attname and attname != name:
-                        self._translated_field_names_cache.add(attname)
+            result = set()
+
+            if django.VERSION >= (1, 8):
+                for field in opts.get_fields():
+                    result.add(field.name)
+                    if hasattr(field, 'attname'):
+                        result.add(field.attname)
+            else:
+                result = set(opts.get_all_field_names())
+                for name in tuple(result):
+                    try:
+                        attname = opts.get_field(name).get_attname()
+                    except (FieldDoesNotExist, AttributeError):
+                        continue
+                    if attname:
+                        result.add(attname)
+
+            self._translated_field_names_cache = tuple(result)
         return self._translated_field_names_cache
 
 #=============================================================================
@@ -310,7 +319,10 @@ def contribute_translations(cls, rel):
     """
     opts = cls._meta
     opts.translations_accessor = rel.get_accessor_name()
-    opts.translations_model = rel.model
+    if django.VERSION >= (1, 8):
+        opts.translations_model = rel.field.model
+    else:
+        opts.translations_model = rel.model
     opts.translations_cache = '%s_cache' % rel.get_accessor_name()
     trans_opts = opts.translations_model._meta
 
@@ -343,19 +355,23 @@ def prepare_translatable_model(sender, **kwargs):
     concrete_model = model._meta.concrete_model if model._meta.proxy else model
 
     # Find the instance of TranslatedFields in the concrete model's dict
+    # We cannot use _meta.get_fields here as app registry is not ready yet.
     found = None
     for relation in list(concrete_model.__dict__.keys()):
         try:
             obj = getattr(model, relation)
-            shared_model = obj.related.model._meta.shared_model
+            if django.VERSION >= (1, 8):
+                shared_model = obj.related.field.model._meta.shared_model
+            else:
+                shared_model = obj.related.model._meta.shared_model
         except AttributeError:
             continue
         if shared_model is concrete_model:
             if found:
                 raise ImproperlyConfigured(
                     "A TranslatableModel can only define one set of "
-                    "TranslatedFields, %r defines more than one: %r to %r "
-                    "and %r to %r and possibly more" % (model, obj,
+                    "TranslatedFields, %r defines more than one: %r on %r "
+                    "and %r on %r and possibly more" % (model, obj,
                     obj.related.model, found, found.related.model))
             # Mark as found but keep looking so we catch duplicates and raise
             found = obj
@@ -379,9 +395,16 @@ def prepare_translatable_model(sender, **kwargs):
         model.add_to_class('_base_manager', Manager())
 
     # Replace get_field_by_name with one that warns for common mistakes
-    if not isinstance(model._meta.get_field_by_name, SmartGetFieldByName):
-        smart_get_field_by_name = SmartGetFieldByName(model._meta.get_field_by_name)
-        model._meta.get_field_by_name = MethodType(smart_get_field_by_name , model._meta)
+    if django.VERSION < (1, 9) and not isinstance(model._meta.get_field_by_name, SmartGetFieldByName):
+        model._meta.get_field_by_name = MethodType(
+            SmartGetFieldByName(model._meta.get_field_by_name),
+            model._meta
+        )
+    if not isinstance(model._meta.get_field, SmartGetField):
+        model._meta.get_field = MethodType(
+            SmartGetField(model._meta.get_field),
+            model._meta
+        )
 
     # Attach save_translations
     post_save.connect(model.save_translations, sender=model, weak=False)

@@ -1,10 +1,97 @@
 import django
-from django.db.models import Q
+from django.db.models import Q, FieldDoesNotExist
 from django.db.models.expressions import ExpressionNode
 from django.db.models.sql.where import WhereNode
+from collections import namedtuple
 
 #===============================================================================
 # Generators abstracting walking through internal django structures
+
+QueryTerm = namedtuple('QueryTerm', 'depth term model field translated target many')
+
+def query_terms(model, path):
+    """ Yields QueryTerms of given path starting from given model.
+        - model can be either a regular model or a translatable model
+    """
+    bits = path.split('__')
+    field = None
+    for depth, bit in enumerate(bits):
+        # STEP 1 -- Resolve the field
+        if bit == 'pk': # handle 'pk' alias
+            bit = model._meta.pk.name
+
+        try:
+            if django.VERSION >= (1, 8):
+                try:                        # is field on the shared model?
+                    field = model._meta.get_field.real(bit)
+                    translated = False
+                except FieldDoesNotExist:   # nope, get field from translations model
+                    field = model._meta.translations_model._meta.get_field(bit)
+                    translated = True
+                except AttributeError:      # current model is a standard model
+                    field = model._meta.get_field(bit)
+                    translated = False
+                direct = (
+                    not field.auto_created or
+                    getattr(field, 'db_column', None) or
+                    getattr(field, 'attname', None)
+                )
+            else:
+                # older versions do not retrieve reverse/m2m with get_field, we must use the obsolete api
+                try:
+                    field, _, direct, _ = model._meta.get_field_by_name.real(bit)
+                    translated = False
+                except FieldDoesNotExist:
+                    field, _, direct, _ = model._meta.translations_model._meta.get_field_by_name(bit)
+                    translated = True
+                except AttributeError:
+                    field, _, direct, _ = model._meta.get_field_by_name(bit)
+                    translated = False
+        except FieldDoesNotExist:
+            break
+
+
+        # STEP 2 -- Find out the target of the relation, if it is one
+        if direct:  # field is on model
+            if field.rel:    # field is a foreign key, follow it
+                target = field.rel.to._meta.concrete_model
+            else:            # field is a regular field
+                target = None
+        else:       # field is a m2m or reverse fk, follow it
+            target = (field.related_model._meta.concrete_model if django.VERSION >= (1, 8) else
+                      field.model._meta.concrete_model)
+
+        yield QueryTerm(
+            depth=depth,
+            term=bit,
+            model=model,
+            field=field,
+            translated=translated,
+            target=target,
+            many=not direct
+        )
+
+        # Onto next iteration
+        if target is None:
+            depth += 1   # we hit a regular field, mark it as yielded then break
+            break        # through to lookup/transform flushing
+        model = target
+
+    else:
+        return  # all bits were recognized as fields, job done
+
+    # STEP 3 -- Flush lookup/transform bits - do not handle invalid stuff, Django will do it
+    for depth, bit in enumerate(bits[depth:], depth):
+        yield QueryTerm(
+            depth=depth,
+            term=bit,
+            model=model,
+            field=None,
+            translated=None,
+            target=None,
+            many=False
+        )
+
 
 def q_children(q):
     ''' Recursively visit a Q object, yielding each (key, value) pair found.
@@ -21,18 +108,31 @@ def q_children(q):
             else:
                 yield child, q.children, index
 
+if django.VERSION >= (1, 8):
+    def expression_nodes(expression):
+        ''' Recursively visit an expression object, yielding each node in turn.
+            - expression: the expression object to visit
+        '''
+        todo = [expression]
+        while todo:
+            expression = todo.pop()
+            if expression is not None:
+                yield expression
+            if isinstance(expression, ExpressionNode):
+                todo.extend(expression.get_source_expressions())
 
-#def expression_children(expression):
-#    ''' Recursively visit an expression object, yielding each child in turn.
-#        - expression: the expression object to visit
-#    '''
-#    todo = [expression]
-#    while todo:
-#        expression = todo.pop()
-#        for child in expression.children:
-#            yield child
-#            if isinstance(child, ExpressionNode):
-#                todo.append(child)
+else:
+    def expression_nodes(expression):
+        ''' Recursively visit an expression object, yielding each node in turn.
+            - expression: the expression object to visit
+        '''
+        todo = [expression]
+        while todo:
+            expression = todo.pop()
+            if expression is not None:
+                yield expression
+            if isinstance(expression, ExpressionNode):
+                todo.extend(expression.children or ())
 
 
 def where_node_children(node):

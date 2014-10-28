@@ -86,6 +86,7 @@ def get_translation_aware_manager(model):
     manager.model = model
     return manager
 
+# remove when we drop support for django 1.8
 class SmartGetFieldByName(object):
     """
     Get field by name from a shared model or raise a smart exception to help the
@@ -98,8 +99,12 @@ class SmartGetFieldByName(object):
         assert not isinstance(self.real, SmartGetFieldByName)
         try:
             return self.real(name)
-        except FieldDoesNotExist:
-            if name in meta.translations_model._meta.get_all_field_names():
+        except FieldDoesNotExist as e:
+            try:
+                meta.translations_model._meta.get_field_by_name(name)
+            except FieldDoesNotExist:
+                raise e
+            else:
                 raise WrongManager("To access translated fields like %r from "
                                    "an untranslated model, you must use a "
                                    "translation aware manager. For non-translatable "
@@ -108,8 +113,30 @@ class SmartGetFieldByName(object):
                                    "For translatable models, use the language() "
                                    "method."%
                                    name)
-            raise
 
+
+class SmartGetField(object):
+    ''' Smart get_field that raises a helpful exception on get_field() '''
+    def __init__(self, real):
+        assert not isinstance(real, SmartGetField)
+        self.real = real
+
+    def __call__(self, meta, name):
+        try:
+            return self.real(name)
+        except FieldDoesNotExist as e:
+            try:
+                meta.translations_model._meta.get_field(name)
+            except FieldDoesNotExist:
+                raise e
+            else:
+                raise WrongManager("To access translated fields like %r from "
+                                   "an untranslated model, you must use a "
+                                   "translation aware manager. For non-translatable "
+                                   "models, you can get one using "
+                                   "hvad.utils.get_translation_aware_manager.\n"
+                                   "For translatable models, use the language() "
+                                   "method." % name)
 
 def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs=None):
     """

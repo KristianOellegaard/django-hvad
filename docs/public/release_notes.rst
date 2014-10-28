@@ -12,6 +12,10 @@ Release Notes
           very latest feature, you can install it from the `github repository`_.
           Otherwise, please get a `packaged release`_ instead.
 
+Python and Django versions supported:
+
+- hvad now supports Django 1.8.
+
 New features:
 
 - It is now possible to use translated fields in the
@@ -19,9 +23,13 @@ New features:
   :attr:`~django.db.models.Options.index_together` settings on
   :doc:`TranslatableModel <models>`. They cannot be mixed in a single constraint
   though, as table-spanning indexes are not supported by SQL databases.
+- The :meth:`~django.db.models.query.QuerySet.annotate` method is now supported. Support
+  is still basic for now: annotations may not access more than one level of relation.
 
 Compatibility warnings:
 
+- Internal module ``fieldtranslator`` was no longer used, and was incompatible with
+  Django 1.8. It has been removed.
 - Deprecated :meth:`~hvad.manager.TranslationManager.using_translations` has been removed.
   It can be safely replaced by :meth:`~hvad.manager.TranslationManager.language`.
 - Deprecated :class:`~hvad.manager.TranslationFallbackManager` has been removed. Please

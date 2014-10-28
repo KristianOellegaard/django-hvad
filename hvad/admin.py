@@ -21,7 +21,7 @@ from django.http import Http404, HttpResponseRedirect, QueryDict
 from django.shortcuts import render_to_response
 from django.template import TemplateDoesNotExist
 from django.template.context import RequestContext
-from django.template.loader import find_template
+from django.template.loader import select_template
 from django.utils.encoding import iri_to_uri, force_text
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
@@ -187,6 +187,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         lang_code = self._language(request)
         lang = get_language_name(lang_code)
         available_languages = self.get_available_languages(obj)
+
         context.update({
             'title': '%s (%s)' % (context['title'], lang),
             'current_is_translated': lang_code in available_languages,
@@ -249,8 +250,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         # will also be deleted.
         
         protected = False
-        deleted_objects, perms_needed, protected = get_deleted_objects(
-            [obj], translations_model._meta, request.user, self.admin_site, using)
+        if django.VERSION >= (1, 8):
+            deleted_objects, model_count, perms_needed, protected = get_deleted_objects(
+                [obj], translations_model._meta, request.user, self.admin_site, using)
+        else:
+            deleted_objects, perms_needed, protected = get_deleted_objects(
+                [obj], translations_model._meta, request.user, self.admin_site, using)
         
         lang = get_language_name(language_code) 
             
@@ -317,8 +322,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def delete_model_translation(self, request, obj):
         obj.delete()
     
-    def get_object(self, request, object_id):
-        obj = super(TranslatableAdmin, self).get_object(request, object_id)
+    def get_object(self, request, object_id, *args):
+        obj = super(TranslatableAdmin, self).get_object(request, object_id, *args)
         if obj is None: # object was not in queryset, bail out
             return None
 
@@ -358,13 +363,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             "admin/%s/change_form.html" % app_label,
             "admin/change_form.html"
         ]
-        for template in search_templates:
-            try:
-                find_template(template)
-                return template
-            except TemplateDoesNotExist:
-                pass
-        return None
+        try:
+            return select_template(search_templates)
+        except TemplateDoesNotExist:
+            return None
 
 
 class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin):

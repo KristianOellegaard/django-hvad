@@ -508,11 +508,10 @@ class AggregateTests(HvadTestCase):
 
 
 class NotImplementedTests(HvadTestCase):
-    def test_defer(self):
+    def test_notimplemented(self):
         baseqs = SimpleRelated.objects.language('en')
         
         self.assertRaises(NotImplementedError, baseqs.defer, 'shared_field')
-        self.assertRaises(NotImplementedError, baseqs.annotate)
         self.assertRaises(NotImplementedError, baseqs.only)
         self.assertRaises(NotImplementedError, baseqs.bulk_create, [])
         # select_related with no field is not implemented

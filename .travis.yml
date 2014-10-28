@@ -12,6 +12,7 @@ env:
   - DJANGO=django==1.6.8 DATABASE_URL=postgres://postgres@localhost/test
   - DJANGO=django==1.7.1 DATABASE_URL=mysql://root@localhost/test
   - DJANGO=django==1.7.1 DATABASE_URL=postgres://postgres@localhost/test
+  - DJANGO=https://github.com/django/django/tarball/stable/1.8.x DATABASE_URL=postgres://postgres@localhost/test
 
 install:
   - pip install -q $DJANGO && pip install sphinx argparse coveralls
