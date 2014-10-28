@@ -21,13 +21,27 @@ Python and Django versions supported:
 New features:
 
 - :ref:`TranslationQueryset <TranslationQueryset-public>` now has a
-  :meth:`~hvad.manager.TranslationQueryset.fallbacks` method when running on
+  :ref:`fallbacks() <fallbacks-public>` method when running on
   Django 1.6 or newer, allowing the queryset to use fallback languages while
   retaining all its normal functionalities – :issue:`184`.
 - Passing additional ``select`` items in method
   :meth:`~django.db.models.query.QuerySet.extra` is now supported. — :issue:`207`.
 - It is now possible to use :ref:`TranslationQueryset <TranslationQueryset-public>`
   as default queryset for translatable models. — :issue:`207`.
+
+.. release 0.5.1
+
+*****************************
+0.5.1 - current release
+*****************************
+
+Released on October 24, 2014
+
+Python and Django versions supported:
+
+- This version will be the last to support Django 1.3.
+- This version will be the last to support Python 2.6. Though it may
+  still work for the time being, it will be removed from the tested setups.
 
 Fixes:
 
@@ -41,16 +55,10 @@ Fixes:
 .. release 0.5.0
 
 *****************************
-0.5.0 - current release
+0.5.0
 *****************************
 
 Released on September 11, 2014
-
-Python and Django versions supported:
-
-- This version will be the last to support Django 1.3.
-- This version will be the last to support Python 2.6. Though it may
-  still work for the time being, it will be removed from the tested setups.
 
 New features:
 

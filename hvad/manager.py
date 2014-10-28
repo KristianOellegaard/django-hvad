@@ -24,8 +24,6 @@ import warnings
 
 # Logging-related globals
 _logger = logging.getLogger(__name__)
-_warned_for_select_related_keys = set()
-_warned_field_translator_get = False
 
 # Global settings, wrapped so they react to SettingsOverride
 @settings_updater
@@ -56,11 +54,9 @@ class FieldTranslator(object):
         return ret
 
     def get(self, key):
-        if not _warned_field_translator_get:
-            _warned_field_translator_get = True
-            warnings.warn('FieldTranslator.get is deprecated, please directly call '
-                          'the field translator: qs.field_translator(name).',
-                          DeprecationWarning, stacklevel=2)
+        warnings.warn('FieldTranslator.get is deprecated, please directly call '
+                      'the field translator: qs.field_translator(name).',
+                      DeprecationWarning, stacklevel=2)
         return self(key)
 
     def _build(self, key):

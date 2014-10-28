@@ -52,6 +52,8 @@ language
 fallbacks
 ---------
 
+.. _fallbacks-public:
+
 .. method:: fallbacks(*languages)
 
     .. versionadded:: 0.6
