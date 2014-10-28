@@ -280,8 +280,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         # will also be deleted.
         
         protected = False
-        deleted_objects, perms_needed, protected = get_deleted_objects(
-            [obj], translations_model._meta, request.user, self.admin_site, using)
+        if django.VERSION >= (1, 8):
+            deleted_objects, model_count, perms_needed, protected = get_deleted_objects(
+                [obj], translations_model._meta, request.user, self.admin_site, using)
+        else:
+            deleted_objects, perms_needed, protected = get_deleted_objects(
+                [obj], translations_model._meta, request.user, self.admin_site, using)
         
         lang = get_language_name(language_code) 
             

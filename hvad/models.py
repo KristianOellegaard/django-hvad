@@ -196,7 +196,6 @@ class TranslatableModel(models.Model):
         super(TranslatableModel, self).__init__(*args, **skwargs)
         # prepopulate the translations model cache with an translation model
         tkwargs['language_code'] = tkwargs.get('language_code', get_language())
-        tkwargs['master'] = self
         translated = self._meta.translations_model(*args, **tkwargs)
         setattr(self, self._meta.translations_cache, translated)
 
@@ -222,7 +221,6 @@ class TranslatableModel(models.Model):
         """
         tkwargs = {
             'language_code': language_code,
-            'master': self,
         }
         translated = self._meta.translations_model(**tkwargs)
         setattr(self, self._meta.translations_cache, translated)
