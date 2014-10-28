@@ -221,7 +221,17 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         lang = get_language_name(lang_code)
         available_languages = self.get_available_languages(obj)
         context['title'] = '%s (%s)' % (context['title'], lang)
-        context['current_is_translated'] = lang_code in available_languages
+
+        # "current_is_translated" indicates something what "add" flag
+        # for regular model. So we gonna override incoming parameter
+        # "add" - it gets passed to super method where it is added to
+        # context. It's a cheat for django but quite natural for
+        # "hvad".
+        current_is_translated = lang_code in available_languages
+        context['current_is_translated'] = current_is_translated
+        if not current_is_translated:
+            add = True
+
         context['allow_deletion'] = len(available_languages) > 1
         context['language_tabs'] = self.get_language_tabs(request, available_languages)
         context['base_template'] = self.get_change_form_base_template()
