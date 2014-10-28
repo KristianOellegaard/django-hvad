@@ -114,7 +114,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             # Override default model fields with any custom declared ones
             # (plus, include all the other declared fields).
             fields.update(declared_fields)
-            
+
             if new_class._meta.exclude:
                 new_class._meta.exclude = list(new_class._meta.exclude)
             else:
@@ -184,8 +184,7 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, Model
 
         trans = construct_instance(self, trans, self._meta.fields)
         trans.language_code = language_code
-        trans.master = self.instance
-        self.instance = combine(trans, self.Meta.model)
+        setattr(self.instance, self.instance._meta.translations_cache, trans)
 
         super(TranslatableModelForm, self).save(commit=commit)
         return self.instance

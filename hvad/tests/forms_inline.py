@@ -38,7 +38,7 @@ class TestTranslationsInline(HvadTestCase, NormalFixture):
     def test_render_formset(self):
         instance = Normal.objects.language('en').get(pk=self.normal_id[1])
         with self.assertNumQueries(1):
-            Formset = translationformset_factory(Normal, extra=1)
+            Formset = translationformset_factory(Normal, extra=1, exclude=[])
             formset = Formset(instance=instance)
             self.assertEqual(len(formset.forms), 3)
             self.assertIn('translated_field', formset.forms[0].fields)
@@ -58,7 +58,7 @@ class TestTranslationsInline(HvadTestCase, NormalFixture):
             class Form(ModelForm):
                 class Meta:
                     fields = ('translated_field',)
-            Formset = translationformset_factory(Normal, form=Form, extra=1)
+            Formset = translationformset_factory(Normal, form=Form, extra=1, exclude=[])
             formset = Formset(instance=instance)
             self.assertIn('translated_field', formset.forms[0].fields)
             self.assertIn('language_code', formset.forms[0].fields)
@@ -68,7 +68,7 @@ class TestTranslationsInline(HvadTestCase, NormalFixture):
 
     def test_create_translations(self):
         instance = Normal.objects.language('en').get(pk=self.normal_id[1])
-        Formset = translationformset_factory(Normal, extra=1)
+        Formset = translationformset_factory(Normal, extra=1, exclude=[])
 
         initial = Formset(instance=instance)
         data = FormData(initial)
@@ -85,7 +85,7 @@ class TestTranslationsInline(HvadTestCase, NormalFixture):
 
     def test_delete_translations(self):
         instance = Normal.objects.language('en').get(pk=self.normal_id[1])
-        Formset = translationformset_factory(Normal, extra=1)
+        Formset = translationformset_factory(Normal, extra=1, exclude=[])
 
         # Delete one of the two translations
         initial = Formset(instance=instance)
@@ -109,7 +109,7 @@ class TestTranslationsInline(HvadTestCase, NormalFixture):
 
     def test_mixed_update_translations(self):
         instance = Normal.objects.language('en').get(pk=self.normal_id[1])
-        Formset = translationformset_factory(Normal, extra=1)
+        Formset = translationformset_factory(Normal, extra=1, exclude=[])
 
         initial = Formset(instance=instance)
         data = FormData(initial)
