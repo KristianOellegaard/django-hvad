@@ -2,6 +2,27 @@
 Release Notes
 #############
 
+.. release 0.5.2
+
+*****************************
+0.5.2
+*****************************
+
+Released on November 8, 2014
+
+Python and Django versions supported (reminder):
+
+- Version 0.5.x will be the last to support Django 1.3.
+- Version 0.5.x will be the last to support Python 2.6. Though it may
+  still work for the time being, it will be removed from the tested setups.
+
+Fixes:
+
+- Admin does not break anymore on M2M fields on latest Django versions. — :issue:`212`.
+- Related fields's :meth:`~django.db.models.fields.related.RelatedManager.clear`
+  method now works properly (it used to break on MySQL, and was inefficient on
+  other engines) — :issue:`212`.
+
 .. release 0.5.1
 
 *****************************
@@ -9,12 +30,6 @@ Release Notes
 *****************************
 
 Released on October 24, 2014
-
-Python and Django versions supported (reminder):
-
-- Version 0.5.x will be the last to support Django 1.3.
-- Version 0.5.x will be the last to support Python 2.6. Though it may
-  still work for the time being, it will be removed from the tested setups.
 
 Fixes:
 
