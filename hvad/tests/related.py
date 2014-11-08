@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import django
 from django.core.exceptions import FieldError
-from django.db import models
+from django.db import connection, models, IntegrityError
 from django.db.models.query_utils import Q
 from hvad.exceptions import WrongManager
 from hvad.models import (TranslatedFields, TranslatableModel)
@@ -34,8 +34,11 @@ class NormalToNormalFKTest(HvadTestCase, NormalFixture):
     def test_failed_relation(self):
         related = Related.objects.create()
         related.normal_id = 999
-        related.save()
-        self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
+        if connection.features.supports_forward_references:
+            related.save()
+            self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
+        else:
+            self.assertRaises(IntegrityError, related.save)
 
     def test_reverse_relation(self):
         normal = Normal.objects.language('en').get(pk=self.normal_id[1])
@@ -243,6 +246,52 @@ class ManyToManyTest(HvadTestCase, NormalFixture):
             self.assertEqual([normal1.pk], [n.pk for n in normals])
             normals_plain = many.normals.all()
             self.assertEqual([normal1.pk], [n.pk for n in normals_plain])
+
+    def test_manager(self):
+        normal1 = Normal.objects.language('en').get(pk=self.normal_id[1])
+        simplerel = SimpleRelated.objects.language('en').create(
+            normal=normal1, translated_field='test1'
+        )
+        with LanguageOverride('en'):
+            self.assertEqual(simplerel.manynormals.count(), 0)
+            simplerel.manynormals.add(normal1)
+            self.assertEqual(simplerel.manynormals.count(), 1)
+            self.assertEqual(simplerel.manynormals.language().get().shared_field, NORMAL[1].shared_field)
+
+            simplerel.manynormals.clear()
+            self.assertEqual(simplerel.manynormals.count(), 0)
+
+            normal2 = simplerel.manynormals.create(
+                shared_field='shared_test', translated_field='test2'
+            )
+            self.assertEqual(simplerel.manynormals.count(), 1)
+            self.assertEqual(simplerel.manynormals.language().get().shared_field, 'shared_test')
+
+            simplerel.manynormals.remove(normal2)
+            self.assertEqual(simplerel.manynormals.count(), 0)
+
+    def test_reverse_manager(self):
+        normal1 = Normal.objects.language('en').get(pk=self.normal_id[1])
+        simplerel = SimpleRelated.objects.language('en').create(
+            normal=normal1, translated_field='test1'
+        )
+        with LanguageOverride('en'):
+            self.assertEqual(normal1.manysimplerel.count(), 0)
+            normal1.manysimplerel.add(simplerel)
+            self.assertEqual(normal1.manysimplerel.count(), 1)
+            self.assertEqual(normal1.manysimplerel.language().get().translated_field, 'test1')
+
+            normal1.manysimplerel.clear()
+            self.assertEqual(normal1.manysimplerel.count(), 0)
+
+            simplerel2 = normal1.manysimplerel.create(
+                normal=normal1, translated_field='test2'
+            )
+            self.assertEqual(normal1.manysimplerel.count(), 1)
+            self.assertEqual(normal1.manysimplerel.language().get().translated_field, 'test2')
+
+            normal1.manysimplerel.remove(simplerel2)
+            self.assertEqual(normal1.manysimplerel.count(), 0)
 
 
 class ForwardDeclaringForeignKeyTests(HvadTestCase):

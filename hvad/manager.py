@@ -928,23 +928,29 @@ class TranslationManager(models.Manager):
             qs = qs._next_is_sticky().filter(**(self.core_filters))
         return qs
 
-    def _make_queryset(self, klass):
+    def _make_queryset(self, klass, core_filters):
+        ''' Builds a queryset of given class.
+            core_filters tells whether the queryset will bypass RelatedManager
+            mechanics and therefore needs to reapply the filters on its own.
+        '''
         if django.VERSION >= (1, 7):
             qs = klass(self.model, using=self.db, hints=self._hints)
         else:
             qs = klass(self.model, using=self.db)
-        if hasattr(self, 'core_filters'):
-            qs = qs._next_is_sticky().filter(**(self.core_filters))
+        core_filters = getattr(self, 'core_filters', None) if core_filters else None
+        if core_filters:
+            qs = qs._next_is_sticky().filter(**core_filters)
         return qs
 
     def language(self, language_code=None):
-        return self._make_queryset(self.queryset_class).language(language_code)
+        return self._make_queryset(self.queryset_class, True).language(language_code)
 
     def untranslated(self):
-        return self._make_queryset(self.fallback_class)
+        return self._make_queryset(self.fallback_class, True)
 
     def get_queryset(self):
-        return self._make_queryset(self.default_class)
+        return self._make_queryset(self.default_class, False)
+    get_query_set = get_queryset        # old name for Django < 1.6
 
     #===========================================================================
     # Internals
