@@ -29,6 +29,12 @@ New features:
 - It is now possible to use :ref:`TranslationQueryset <TranslationQueryset-public>`
   as default queryset for translatable models. — :issue:`207`.
 
+Fixes:
+
+- :ref:`TranslatableModelForm <translatablemodelform>`'s
+  :meth:`~django.forms.Form.clean` can now return `None` as per the new semantics
+  introduced in Django 1.7. — :issue:`217`.
+
 .. release 0.5.1
 
 *****************************

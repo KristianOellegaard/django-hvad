@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.core.exceptions import FieldError
-from hvad.forms import TranslatableModelForm, TranslatableModelFormMetaclass
+from hvad.forms import (TranslatableModelForm, TranslatableModelFormMetaclass,
+                        translatable_modelform_factory)
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, SimpleRelated
@@ -33,6 +34,12 @@ class SimpleRelatedForm(TranslatableModelForm):
     class Meta:
         model = SimpleRelated
         fields = ['normal', 'translated_field']
+
+class NoneCleanForm(TranslatableModelForm):
+    def clean(self):
+        super(NoneCleanForm, self).clean()
+        pass # do not return cleaned_data, this is valid starting from Django 1.7
+
 
 class FormTests(HvadTestCase, NormalFixture):
     normal_count = 2
@@ -183,3 +190,13 @@ class FormTests(HvadTestCase, NormalFixture):
             rendered = form['normal'].as_widget()
             self.assertIn(NORMAL[1].translated_field['ja'], rendered)
             self.assertIn(NORMAL[2].translated_field['ja'], rendered)
+
+    def test_accepts_none_clean(self):
+        Form = translatable_modelform_factory('en', Normal, form=NoneCleanForm,
+                                              fields=['shared_field', 'translated_field'])
+        data = {
+            'shared_field': 'shared',
+            'translated_field': 'English',
+        }
+        form = Form(data, instance=Normal(), initial=data)
+        self.assertTrue(form.is_valid(), form.errors.as_text())
