@@ -210,6 +210,8 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, Model
 class CleanMixin(object):
     def clean(self):
         data = super(CleanMixin, self).clean()
+        if data is None:
+            data = self.cleaned_data
         data['language_code'] = self.language
         return data
 
