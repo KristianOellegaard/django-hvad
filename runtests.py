@@ -28,8 +28,6 @@ if __name__ == '__main__':
     parser.add_argument('--jenkins', action='store_true', default=False,
             dest='jenkins')
     parser.add_argument('--jenkins-data-dir', default='.', dest='jenkins_data_dir')
-    parser.add_argument('--coverage', action='store_true', default=False,
-            dest='coverage')
     parser.add_argument('--failfast', action='store_true', default=False,
             dest='failfast')
     parser.add_argument('--verbosity', default=1)

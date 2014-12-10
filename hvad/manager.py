@@ -53,7 +53,7 @@ class FieldTranslator(object):
             self._cache[key] = ret
         return ret
 
-    def get(self, key):
+    def get(self, key): # pragma: no cover
         warnings.warn('FieldTranslator.get is deprecated, please directly call '
                       'the field translator: qs.field_translator(name).',
                       DeprecationWarning, stacklevel=2)
@@ -266,7 +266,8 @@ class TranslationQueryset(QuerySet):
         for key, value in self.override_classes.items():
             if issubclass(klass, key):
                 return type(value.__name__, (value, klass, TranslationQueryset,), {})
-        return klass
+        else: # pragma: no cover
+            return klass
 
     def _get_shared_queryset(self):
         qs = super(TranslationQueryset, self)._clone()
@@ -351,7 +352,7 @@ class TranslationQueryset(QuerySet):
         self._forced_unique_fields = force_unique_fields
 
     def _add_language_filter(self):
-        if self._language_filter_tag:
+        if self._language_filter_tag: # pragma: no cover
             raise RuntimeError('Queryset is already tagged. This is a bug in hvad')
         self._language_filter_tag = True
 
@@ -493,7 +494,7 @@ class TranslationQueryset(QuerySet):
                 for name in self._hvad_switch_fields:
                     try:
                         setattr(obj.master, name, getattr(obj, name))
-                    except AttributeError:
+                    except AttributeError: # pragma: no cover
                         pass
                     else:
                         delattr(obj, name)
@@ -908,7 +909,7 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
 FallbackQueryset = LegacyFallbackQueryset if LEGACY_FALLBACKS else SelfJoinFallbackQueryset
 
 
-class TranslationFallbackManager(models.Manager):
+class TranslationFallbackManager(models.Manager): # pragma: no cover
     """
     Manager class for the shared model, without specific translations. Allows
     using `use_fallbacks()` to enable per object language fallback.

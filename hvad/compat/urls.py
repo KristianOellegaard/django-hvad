@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-try:
+try: #pragma: no cover
     from urllib import urlencode
     from urlparse import urlparse
     from urllib import unquote

@@ -355,7 +355,7 @@ def prepare_translatable_model(sender, **kwargs):
     if model._meta.proxy:
         if hasattr(model._meta, 'concrete_model'):
             concrete_model = model._meta.concrete_model
-        else:
+        else: # pragma: no cover
             # We need this prior to Django 1.4
             concrete_model = model
             while concrete_model._meta.proxy:

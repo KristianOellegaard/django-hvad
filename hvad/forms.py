@@ -359,8 +359,9 @@ class BaseTranslationFormSet(BaseInlineFormSet):
             obj.master = master
             combined = combine(obj, master.__class__)
             combined.save()
-            if hasattr(combined, 'save_m2m'):   # cannot happen, but feature
-                combined.save_m2m()             # could be added, be ready
+            if hasattr(combined, 'save_m2m'): # pragma: no cover
+                # cannot happen, but feature could be added, be ready
+                combined.save_m2m()
             if stashed is None:
                 delattr(master, master._meta.translations_cache)
             else:

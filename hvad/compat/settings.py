@@ -6,7 +6,7 @@ if django.VERSION >= (1, 4):
         setting_changed.connect(func, dispatch_uid=id(func))
         return func
 
-else:
+else: #pragma: no cover
     def settings_updater(func):
         func()
         return func

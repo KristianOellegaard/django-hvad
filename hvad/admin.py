@@ -148,11 +148,11 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
 
     def get_urls(self):
-        try:
+        if django.VERSION >= (1, 4):
             from django.conf.urls import patterns, url
-        except ImportError:
-            from django.conf.urls.defaults import patterns, url            
-        
+        else: #pragma: no cover
+            from django.conf.urls.defaults import patterns, url
+
         urlpatterns = super(TranslatableAdmin, self).get_urls()
 
         def wrap(view):
@@ -448,7 +448,10 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         return translatable_inlineformset_factory(language, self.parent_model, self.model, **defaults)
 
     def get_urls(self):
-        from django.conf.urls.defaults import patterns, url
+        if django.VERSION >= (1, 4):
+            from django.conf.urls import patterns, url
+        else: #pragma: no cover
+            from django.conf.urls.defaults import patterns, url
 
         urlpatterns = super(InlineModelAdmin, self).get_urls()
 

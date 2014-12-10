@@ -22,17 +22,17 @@ def q_children(q):
                 yield child, q.children, index
 
 
-def expression_children(expression):
-    ''' Recursively visit an expression object, yielding each child in turn.
-        - expression: the expression object to visit
-    '''
-    todo = [expression]
-    while todo:
-        expression = todo.pop()
-        for child in expression.children:
-            yield child
-            if isinstance(child, ExpressionNode):
-                todo.append(child)
+#def expression_children(expression):
+#    ''' Recursively visit an expression object, yielding each child in turn.
+#        - expression: the expression object to visit
+#    '''
+#    todo = [expression]
+#    while todo:
+#        expression = todo.pop()
+#        for child in expression.children:
+#            yield child
+#            if isinstance(child, ExpressionNode):
+#                todo.append(child)
 
 
 def where_node_children(node):
