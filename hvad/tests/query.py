@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import django
+from django.db import connection
 from django.db.models.query_utils import Q
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL, STANDARD
@@ -182,7 +183,7 @@ class UpdateTests(HvadTestCase, NormalFixture):
         n2 = Normal.objects.language('en').get(pk=self.normal_id[2])
         ja1 = Normal.objects.language('ja').get(pk=self.normal_id[1])
         ja2 = Normal.objects.language('ja').get(pk=self.normal_id[2])
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(1 if connection.features.update_can_self_select else 2):
             Normal.objects.language('en').update(shared_field=NEW_SHARED)
         new1 = Normal.objects.language('en').get(pk=self.normal_id[1])
         new2 = Normal.objects.language('en').get(pk=self.normal_id[2])
@@ -224,7 +225,7 @@ class UpdateTests(HvadTestCase, NormalFixture):
         NEW_TRANSLATED = 'new translated'
         ja1 = Normal.objects.language('ja').get(pk=self.normal_id[1])
         ja2 = Normal.objects.language('ja').get(pk=self.normal_id[2])
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(2 if connection.features.update_can_self_select else 3):
             Normal.objects.language('en').update(
                 shared_field=NEW_SHARED, translated_field=NEW_TRANSLATED
             )

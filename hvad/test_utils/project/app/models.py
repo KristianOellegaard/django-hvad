@@ -60,6 +60,7 @@ class RelatedProxy(Related):
 class SimpleRelated(TranslatableModel):
     """ Model with foreign key to Normal, shared only and regular translatable field """
     normal = models.ForeignKey(Normal, related_name='simplerel')
+    manynormals = models.ManyToManyField(Normal, blank=True, related_name='manysimplerel')
     translated_fields = TranslatedFields(
         translated_field = models.CharField(max_length=255),
     )
