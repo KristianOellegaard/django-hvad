@@ -4,6 +4,16 @@ from django.db.models import Q
 from django.db.models.expressions import ExpressionNode
 from django.db.models.sql.constants import QUERY_TERMS
 from django.db.models.sql.where import WhereNode
+from collections import namedtuple
+
+def split_query_term(query):
+    try:
+        base, last = query.rsplit('__', 1)
+    except ValueError:
+        return (query, None)
+    if last in QUERY_TERMS:
+        return (base, last)
+    return (query, None)
 
 
 class QueryTranslator(object):
@@ -46,71 +56,32 @@ class QueryTranslator(object):
 
     def translate_query(self, path, nullable=False, related=False):
         model = self.model
-        bits = path.split('__')
-        query_term = bits.pop() if bits[-1] in QUERY_TERMS else None
+        path, query_term = split_query_term(path)
+        result = []
 
-        for depth, bit in enumerate(bits):
-            # STEP 1 -- Resolve the field
-            if bit == 'pk': # handle 'pk' alias
-                bit = model._meta.pk.name
-
-            if hasattr(model._meta, 'translations_accessor'):
-                # current model is a shared model
-                try:
-                    # is field on the shared model?
-                    field, _, direct, _ = model._meta.get_field_by_name.real(bit)
-                    translated = False
-                except models.FieldDoesNotExist:
-                    # nope, get field from translations model
-                    field, _, direct, _ = (model._meta.translations_model
-                                                ._meta.get_field_by_name(bit))
-                    translated = True
-            else:
-                # current model is a standard model
-                field, _, direct, _ = model._meta.get_field_by_name(bit)
-                translated = False
-
-            # STEP 2 -- Adjust the path bit to reflect real location of the field
-            if depth == 0 and not translated:
-                # current model is a translation, target is on shared model
-                bits[depth] = 'master__%s' % bit
-            elif depth > 0 and translated:
-                # current model is shared, target is on translation
-                taccessor = model._meta.translations_accessor
-                bits[depth] = '%s__%s' % (taccessor, bit)
+        for term in query_terms(model, path):
+            if term.depth == 0 and not term.translated:
+                result.append('master__%s' % term.term)
+            elif term.depth > 0 and term.translated:
+                taccessor = term.model._meta.translations_accessor
                 self._language_joins.add(
-                    ('__'.join(bits[:depth] + [taccessor]), nullable)
+                    ('__'.join(result + [taccessor]), nullable)
                 )
+                result.append('%s__%s' % (taccessor, term.term))
+            else:
+                result.append(term.term)
 
-            # STEP 3 -- Find out the target of the relation, if it is one
-            if direct:  # field is on model
-                if field.rel:    # field is a foreign key, follow it
-                    target = field.rel.to
-                else:            # field is a regular field
-                    target = None
-            else:       # field is a m2m or reverse fk, follow it
-                target = field.model
-
-            # STEP 4 -- Some utility stuff
             if related:
                 try:
-                    taccessor = target._meta.translations_accessor
+                    taccessor = term.target._meta.translations_accessor
                 except AttributeError:
                     pass
                 else:
-                    query = '%s__%s' % ('__'.join(bits[:depth+1]), taccessor)
-                    self.related_queries[query] = getattr(target, taccessor).related.field
+                    query = '%s__%s' % ('__'.join(result), taccessor)
+                    self.related_queries[query] = getattr(term.target, taccessor).related.field
                     self._language_joins.add((query, True))
 
-            # Raise a helpful exception if query bumps into non-relational fields
-            if target is None and depth != len(bits)-1:
-                raise ValueError('Found regular field %s in query %s' %
-                                ('__'.join(bits[:depth+1]), path))
-
-            # STEP 5 -- move on
-            model = target
-
-        result = '__'.join(bits)
+        result = '__'.join(result)
         if query_term is None:
             self._reverse_cache[result] = path
         else:
@@ -180,6 +151,55 @@ class QueryTranslator(object):
 
 #===============================================================================
 # Generators abstracting walking through internal django structures
+
+QueryTerm = namedtuple('QueryTerm', 'depth term model translated target')
+
+def query_terms(model, path):
+    bits = path.split('__')
+    for depth, bit in enumerate(bits):
+        # STEP 1 -- Resolve the field
+        if bit == 'pk': # handle 'pk' alias
+            bit = model._meta.pk.name
+
+        if hasattr(model._meta, 'translations_accessor'):
+            # current model is a shared model
+            try:
+                # is field on the shared model?
+                field, _, direct, _ = model._meta.get_field_by_name.real(bit)
+                translated = False
+            except models.FieldDoesNotExist:
+                # nope, get field from translations model
+                field, _, direct, _ = (model._meta.translations_model
+                                            ._meta.get_field_by_name(bit))
+                translated = True
+        else:
+            # current model is a standard model
+            field, _, direct, _ = model._meta.get_field_by_name(bit)
+            translated = False
+
+        # STEP 2 -- Find out the target of the relation, if it is one
+        if direct:  # field is on model
+            if field.rel:    # field is a foreign key, follow it
+                target = field.rel.to
+            else:            # field is a regular field
+                target = None
+        else:       # field is a m2m or reverse fk, follow it
+            target = field.model
+
+        # Raise a helpful exception if query bumps into non-relational fields
+        if target is None and depth != len(bits)-1:
+            raise ValueError('Found regular field %s in query %s' %
+                             ('__'.join(bits[:depth+1]), path))
+
+        yield QueryTerm(
+            depth=depth,
+            term=bit,
+            model=model,
+            translated=translated,
+            target=target,
+        )
+        model = target
+
 
 def q_children(q):
     ''' Recursively visit a Q object, yielding each (key, value) pair found.
