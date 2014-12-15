@@ -335,16 +335,16 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
 
     def test_select_related_semantics(self):
         qs = Related.objects.language()
-        self.assertCountEqual(qs._raw_select_related, [])
+        self.assertCountEqual(qs._hvad_select_related, [])
         qs = qs.select_related('normal')
-        self.assertCountEqual(qs._raw_select_related, ['normal'])
+        self.assertCountEqual(qs._hvad_select_related, ['normal'])
         qs = qs.select_related('translated')
         if django.VERSION >= (1, 7):
-            self.assertCountEqual(qs._raw_select_related, ['normal', 'translated'])
+            self.assertCountEqual(qs._hvad_select_related, ['normal', 'translated'])
         else:
-            self.assertCountEqual(qs._raw_select_related, ['translated'])
+            self.assertCountEqual(qs._hvad_select_related, ['translated'])
         qs = qs.select_related(None)
-        self.assertCountEqual(qs._raw_select_related, [])
+        self.assertCountEqual(qs._hvad_select_related, [])
 
     def test_select_related(self):
         with LanguageOverride('en'):  

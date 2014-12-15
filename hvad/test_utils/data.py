@@ -30,6 +30,15 @@ STANDARD = {
 
 #===============================================================================
 
+RelatedData = namedtuple('RelatedData', 'normal translated translated_to_translated')
+
+RELATED = {
+    1: RelatedData(1, {'en': 1, 'ja':2}, {'en': 2, 'ja': 1}),
+    2: RelatedData(2, {'en': 2, 'ja':2}, {'en': 1, 'ja': 1}),
+}
+
+#===============================================================================
+
 ConcreteABData = namedtuple('ConcreteABData',
                             'shared_field_a shared_field_b shared_field_ab '
                             'translated_field_a translated_field_b translated_field_ab')

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
-from hvad.test_utils.data import NORMAL, STANDARD, CONCRETEAB, DATE, QONORMAL
-from hvad.test_utils.project.app.models import Normal, Standard, ConcreteAB, Date, QONormal
+from hvad.test_utils.data import NORMAL, STANDARD, RELATED, CONCRETEAB, DATE, QONORMAL
+from hvad.test_utils.project.app.models import (Normal, Standard, Related, ConcreteAB,
+                                                Date, QONormal)
 
 
 class Fixture(object):
@@ -47,6 +48,27 @@ class StandardFixture(NormalFixture):
             normal_field=data.normal_field,
             normal_id=self.normal_id[data.normal],
         )
+        return obj
+
+
+class RelatedFixture(NormalFixture):
+    related_count = 0
+
+    def create_fixtures(self):
+        super(RelatedFixture, self).create_fixtures()
+        assert self.related_count <= len(RELATED)
+
+        self.related_id = {}
+        for i in range(1, self.related_count + 1):
+            self.related_id[i] = self.create_related(RELATED[i]).pk
+
+    def create_related(self, data, translations=None):
+        obj = Related(normal_id=self.normal_id[data.normal])
+        for code in translations or self.translations:
+            obj.translate(code)
+            obj.translated_id = self.normal_id[data.translated[code]]
+            obj.translated_to_translated_id = self.normal_id[data.translated_to_translated[code]]
+            obj.save()
         return obj
 
 
