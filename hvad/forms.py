@@ -138,12 +138,12 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, Model
         opts = self._meta
         model_opts = opts.model._meta
         object_data = {}
-        language = getattr(self, 'language', get_language())
+        self.language = getattr(self, 'language', get_language())
         if instance is not None:
             trans = get_cached_translation(instance)
             if not trans:
                 try:
-                    trans = get_translation(instance, language)
+                    trans = get_translation(instance, self.language)
                 except model_opts.translations_model.DoesNotExist:
                     trans = None
             if trans:
