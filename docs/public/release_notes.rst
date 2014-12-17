@@ -34,6 +34,10 @@ Fixes:
 - :ref:`TranslatableModelForm <translatablemodelform>`'s
   :meth:`~django.forms.Form.clean` can now return `None` as per the new semantics
   introduced in Django 1.7. — :issue:`217`.
+- Using ``Q object`` logical combinations or
+  :meth:`~django.db.models.query.QuerySet.exclude` on a translation-aware
+  manager returned by :func:`~hvad.utils.get_translation_aware_manager` no longer
+  yields wrong results.
 
 .. release 0.5.2
 

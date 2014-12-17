@@ -1109,7 +1109,11 @@ class TranslationAwareQueryset(QuerySet):
 
     def exclude(self, *args, **kwargs):
         newargs, newkwargs, extra_filters = self._translate_args_kwargs(*args, **kwargs)
-        return self._exclude_extra(extra_filters).exclude(*newargs, **newkwargs)
+        if extra_filters.children:
+            combined = extra_filters & ~Q(*args, **kwargs)
+            return super(TranslationAwareQueryset, self).filter(combined)
+        else:
+            return super(TranslationAwareQueryset, self).exclude(*newargs, **newkwargs)
 
     def complex_filter(self, filter_obj):
         # admin calls this with an empy filter_obj sometimes
@@ -1143,13 +1147,11 @@ class TranslationAwareQueryset(QuerySet):
         return super(TranslationAwareQueryset, self)._clone(klass, setup, **kwargs)
 
     def _filter_extra(self, extra_filters):
-        qs = (super(TranslationAwareQueryset, self).filter(extra_filters)
-              if extra_filters.children else self)
-        return super(TranslationAwareQueryset, qs)
-
-    def _exclude_extra(self, extra_filters):
-        qs = (super(TranslationAwareQueryset, self).exclude(extra_filters)
-              if extra_filters.children else self)
+        if extra_filters.children:
+            qs = self._next_is_sticky()
+            qs = super(TranslationAwareQueryset, qs).filter(extra_filters)
+        else:
+            qs = self
         return super(TranslationAwareQueryset, qs)
 
 

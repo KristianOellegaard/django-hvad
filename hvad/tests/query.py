@@ -622,14 +622,14 @@ class ComplexFilterTests(HvadTestCase, StandardFixture, NormalFixture):
 
             # test various union combinations
             qs = manager.filter(Q(normal_one | translated_one_en))
-            self.assertEqual(qs.count(), 2)
+            self.assertEqual(qs.count(), 1)
             qs = manager.filter(Q(shared_one | translated_one_en))
-            self.assertEqual(qs.count(), 2)
+            self.assertEqual(qs.count(), 1)
 
             qs = manager.filter(Q(normal_one | translated_two_en))
-            self.assertEqual(qs.count(), 3)
+            self.assertEqual(qs.count(), 2)
             qs = manager.filter(Q(shared_one | translated_two_en))
-            self.assertEqual(qs.count(), 3)
+            self.assertEqual(qs.count(), 2)
 
             qs = manager.filter(Q(translated_one_en | translated_two_en))
             self.assertEqual(qs.count(), 2)

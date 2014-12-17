@@ -153,8 +153,9 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
                 self.assertTrue(obj in en.standards.all())
 
     def test_exclude_by_shared_field(self):
+        manager = get_translation_aware_manager(Standard)
         with LanguageOverride('en'):
-            qs = Standard.objects.exclude(
+            qs = manager.exclude(
                 normal__shared_field=NORMAL[STANDARD[1].normal].shared_field
             )
             self.assertCountEqual([obj.pk for obj in qs], [self.standard_id[2]])
