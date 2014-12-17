@@ -14,6 +14,8 @@ Release Notes
 
 New features:
 
+- Integration with django-restframework now comes out of the box. Be sure to check
+  the :doc:`documentation <restframework>` — :issue:`220`.
 - It is now possible to use translated fields in the
   :attr:`~django.db.models.Options.unique_together` and
   :attr:`~django.db.models.Options.index_together` settings on
