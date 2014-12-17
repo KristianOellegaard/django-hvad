@@ -566,20 +566,34 @@ class TranslationQueryset(QuerySet):
             self._for_write = True
             return self.get(**lookup), False
         except self.model.DoesNotExist:
+            pass
+
+        params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
+        params.update(defaults)
+
+        if 'language_code' not in params:
+            params['language_code'] = self._language_code or get_language()
+        else:
+            warnings.warn('Overriding language_code in get_or_create() is deprecated. '
+                          'Please set the language in Model.objects.language() instead.',
+                          DeprecationWarning, stacklevel=2)
+        if params['language_code'] == 'all':
+            raise ValueError('Cannot create an object with language \'all\'')
+
+        obj = self.shared_model(**params)
+        if django.VERSION >= (1, 6):
             try:
-                params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
-                params.update(defaults)
-                # START PATCH
-                if 'language_code' not in params:
-                    params['language_code'] = self._language_code or get_language()
-                else:
-                    warnings.warn('Overriding language_code in get_or_create() is deprecated. '
-                                  'Please set the language in Model.objects.language() instead.',
-                                  DeprecationWarning, stacklevel=2)
-                if params['language_code'] == 'all':
-                    raise ValueError('Cannot create an object with language \'all\'')
-                obj = self.shared_model(**params)
-                # END PATCH
+                with transaction.atomic(using=self.db):
+                    obj.save(force_insert=True, using=self.db)
+                return obj, True
+            except IntegrityError:
+                exc_info = sys.exc_info()
+                try:
+                    return self.get(**lookup), False
+                except self.model.DoesNotExist:
+                    raise exc_info[1]
+        else:
+            try:
                 sid = transaction.savepoint(using=self.db)
                 obj.save(force_insert=True, using=self.db)
                 transaction.savepoint_commit(sid, using=self.db)

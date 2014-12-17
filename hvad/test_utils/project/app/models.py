@@ -25,6 +25,16 @@ class Normal(TranslatableModel):
         return self.safe_translation_getter('translated_field', self.shared_field)
 
 @python_2_unicode_compatible
+class Unique(TranslatableModel):
+    shared_field = models.CharField(max_length=255, unique=True)
+    translations = TranslatedFields(
+        translated_field = models.CharField(max_length=255, unique=True)
+    )
+
+    def __str__(self):
+        return self.safe_translation_getter('translated_field', self.shared_field)
+
+@python_2_unicode_compatible
 class NormalProxy(Normal):
     def __str__(self):
         return u'proxied %s' % super(NormalProxy, self).__str__()

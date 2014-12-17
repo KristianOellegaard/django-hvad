@@ -2,7 +2,7 @@
 from __future__ import with_statement
 import django
 from django.core.exceptions import ImproperlyConfigured
-from django.db import connection
+from django.db import connection, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from hvad.compat.metaclasses import with_metaclass
@@ -12,7 +12,7 @@ from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
-from hvad.test_utils.project.app.models import Normal, Related, MultipleFields, Boolean, Standard
+from hvad.test_utils.project.app.models import Normal, Unique, Related, MultipleFields, Boolean, Standard
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 
 
@@ -584,6 +584,17 @@ class GetOrCreateTest(HvadTestCase):
         self.assertEqual(ja.second_translated_field,  u'日本語-二')
         self.assertEqual(ja.language_code, "ja")
         self.assertNotEqual(en.pk, ja.pk)
+
+    def test_get_or_create_integrity_exception(self):
+        obj = Unique.objects.language('en').create(
+            shared_field='duplicated',
+            translated_field='English',
+        )
+        with self.assertRaises(IntegrityError):
+            Unique.objects.language('en').get_or_create(
+                translated_field='inexistent',
+                defaults={'shared_field': 'duplicated'}
+            )
 
     def test_get_or_create_invalid_lang(self):
         self.assertRaises(ValueError, Normal.objects.language().get_or_create,

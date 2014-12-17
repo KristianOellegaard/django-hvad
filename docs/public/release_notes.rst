@@ -38,6 +38,8 @@ Fixes:
   :meth:`~django.db.models.query.QuerySet.exclude` on a translation-aware
   manager returned by :func:`~hvad.utils.get_translation_aware_manager` no longer
   yields wrong results.
+- Method :meth:`~django.db.models.query.QuerySet.get_or_create` now properly deals
+  with Django 1.6-style transactions.
 
 .. release 0.5.2
 
