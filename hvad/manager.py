@@ -908,7 +908,7 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
             for instance in super(SelfJoinFallbackQueryset, qs).iterator():
                 try:
                     translation = getattr(instance, taccessorcache)
-                except AttributeError:
+                except AttributeError: #pragma: no cover
                     _logger.error("no translation for %s.%s (pk=%s)",
                                   instance._meta.app_label,
                                   instance.__class__.__name__,

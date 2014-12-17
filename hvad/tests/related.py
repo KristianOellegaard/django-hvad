@@ -163,6 +163,13 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             self.assertCountEqual([obj.normal.shared_field for obj in qs],
                                   [NORMAL[STANDARD[2].normal].shared_field])
 
+            # Same result, other codepath
+            qs = manager.exclude(normal=self.normal_id[1])
+            self.assertCountEqual([obj.pk for obj in qs], [self.standard_id[2]])
+            self.assertCountEqual([obj.normal.pk for obj in qs], [self.normal_id[STANDARD[2].normal]])
+            self.assertCountEqual([obj.normal.shared_field for obj in qs],
+                                  [NORMAL[STANDARD[2].normal].shared_field])
+
     def test_filter_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)

@@ -217,6 +217,28 @@ class CreateTest(HvadTestCase):
             )
 
 
+class DeleteTest(HvadTestCase, NormalFixture):
+    normal_count = 2
+
+    def test_basic_delete(self):
+        with LanguageOverride('en'):
+            Normal.objects.language().filter(pk=self.normal_id[1]).delete()
+            self.assertEquals(Normal.objects.untranslated().count(), self.normal_count - 1)
+            self.assertEquals(Normal.objects.language().count(), self.normal_count - 1)
+            self.assertNotIn(self.normal_id[1],
+                            [obj.pk for obj in Normal.objects.untranslated().all()])
+            self.assertFalse(
+                Normal._meta.translations_model.objects.filter(master_id=self.normal_id[1]).exists()
+            )
+
+    def test_multi_delete(self):
+        with LanguageOverride('en'):
+            Normal.objects.language().delete()
+            self.assertFalse(Normal.objects.untranslated().exists())
+            self.assertFalse(Normal.objects.language().exists())
+            self.assertFalse(Normal._meta.translations_model.objects.exists())
+
+
 class TranslatedTest(HvadTestCase, NormalFixture):
     normal_count = 1
     translations = ('en',)
