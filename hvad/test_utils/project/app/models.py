@@ -98,6 +98,7 @@ class Standard(models.Model):
     """ Untranslatable Model with foreign key to Normal """
     normal_field = models.CharField(max_length=255)
     normal = models.ForeignKey(Normal, related_name='standards')
+    date = models.ForeignKey('Date', null=True, related_name='standards')
 
 
 class StandardRelated(TranslatableModel):

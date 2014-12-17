@@ -369,6 +369,11 @@ class ValuesTests(HvadTestCase, NormalFixture):
 class InBulkTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
+    def test_empty_in_bulk(self):
+        with self.assertNumQueries(0):
+            result = Normal.objects.language('en').in_bulk([])
+            self.assertEqual(len(result), 0)
+
     def test_in_bulk(self):
         pk1, pk2 = self.normal_id[1], self.normal_id[2]
         with self.assertNumQueries(1):
@@ -548,6 +553,10 @@ class ExcludeTests(HvadTestCase, NormalFixture):
         qs = Normal.objects.language('all').exclude(translated_field=NORMAL[1].translated_field['en'])
         self.assertEqual(qs.count(), 1)
         self.assertEqual(qs[0].translated_field, NORMAL[1].translated_field['ja'])
+
+    def test_invalid_all_languages_exclude(self):
+        with self.assertRaises(ValueError):
+            Normal.objects.language().exclude(language_code='all')
 
 
 class ComplexFilterTests(HvadTestCase, StandardFixture, NormalFixture):

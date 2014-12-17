@@ -23,7 +23,7 @@ Features
 * **Fast** - no additional queries for reads, just an inner join to an indexed key.
 * **Complete** - supports relationships, custom managers, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
-* **Reliable** - more than 240 test cases and counting. |coverage| |build|
+* **Reliable** - more than 250 test cases and counting. |coverage| |build|
 * **Compatible** with Django 1.4 to 1.7, running Python 2.6+ or 3.3+.
 
 Releases

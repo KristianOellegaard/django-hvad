@@ -313,11 +313,16 @@ class TranslationQueryset(QuerySet):
                 # Find out target model
                 if direct:  # field is on model
                     if field.rel:    # field is a foreign key, follow it
+                        if hasattr(field.rel, 'through'):
+                            raise ValueError('Cannot select_related: %s can be multiple objects. '
+                                             'Use prefetch_related instead.' % query_key)
                         target = field.rel.to
                     else:            # field is a regular field
                         raise ValueError('Cannot select_related: %s is a regular field' % query_key)
-                else:       # field is a m2m or reverse fk, follow it
-                    target = field.model
+                else:       # field is a m2m or reverse fk
+                    raise ValueError('Cannot select_related: %s can be multiple objects. '
+                                     'Use prefetch_related instead.' % query_key)
+                    # would be target = field.model to follow
 
                 # If target is a translated model, select its translations
                 if hasattr(target._meta, 'translations_accessor'):
@@ -411,11 +416,8 @@ class TranslationQueryset(QuerySet):
         """
 
         # First, set translation for current object,
-        try:
-            accessor = obj._meta.translations_accessor
-        except AttributeError:
-            pass
-        else:
+        accessor = getattr(obj._meta, 'translations_accessor', None)
+        if accessor is not None:
             cache = getattr(obj.__class__, accessor).related.get_cache_name()
             try:
                 translation = getattr(obj, cache)
@@ -427,7 +429,7 @@ class TranslationQueryset(QuerySet):
 
         # Then recurse in the relation dict
         for field, sub_dict in relations_dict.items():
-            target = getattr(obj, field)
+            target = translation if field == accessor else getattr(obj, field)
             if target is not None:
                 self._use_related_translations(target, sub_dict, depth+1)
 
@@ -503,11 +505,12 @@ class TranslationQueryset(QuerySet):
                 if django.VERSION >= (1, 6):
                     for field, rel_objs in self._known_related_objects.items():
                         if hasattr(obj, field.get_cache_name()):
-                            continue # field was already cached
+                            # should not happen, but we conform to Django behavior
+                            continue #pragma: no cover
                         pk = getattr(obj, field.get_attname())
                         try:
                             rel_obj = rel_objs[pk]
-                        except KeyError:
+                        except KeyError: #pragma: no cover
                             pass
                         else:
                             setattr(obj, field.name, rel_obj)
@@ -955,13 +958,10 @@ class TranslationManager(models.Manager):
         self.default_class = kwargs.pop('default_class', self.default_class)
         super(TranslationManager, self).__init__(*args, **kwargs)
 
-    def using_translations(self):
+    def using_translations(self): #pragma: no cover
         warnings.warn('using_translations() is deprecated, use language() instead',
                       DeprecationWarning, stacklevel=2)
-        qs = self.queryset_class(self.model, using=self.db)
-        if hasattr(self, 'core_filters'):
-            qs = qs._next_is_sticky().filter(**(self.core_filters))
-        return qs
+        return self.language()
 
     def _make_queryset(self, klass, core_filters):
         ''' Builds a queryset of given class.
@@ -1069,20 +1069,20 @@ class TranslationAwareQueryset(QuerySet):
     def latest(self, field_name=None):
         extra = Q()
         if field_name:
-            language_joins = set()
-            field_name = self._translate(self, field_name, language_joins)
+            language_joins, lang = set(), self._language_code or get_language()
+            field_name = self._translate(field_name, self.model, language_joins)
             for join in language_joins:
-                extra &= Q(**{join: self._language_code})
+                extra &= Q(**{join: lang})
         return self._filter_extra(extra).latest(field_name)
 
     @minimumDjangoVersion(1, 6)
     def earliest(self, field_name=None):
         extra = Q()
         if field_name:
-            language_joins = set()
-            field_name = self._translate(self, field_name, language_joins)
+            language_joins, lang = set(), self._language_code or get_language()
+            field_name = self._translate(field_name, self.model, language_joins)
             for join in language_joins:
-                extra &= Q(**{join: self._language_code})
+                extra &= Q(**{join: lang})
         return self._filter_extra(extra).earliest(field_name)
 
     def in_bulk(self, id_list):
@@ -1143,11 +1143,13 @@ class TranslationAwareQueryset(QuerySet):
         return super(TranslationAwareQueryset, self)._clone(klass, setup, **kwargs)
 
     def _filter_extra(self, extra_filters):
-        qs = super(TranslationAwareQueryset, self).filter(extra_filters)
+        qs = (super(TranslationAwareQueryset, self).filter(extra_filters)
+              if extra_filters.children else self)
         return super(TranslationAwareQueryset, qs)
 
     def _exclude_extra(self, extra_filters):
-        qs = super(TranslationAwareQueryset, self).exclude(extra_filters)
+        qs = (super(TranslationAwareQueryset, self).exclude(extra_filters)
+              if extra_filters.children else self)
         return super(TranslationAwareQueryset, qs)
 
 

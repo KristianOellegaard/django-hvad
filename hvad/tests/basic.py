@@ -6,13 +6,13 @@ from django.db import connection
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from hvad.compat.metaclasses import with_metaclass
-from hvad.manager import TranslationManager
+from hvad.manager import TranslationQueryset, TranslationManager
 from hvad.models import TranslatableModel, TranslatableModelBase, TranslatedFields
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
-from hvad.test_utils.project.app.models import Normal, Related, MultipleFields, Boolean
+from hvad.test_utils.project.app.models import Normal, Related, MultipleFields, Boolean, Standard
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 
 
@@ -56,6 +56,10 @@ class DefinitionTests(HvadTestCase):
                 translations = TranslatedFields()
             self.assertIsInstance(CustomMetaclassModel, TranslatableModelBase)
 
+    def test_manager_properties(self):
+        manager = Normal.objects
+        self.assertEqual(manager.translations_model, Normal._meta.translations_model)
+
 class OptionsTest(HvadTestCase):
     def test_options(self):
         opts = Normal._meta
@@ -64,6 +68,21 @@ class OptionsTest(HvadTestCase):
         relmodel = Normal._meta.get_field_by_name(opts.translations_accessor)[0].model
         self.assertEqual(relmodel, opts.translations_model)
 
+
+class QuerysetTest(HvadTestCase):
+    def test_bad_model(self):
+        with self.assertRaises(TypeError):
+            TranslationQueryset(Standard)
+
+    @minimumDjangoVersion(1, 6)
+    def test_fallbacks_semantics(self):
+        from hvad.manager import FALLBACK_LANGUAGES
+        qs = Normal.objects.language().fallbacks()
+        self.assertEquals(qs._language_fallbacks, FALLBACK_LANGUAGES)
+        qs = qs.fallbacks(None)
+        self.assertEquals(qs._language_fallbacks, None)
+        qs = qs.fallbacks('en', 'fr')
+        self.assertEquals(qs._language_fallbacks, ('en', 'fr'))
 
 class AlternateCreateTest(HvadTestCase):
     def test_create_instance_simple(self):
@@ -101,7 +120,10 @@ class CreateTest(HvadTestCase):
         self.assertEqual(en.shared_field, "shared")
         self.assertEqual(en.translated_field, "English")
         self.assertEqual(en.language_code, "en")
-    
+
+    def test_create_invalid_lang(self):
+        self.assertRaises(ValueError, Normal.objects.language().create, language_code='all')
+
     def test_create_instance_simple(self):
         obj = Normal(language_code='en')
         obj.shared_field = "shared"
@@ -562,6 +584,10 @@ class GetOrCreateTest(HvadTestCase):
         self.assertEqual(ja.second_translated_field,  u'日本語-二')
         self.assertEqual(ja.language_code, "ja")
         self.assertNotEqual(en.pk, ja.pk)
+
+    def test_get_or_create_invalid_lang(self):
+        self.assertRaises(ValueError, Normal.objects.language().get_or_create,
+                          shared_field='nonexistent', defaults={'language_code': 'all'})
 
     def test_get_or_create_lang_deprecation(self):
         with self.assertThrowsWarning(DeprecationWarning, 1):

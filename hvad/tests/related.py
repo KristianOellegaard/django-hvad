@@ -8,10 +8,11 @@ from hvad.models import (TranslatedFields, TranslatableModel)
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL, STANDARD
 from hvad.test_utils.fixtures import NormalFixture, StandardFixture
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.utils import get_translation_aware_manager
 from hvad.test_utils.project.app.models import (Normal, Related, SimpleRelated,
-                                                RelatedRelated, Standard, StandardRelated)
+                                                RelatedRelated, Standard, StandardRelated,
+                                                Date)
 
 
 class NormalToNormalFKTest(HvadTestCase, NormalFixture):
@@ -49,7 +50,7 @@ class NormalToNormalFKTest(HvadTestCase, NormalFixture):
 
 class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     normal_count = 2
-    standard_count = 1
+    standard_count = 2
 
     def test_relation(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
@@ -151,6 +152,16 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             for obj in by_shared_field:
                 self.assertTrue(obj in en.standards.all())
 
+    def test_exclude_by_shared_field(self):
+        with LanguageOverride('en'):
+            qs = Standard.objects.exclude(
+                normal__shared_field=NORMAL[STANDARD[1].normal].shared_field
+            )
+            self.assertCountEqual([obj.pk for obj in qs], [self.standard_id[2]])
+            self.assertCountEqual([obj.normal.pk for obj in qs], [self.normal_id[STANDARD[2].normal]])
+            self.assertCountEqual([obj.normal.shared_field for obj in qs],
+                                  [NORMAL[STANDARD[2].normal].shared_field])
+
     def test_filter_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
@@ -193,6 +204,100 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             self.assertEqual(translated_fields, expected_fields)
             for obj in by_translated_field:
                 self.assertTrue(obj in en.standards.all())
+
+    @minimumDjangoVersion(1, 6)
+    def test_earliest(self):
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        for index, pk in self.standard_id.items():
+            obj = Standard.objects.get(pk=pk)
+            obj.date = Date.objects.language('en').create(
+                shared_date=now+timedelta(days=index),
+                translated_date=now-timedelta(days=index)
+            )
+            obj.save()
+
+        manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            self.assertEqual(manager.earliest('date__shared_date').pk,
+                             self.standard_id[1])
+            self.assertEqual(manager.earliest('date__translated_date').pk,
+                             self.standard_id[self.standard_count])
+
+    def test_latest(self):
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        for index, pk in self.standard_id.items():
+            obj = Standard.objects.get(pk=pk)
+            obj.date = Date.objects.language('en').create(
+                shared_date=now+timedelta(days=index),
+                translated_date=now-timedelta(days=index)
+            )
+            obj.save()
+
+        manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            self.assertEqual(manager.latest('date__shared_date').pk,
+                             self.standard_id[self.standard_count])
+            self.assertEqual(manager.latest('date__translated_date').pk,
+                             self.standard_id[1])
+
+    def test_in_bulk(self):
+        manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            qs = manager.filter(
+                normal__translated_field=NORMAL[STANDARD[1].normal].translated_field['en']
+            )
+            standard_dict = qs.in_bulk(self.standard_id.values())
+            self.assertCountEqual(standard_dict, [self.standard_id[1]])
+
+            with self.assertNumQueries(0):
+                self.assertEqual(qs.in_bulk([]), {})
+
+    def test_values(self):
+        manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            qs = manager.filter(
+                normal__translated_field=NORMAL[STANDARD[1].normal].translated_field['en']
+            ).values('normal_field', 'normal__shared_field', 'normal__translated_field')
+            self.assertCountEqual([obj['normal_field'] for obj in qs],
+                                  [STANDARD[1].normal_field])
+            self.assertCountEqual([obj['normal__shared_field'] for obj in qs],
+                                  [NORMAL[STANDARD[1].normal].shared_field])
+            # Following is a known caveat: translations table leaks into name
+            self.assertCountEqual([obj['normal__translations__translated_field'] for obj in qs],
+                                  [NORMAL[STANDARD[1].normal].translated_field['en']])
+
+    def test_values_list(self):
+        manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            qs = manager.filter(
+                normal__translated_field=NORMAL[STANDARD[1].normal].translated_field['en']
+            ).values_list('normal_field', 'normal__shared_field', 'normal__translated_field')
+            self.assertCountEqual(qs, [
+                (STANDARD[1].normal_field,
+                 NORMAL[STANDARD[1].normal].shared_field,
+                 NORMAL[STANDARD[1].normal].translated_field['en'])
+            ])
+
+    def test_not_implemented_methods(self):
+        en = Normal.objects.language('en').get(pk=self.normal_id[1])
+        manager = get_translation_aware_manager(Standard)
+        with LanguageOverride('en'):
+            self.assertRaises(NotImplementedError, manager.aggregate)
+            self.assertRaises(NotImplementedError, manager.dates, 'dummy', 'dummy')
+            if django.VERSION < (1, 6):
+                self.assertRaises(AttributeError, getattr, manager, 'datetimes')
+            else:
+                self.assertRaises(NotImplementedError, manager.datetimes, 'dummy')
+            self.assertRaises(NotImplementedError, manager.complex_filter, Q(normal_field=''))
+            self.assertRaises(NotImplementedError, manager.annotate)
+            self.assertRaises(NotImplementedError, manager.reverse)
+            self.assertRaises(NotImplementedError, manager.defer)
+            self.assertRaises(NotImplementedError, manager.only)
+
+            qs = manager.all()
+            self.assertEqual(qs, qs.complex_filter({}))
 
 
 class TripleRelationTests(HvadTestCase, StandardFixture, NormalFixture):
@@ -333,6 +438,19 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
             self.normal2 = Normal.objects.language().get(pk=self.normal_id[2])
             SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1")
 
+    def test_select_related_bad_field(self):
+        with self.assertRaises(ValueError):
+            list(Normal.objects.language().select_related('simplerel'))
+        with self.assertRaises(ValueError):
+            list(Related.objects.language().select_related('normal__shared_field'))
+        with self.assertRaises(ValueError):
+            list(RelatedRelated.objects.language().select_related('simple__manynormals'))
+
+    @minimumDjangoVersion(1, 6)
+    def test_fallbacks_raise(self):
+        with self.assertRaises(NotImplementedError):
+            list(Related.objects.language().fallbacks().select_related('normal'))
+
     def test_select_related_semantics(self):
         qs = Related.objects.language()
         self.assertCountEqual(qs._raw_select_related, [])
@@ -441,7 +559,7 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
     def test_deep_select_related(self):
         with LanguageOverride('en'):
             with self.assertNumQueries(1):
-                qs = RelatedRelated.objects.language().select_related('related__normal', 'simple__normal')
+                qs = RelatedRelated.objects.language().select_related('related__normal', 'simple__normal', 'related__translated')
                 self.assertCountEqual((obj.pk for obj in qs),
                                       (self.relrel1.pk, self.relrel2.pk))
             with self.assertNumQueries(0):
