@@ -2,301 +2,284 @@ import django
 from django.conf import settings
 from django.core.exceptions import FieldError, ValidationError
 from django.forms.fields import CharField
-from django.forms.forms import get_declared_fields
 from django.forms.formsets import formset_factory
-from django.forms.models import (ModelForm, ModelFormMetaclass, ModelFormOptions, 
+from django.forms.models import (ModelForm, BaseModelForm, ModelFormMetaclass,
     fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet,
-    inlineformset_factory)
+    modelform_factory, inlineformset_factory)
 if django.VERSION >= (1, 7):
     from django.forms.utils import ErrorList
 else:
     from django.forms.util import ErrorList
-from django.forms.widgets import Select, media_property
+from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
 from hvad.compat.metaclasses import with_metaclass
 from hvad.models import TranslatableModel, BaseTranslationModel
 from hvad.utils import get_cached_translation, get_translation, combine
+try:
+    from collections import OrderedDict
+except ImportError: #pragma: no cover (python < 2.7)
+    from django.utils.datastructures import SortedDict as OrderedDict
+import warnings
 
+#=============================================================================
 
 class TranslatableModelFormMetaclass(ModelFormMetaclass):
+    ''' Metaclass used for forms with translatable fields.
+        It wraps the regular ModelFormMetaclass to intercept translatable fields,
+        otherwise it would choke. Translatable fields are then inserted back
+        into the created class.
+    '''
     def __new__(cls, name, bases, attrs):
-        
-        """
-        Django 1.3 fix, that removes all Meta.fields and Meta.exclude
-        fieldnames that are in the translatable model. This ensures
-        that the superclass' init method doesnt throw a validation
-        error
-        """
-        fields = []
-        exclude = []
-        fieldsets = []
-        if "Meta" in attrs:
-            meta = attrs["Meta"]
-            if getattr(meta, "fieldsets", False):
-                fieldsets = meta.fieldsets
-                meta.fieldsets = []
-            if getattr(meta, "fields", False):
-                fields = meta.fields
-                meta.fields = []
-            if getattr(meta, "exclude", False):
-                exclude = meta.exclude
-                meta.exclude = []
-        # End 1.3 fix
-        
-        super_new = super(TranslatableModelFormMetaclass, cls).__new__
-        
-        formfield_callback = attrs.pop('formfield_callback', None)
-        declared_fields = get_declared_fields(bases, attrs, False)
-        new_class = super_new(cls, name, bases, attrs)
-        
-        # Start 1.3 fix
-        if fields:
-            new_class.Meta.fields = fields
-        if exclude:
-            new_class.Meta.exclude = exclude
-        if fieldsets:
-            new_class.Meta.fieldsets = fieldsets
-        # End 1.3 fix
+        # Force presence of meta class, we need it
+        meta = attrs.get('Meta')
+        if meta is None:
+            meta = attrs['Meta'] = type('Meta', (object,), {})
 
-        if not getattr(new_class, "Meta", None):
-            class Meta:
-                exclude = ['language_code']
-            new_class.Meta = Meta
-        elif not getattr(new_class.Meta, 'exclude', None):
-            new_class.Meta.exclude = ['language_code']
-        elif getattr(new_class.Meta, 'exclude', False):
-            if 'language_code' not in new_class.Meta.exclude:
-                new_class.Meta.exclude.append("language_code")
+        model = getattr(meta, 'model', None)
+        fields = getattr(meta, 'fields', None)
 
-        if 'Media' not in attrs:
-            new_class.media = media_property(new_class)
-        opts = new_class._meta = ModelFormOptions(getattr(new_class, 'Meta', attrs.get('Meta', None)))
-        if opts.model:
-            # bail out if a wrong model uses this form class
-            if not issubclass(opts.model, TranslatableModel):
-                raise TypeError(
-                    "Only TranslatableModel subclasses may use TranslatableModelForm"
-                )
-            mopts = opts.model._meta
-            
-            shared_fields = mopts.get_all_field_names()
-            
-            # split exclude and include fieldnames into shared and translated
-            sfieldnames = [field for field in opts.fields or [] if field in shared_fields]
-            tfieldnames = [field for field in opts.fields or [] if field not in shared_fields]
-            sexclude = [field for field in opts.exclude or [] if field in shared_fields]
-            texclude = [field for field in opts.exclude or [] if field not in shared_fields]
-            
-            # required by fields_for_model
-            if not sfieldnames :
-                sfieldnames = None if not fields else []
-            if not tfieldnames:
-                tfieldnames = None if not fields else []
-            
-            # If a model is defined, extract form fields from it.
-            sfields = fields_for_model(opts.model, sfieldnames, sexclude,
-                                       opts.widgets, formfield_callback)
-            tfields = fields_for_model(mopts.translations_model, tfieldnames,
-                                       texclude, opts.widgets, formfield_callback)
-            
-            fields = sfields
-            fields.update(tfields)
-            
-            # make sure opts.fields doesn't specify an invalid field
-            none_model_fields = [k for k, v in fields.items() if not v]
-            missing_fields = set(none_model_fields) - \
-                             set(declared_fields.keys())
-            if missing_fields:
-                message = 'Unknown field(s) (%s) specified for %s'
-                message = message % (', '.join(missing_fields),
-                                     opts.model.__name__)
-                raise FieldError(message)
-            # Override default model fields with any custom declared ones
-            # (plus, include all the other declared fields).
-            fields.update(declared_fields)
-            
-            if new_class._meta.exclude:
-                new_class._meta.exclude = list(new_class._meta.exclude)
+        # Force exclusion of language_code as we use cleaned_data['language_code']
+        exclude = meta.exclude = list(getattr(meta, 'exclude', ()))
+        if 'language_code' not in exclude:
+            exclude.append('language_code')
+        if fields is not None and 'language_code' in fields:
+            raise FieldError('Field \'language_code\' is invalid.')
+
+        # If a model is provided, handle translatable fields
+        if model:
+            if not issubclass(model, TranslatableModel):
+                raise TypeError('TranslatableModelForm only works with TranslatableModel'
+                                ' subclasses, which %s is not.' % model.__name__)
+
+            # Additional exclusions
+            exclude.append(model._meta.translations_accessor)
+            if fields is not None and model._meta.translations_accessor in fields:
+                raise FieldError('Field \'%s\' is invalid', model._meta.translations_accessor)
+
+            # Get translatable fields
+            tfields = fields_for_model(
+                model._meta.translations_model,
+                fields=fields,
+                exclude=exclude + ['master'], # only exclude master here, it is valid shared field
+                widgets=getattr(meta, 'widgets', None),
+                formfield_callback=attrs.get('formfield_callback')
+            )
+
+            # Drop translatable fields from Meta.fields
+            if fields is not None:
+                meta.fields = [field for field in fields if tfields.get(field) is None]
+
+        # Create the form class
+        new_class = super(TranslatableModelFormMetaclass, cls).__new__(cls, name, bases, attrs)
+
+        # Add translated fields into the form's base fields
+        if model:
+            if fields is None:
+                # loop, as Django's variant of OrderedDict cannot consume generators
+                for name, field in tfields.items():
+                    if field is not None:
+                        new_class.base_fields[name] = field
             else:
-                new_class._meta.exclude = []
-                
-            for field in (mopts.translations_accessor, 'master'):
-                if not field in new_class._meta.exclude:
-                    new_class._meta.exclude.append(field)
-        else:
-            fields = declared_fields
-        new_class.declared_fields = declared_fields
-        new_class.base_fields = fields
-        # always exclude the FKs
+                # rebuild the fields to respect Meta.fields ordering
+                new_class.base_fields = OrderedDict(
+                    item for item in (
+                        (name, new_class.base_fields.get(name, tfields.get(name)))
+                        for name in fields
+                    )
+                    if item[1] is not None
+                )
+                # restore hijacked Meta.fields
+                new_class._meta.fields = meta.fields = fields
         return new_class
 
 
-class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass, ModelForm)):
+#=============================================================================
+
+class BaseTranslatableModelForm(BaseModelForm):
+    ''' Base class for forms dealing with TranslatableModel
+        It has two main responsibilities: loading translated fields into the form
+        when __init__ialized and ensuring the right translation gets saved.
+    '''
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
                  empty_permitted=False, instance=None):
-        opts = self._meta
-        model_opts = opts.model._meta
+
+        # Insert values of instance's translated fields into 'initial' dict
         object_data = {}
-        language = getattr(self, 'language', get_language())
+        enforce = hasattr(self, 'language')
+        language = getattr(self, 'language', None) or get_language()
+
         if instance is not None:
-            trans = get_cached_translation(instance)
-            if not trans:
+            translation = get_cached_translation(instance)
+            if translation is None or (enforce and translation.language_code != language):
                 try:
-                    trans = get_translation(instance, language)
-                except model_opts.translations_model.DoesNotExist:
-                    trans = None
-            if trans:
-                object_data = model_to_dict(trans, opts.fields, opts.exclude)
+                    translation = get_translation(instance, language)
+                except instance._meta.translations_model.DoesNotExist:
+                    pass
+            if translation is not None:
+                object_data.update(
+                    model_to_dict(translation, self._meta.fields, self._meta.exclude)
+                )
         if initial is not None:
             object_data.update(initial)
-        initial = object_data
-        super(TranslatableModelForm, self).__init__(data, files, auto_id,
-                                                     prefix, object_data,
-                                                     error_class, label_suffix,
-                                                     empty_permitted, instance)
 
-    def save(self, commit=True):
-        if self.instance.pk is None:
-            fail_message = 'created'
-            new = True
-        else:
-            fail_message = 'changed'
-            new = False
+        super(BaseTranslatableModelForm, self).__init__(
+            data, files, auto_id, prefix, object_data,
+            error_class, label_suffix, empty_permitted, instance
+        )
 
-        if self.errors:
-            opts = self.instance._meta
-            raise ValueError("The %s could not be %s because the data didn't"
-                             " validate." % (opts.object_name, fail_message))
-
-        trans_model = self.instance._meta.translations_model
-        language_code = self.cleaned_data.get('language_code', get_language())
-
-        if not new:
-            trans = get_cached_translation(self.instance)
-            if not trans or trans.language_code != language_code:
-                try:
-                    trans = get_translation(self.instance, language_code)
-                except trans_model.DoesNotExist:
-                    trans = trans_model()
-        else:
-            trans = trans_model()
-
-        trans = construct_instance(self, trans, self._meta.fields)
-        trans.language_code = language_code
-        trans.master = self.instance
-        self.instance = combine(trans, self.Meta.model)
-
-        super(TranslatableModelForm, self).save(commit=commit)
-        return self.instance
-        
-    def _post_clean(self):
-        if self.instance.pk:
-            try:
-                # Don't use self.instance.language_code here! That will fail if
-                # the instance is not translated into the current language. If
-                # it succeeded, then the instance would already be translated,
-                # and there'd be no point combining it with the same
-                # translation again.
-                trans = get_translation(self.instance, self.language)
-                trans.master = self.instance
-                self.instance = combine(trans, self.Meta.model)
-            except self.instance._meta.translations_model.DoesNotExist:
-                self.instance = self.instance.translate(self.language)
-        return super(TranslatableModelForm, self)._post_clean()
-
-
-
-class CleanMixin(object):
     def clean(self):
-        data = super(CleanMixin, self).clean()
-        if data is None:
-            data = self.cleaned_data
-        data['language_code'] = self.language
+        ''' If a language is set on the form, enforce it by overwriting it
+            in the cleaned_data.
+        '''
+        data = super(BaseTranslatableModelForm, self).clean()
+        if hasattr(self, 'language'):
+            data['language_code'] = self.language
         return data
 
+    def _post_clean(self):
+        ''' Switch the translation on self.instance
+            This cannot (and should not) be done in clean() because it could be
+            overriden to change the language. Yet it should be done before save()
+            to allow an overriden save to set some translated field values before
+            invoking super().
+        '''
+        result = super(BaseTranslatableModelForm, self)._post_clean()
 
-def LanguageAwareCleanMixin(language):
-    return type('BoundCleanMixin', (CleanMixin,), {'language': language})
+        enforce = 'language_code' in self.cleaned_data
+        language = self.cleaned_data.get('language_code') or get_language()
+        translation = self._get_translation(self.instance, language, enforce)
+        translation.master = self.instance
+        self.instance = combine(translation, self.instance.__class__)
+        return result
+
+    def save(self, commit=True):
+        ''' Saves the model
+            If will always use the language specified in self.cleaned_data, with
+            the usual None meaning 'call get_language()'. If instance has
+            another language loaded, it gets reloaded with the new language.
+
+            If no language is specified in self.cleaned_data, assume the instance
+            is preloaded with correct language.
+        '''
+        if not self.is_valid():
+            warnings.warn('Calling save() on an invalid form is deprecated and '
+                          'will fail in the future. Check the result of .is_valid() '
+                          'before calling save().', DeprecationWarning, stacklevel=2)
+            raise ValueError((
+                _("The %s could not be created because the data didn't validate.")
+                if self.instance.pk is None else
+                _("The %s could not be changed because the data didn't validate.")
+                ) % self.instance._meta.object_name
+            )
+
+        # Get the right translation for object and language
+        # It should have been done in _post_clean, but instance may have been
+        # changed since.
+        enforce = 'language_code' in self.cleaned_data
+        language = self.cleaned_data.get('language_code') or get_language()
+        translation = self._get_translation(self.instance, language, enforce)
+
+        # Fill the translated fields with values from the form
+        excludes = list(self._meta.exclude) + ['master', 'language_code']
+        translation = construct_instance(self, translation,
+                                         self._meta.fields, excludes)
+        translation.master = self.instance
+        self.instance = combine(translation, self.instance.__class__)
+
+        # Delegate shared fields to super()
+        return super(BaseTranslatableModelForm, self).save(commit=commit)
+
+    def _get_translation(self, instance, language, enforce):
+        ''' Get a translation for the instance.
+            Depending on enforce argument, the language will serve as a default
+            or will be enforced by reloading a mismatching translation.
+
+            If instance's active translation is in given language, this is
+            a guaranteed no-op: it will be returned as is.
+        '''
+        trans_model = instance._meta.translations_model
+        translation = get_cached_translation(instance)
+
+        if translation is None or (enforce and translation.language_code != language):
+            if instance.pk is None:
+                translation = trans_model()
+                translation.language_code = language
+            else:
+                try:
+                    translation = get_translation(self.instance, language)
+                except trans_model.DoesNotExist:
+                    translation = trans_model()
+                    translation.language_code = language
+        return translation
 
 
-def translatable_modelform_factory(language, model, form=TranslatableModelForm,
-                                   fields=None, exclude=None,
-                                   formfield_callback=None):
-    # Create the inner Meta class. FIXME: ideally, we should be able to
-    # construct a ModelForm without creating and passing in a temporary
-    # inner class.
+if django.VERSION >= (1, 7):
+    class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
+                                               BaseTranslatableModelForm)):
+        pass
+else:
+    # Older django version have buggy metaclass
+    class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
+                                               BaseTranslatableModelForm, ModelForm)):
+        __metaclass__ = TranslatableModelFormMetaclass # Django 1.4 compatibility
 
-    # Build up a list of attributes that the Meta object will have.
-    attrs = {'model': model}
-    if fields is not None:
-        attrs['fields'] = fields
-    if exclude is not None:
-        attrs['exclude'] = exclude
 
-    # If parent form class already has an inner Meta, the Meta we're
-    # creating needs to inherit from the parent's inner meta.
-    parent = (object,)
-    if hasattr(form, 'Meta'):
-        parent = (form.Meta, object)
-    Meta = type('Meta', parent, attrs)
+#=============================================================================
 
-    # Give this new form class a reasonable name.
-    class_name = model.__name__ + 'Form'
+def translatable_modelform_factory(language, model, form=TranslatableModelForm, *args, **kwargs):
+    klass = modelform_factory(model, form, *args, **kwargs)
+    klass.language = language
+    return klass
 
-    # Class attributes for the new form class.
-    form_class_attrs = {
-        'Meta': Meta,
-        'formfield_callback': formfield_callback
-    }
-    clean_mixin = LanguageAwareCleanMixin(language)
-    return type(class_name, (clean_mixin, form,), form_class_attrs)
 
-def translatable_modelformset_factory(language, model, form=TranslatableModelForm, formfield_callback=None,
-                         formset=BaseModelFormSet,
-                         extra=1, can_delete=False, can_order=False,
-                         max_num=None, fields=None, exclude=None):
-    """
-    Returns a FormSet class for the given Django model class.
-    """
-    form = translatable_modelform_factory(language, model, form=form, fields=fields, exclude=exclude,
-                             formfield_callback=formfield_callback)
+def translatable_modelformset_factory(language, model, form=TranslatableModelForm,
+                                      formfield_callback=None, formset=BaseModelFormSet,
+                                      extra=1, can_delete=False, can_order=False,
+                                      max_num=None, fields=None, exclude=None, **kwargs):
+
+    # This Django API changes often, handle args we know and raise for others
+    form_kwargs, formset_kwargs = {}, {}
+    for key in ('widgets', 'localized_fields', 'labels', 'help_texts', 'error_messages'):
+        if key in kwargs:
+            form_kwargs[key] = kwargs.pop(key)
+    for key in ('validate_max',):
+        if key in kwargs:
+            formset_kwargs[key] = kwargs.pop(key)
+    if kwargs:
+        raise TypeError('Unknown arguments %r for translatable_modelformset_factory. '
+                        'If it is legit, it is probably new in Django. Please open '
+                        'a ticket so we can add it.' % tuple(kwargs.keys()))
+
+    form = translatable_modelform_factory(
+        language, model, form=form, fields=fields, exclude=exclude,
+        formfield_callback=formfield_callback, **form_kwargs
+    )
     FormSet = formset_factory(form, formset, extra=extra, max_num=max_num,
-                              can_order=can_order, can_delete=can_delete)
+                              can_order=can_order, can_delete=can_delete, **formset_kwargs)
     FormSet.model = model
     return FormSet
 
-def translatable_inlineformset_factory(language, parent_model, model, form=TranslatableModelForm,
-                          formset=BaseInlineFormSet, fk_name=None,
-                          fields=None, exclude=None,
-                          extra=3, can_order=False, can_delete=True, max_num=None,
-                          formfield_callback=None):
-    """
-    Returns an ``InlineFormSet`` for the given kwargs.
 
-    You must provide ``fk_name`` if ``model`` has more than one ``ForeignKey``
-    to ``parent_model``.
-    """
+def translatable_inlineformset_factory(language, parent_model, model, form=TranslatableModelForm,
+                                       formset=BaseInlineFormSet, fk_name=None,
+                                       fields=None, exclude=None, extra=3,
+                                       can_order=False, can_delete=True,
+                                       max_num=None, formfield_callback=None, **kwargs):
     from django.forms.models import _get_foreign_key
     fk = _get_foreign_key(parent_model, model, fk_name=fk_name)
-    # enforce a max_num=1 when the foreign key to the parent model is unique.
-    if fk.unique:
+    if fk.unique:  #pragma: no cover (internal Django behavior)
         max_num = 1
-    kwargs = {
-        'form': form,
-        'formfield_callback': formfield_callback,
-        'formset': formset,
-        'extra': extra,
-        'can_delete': can_delete,
-        'can_order': can_order,
-        'fields': fields,
-        'exclude': exclude,
-        'max_num': max_num,
-    }
-    FormSet = translatable_modelformset_factory(language, model, **kwargs)
+
+    FormSet = translatable_modelformset_factory(language, model,
+         form=form, formfield_callback=formfield_callback, formset=formset,
+         extra=extra, can_delete=can_delete, can_order=can_order,
+         fields=fields, exclude=exclude, max_num=max_num, **kwargs)
     FormSet.fk = fk
     return FormSet
 
+
+#=============================================================================
 
 class BaseTranslationFormSet(BaseInlineFormSet):
     """A kind of inline formset for working with an instance's translations.
@@ -385,7 +368,7 @@ class BaseTranslationFormSet(BaseInlineFormSet):
             # Add language_code to self._meta.fields so it is included in validation stage
             try:
                 form._meta.fields.append('language_code')
-            except AttributeError:
+            except AttributeError: #pragma: no cover
                 form._meta.fields += ('language_code',)
 
         # Remove the master foreignkey, we have this from self.instance already

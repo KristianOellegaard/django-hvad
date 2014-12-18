@@ -67,7 +67,7 @@ class TestTranslationsInline(HvadTestCase, NormalFixture):
             self.assertNotIn('master', formset.forms[0].fields)
 
     def test_create_translations(self):
-        instance = Normal.objects.language('en').get(pk=self.normal_id[1])
+        instance = Normal.objects.untranslated().get(pk=self.normal_id[1])
         Formset = translationformset_factory(Normal, extra=1)
 
         initial = Formset(instance=instance)
