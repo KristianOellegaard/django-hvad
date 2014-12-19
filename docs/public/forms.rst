@@ -31,12 +31,11 @@ TranslatableModelForm
 *********************
 
 TranslatableModelForms work like :class:`~django.forms.ModelForm`, but can
-display and edit translatable fields as well. There use is very similar,
+display and edit translatable fields as well. Their use is very similar,
 except the form must subclass :class:`~hvad.forms.TranslatableModelForm` instead of
 :class:`~django.forms.ModelForm`::
 
     class ArticleForm(TranslatableModelForm):
-        # language = 'en'       # See below
         class Meta:
             model = Article
             fields = ['pub_date', 'headline', 'content', 'reporter']
@@ -46,23 +45,26 @@ There is none but for the parent class. This ``ArticleForm`` will allow editing
 of one ``Article`` in one language, correctly introspecting the model to know
 which fields are translatable.
 
-The language the form uses is computed this way:
+The form can work in either normal mode, or **enforce** mode. This affects the
+way the form chooses a language for displaying and committing.
 
-- if the form is given a model instance, it will use the language that instance
-  was loaded with.
-- if this fails, it will look for a ``language`` attribute set on the form.
-- if this fails, it will use the current language, as returned by
-  :func:`~django.utils.translation.get_language`. If a request is being
-  processed, that will be the language of the request.
+* A form is in normal mode if it has no language set. This is the default. In
+  this mode, it will use the language of the ``instance`` it is given, defaulting
+  to current language if not ``instance`` is specified.
+* A form is in **enforce** mode if is has a language set. This is usually achieved
+  by calling :ref:`translatable_modelform_factory <translatablemodelformfactory>`.
+  When in **enforce** mode, the form will always use its language, disregarding
+  current language and reloading the ``instance`` it is given if it has another
+  language loaded.
+* The language can be overriden manually by providing a
+  :meth:`custom clean() method <django.forms.Form.clean>`.
 
-In all cases, any ``language_code`` field sent with form data will be ignored.
-It is the reponsibility of calling code to ensure the data matches the language
-of the form.
+In all cases, the language is not part of the form seen by the browser or sent
+in the POST request. If you need to change the language based on some user
+input, you must override the ``clean()`` method with your own logic, and set
+:attr:`~django.forms.Form.cleaned_data` ``['language_code']`` with it.
 
-All features of Django's form work as usual. Just be careful while overriding
-the :meth:`~hvad.forms.TranslatableModelForm.save` or
-:meth:`~hvad.forms.TranslatableModelForm._post_clean` methods, as they are
-crucial parts for the form to work.
+All features of Django forms work as usual.
 
 .. _translatablemodelformfactory:
 
@@ -78,6 +80,11 @@ eases the generation of uncustomized forms by providing a factory::
 The translation-aware version works exactly the same way as the original one,
 except it takes the language the form should use as an additional argument.
 
+The returned form class is in **enforce** mode.
+
+.. note:: If using the ``form=`` parameter, the given form class must inherit
+          :ref:`TranslatableModelForm <translatablemodelform>`.
+
 .. _translatablemodelformset:
 
 *************************
@@ -89,20 +96,28 @@ provides a factory to create formsets of translatable models::
 
     AuthorFormSet = translatable_modelformset_factory('en', Author)
 
-It is also possible to override the queryset, the same way you would do it for
-a regular formset. In fact, it is recommended, as the default will not prefetch
-translations::
+This formset allows edition a collection of ``Author`` instances, all of them
+being in English.
+
+All arguments supported by Django's :func:`~django.forms.models.modelformset_factory`
+can be used.
+
+For instance, it is possible to override the queryset, the same way it is done for
+a regular formset. In fact, it is recommended for performance, as the default
+queryset will not prefetch translations::
 
     BookForm = translatable_modelformset_factory(
         'en', Book, fields=('author', 'title'),
-        queryset=Book.objects.language().filter(name__startswith='O'),
+        queryset=Book.objects.language('en').all(),
     )
 
-Using :meth:`~hvad.manager.TranslationManager.language` ensures translations will
-be loaded at once, and allows filtering on translated fields.
+Here, using :meth:`~hvad.manager.TranslationManager.language` ensures translations
+will be loaded at once, and allows filtering on translated fields is needed.
+
+The returned formset class is in **enforce** mode.
 
 .. note:: To override the form by passing a ``form=`` argument to the factory,
-          the custom form must inherit :class:`~hvad.forms.TranslatableModelForm`.
+          the custom form must inherit :ref:`TranslatableModelForm <translatablemodelform>`.
 
 .. _translatableinlineformset:
 
@@ -115,8 +130,18 @@ provides a factory to create inline formsets of translatable models::
 
     BookFormSet = translatable_inlineformset_factory('en', Author, Book)
 
+This creates an inline formset, allowing edition of a collection of instances of
+``Book`` attached to a single instance of ``Author``, all of those objects
+being editted in English. It does not allow editting other languages; for this,
+please see :ref:`translationformset_factory <translationformset>`.
+
+Any argument accepted by Django's :func:`~django.forms.models.inlineformset_factory`
+can be used with ``translatable_inlineformset_factory`` as well.
+
+The returned formset class is in **enforce** mode.
+
 .. note:: To override the form by passing a ``form=`` argument to the factory,
-          the custom form must inherit :class:`~hvad.forms.TranslatableModelForm`.
+          the custom form must inherit :ref:`TranslatableModelForm <translatablemodelform>`.
 
 .. _translationformset:
 

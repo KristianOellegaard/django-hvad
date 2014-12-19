@@ -20,6 +20,14 @@ Python and Django versions supported:
 
 New features:
 
+- :ref:`TranslatableModelForm <translatablemodelform>` has been refactored to make
+  its behavior more consistent. As a result, it exposes two distinct language
+  selection modes, *normal* and *enforce*, and has a clear API for manually
+  overriding the language — :issue:`221`.
+- The new features of :func:`~django.forms.models.modelform_factory` introduced by
+  Django 1.6 and 1.7 are now available on
+  :ref:`translatable_modelform_factory <translatablemodelformfactory>` as
+  well — :issue:`221`.
 - :ref:`TranslationQueryset <TranslationQueryset-public>` now has a
   :ref:`fallbacks() <fallbacks-public>` method when running on
   Django 1.6 or newer, allowing the queryset to use fallback languages while
@@ -28,6 +36,18 @@ New features:
   :meth:`~django.db.models.query.QuerySet.extra` is now supported. — :issue:`207`.
 - It is now possible to use :ref:`TranslationQueryset <TranslationQueryset-public>`
   as default queryset for translatable models. — :issue:`207`.
+
+Compatibility warnings:
+
+- :ref:`TranslatableModelForm <translatablemodelform>` has been refactored to make
+  its behavior more consistent. The core API has not changed, but edge cases are
+  now clearly specified and some inconsistencies have disappeared, which could
+  create issues, especially:
+
+  - Direct use of the form class, without passing through the
+    :ref:`factory method <translatablemodelformfactory>`. This used to have an
+    unspecified behavior regarding language selection. Behavior is now
+    well-defined. Please ensure it works the way you expect it to.
 
 Fixes:
 
