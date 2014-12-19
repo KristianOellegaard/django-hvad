@@ -2,15 +2,13 @@
 Release Notes
 #############
 
-.. release 0.6.0
+.. release 1.0.0
 
 *****************************
-0.6.0 - upcoming release
+1.0.0 - current release
 *****************************
 
-.. note:: This version is being developed. If you feel like helping, or want the
-          very latest feature, you can install it from the `github repository`_.
-          Otherwise, please get a `packaged release`_ instead.
+Released on December 19, 2014
 
 Python and Django versions supported:
 
@@ -36,6 +34,9 @@ New features:
   :meth:`~django.db.models.query.QuerySet.extra` is now supported. — :issue:`207`.
 - It is now possible to use :ref:`TranslationQueryset <TranslationQueryset-public>`
   as default queryset for translatable models. — :issue:`207`.
+- A lot of tests have been added, hvad now has 100% coverage on its core modules.
+  Miscellaneous glitches found in this process were fixed.
+- Added MySQL to tested database backends on Python 2.7.
 
 Compatibility warnings:
 
@@ -64,7 +65,7 @@ Fixes:
 .. release 0.5.2
 
 *****************************
-0.5.2 - current release
+0.5.2
 *****************************
 
 Released on November 8, 2014

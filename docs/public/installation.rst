@@ -7,9 +7,8 @@ Installation
 Requirements
 ************
 
-* `Django`_ 1.3 or higher. Django 1.6 or higher is recommended.
-* Python 2.6 or a higher release of Python 2.x or PyPy 1.5 or higher, Python 3.3 or higher.
-* For Python 2.6 you need `argparse`_
+* `Django`_ 1.4 or higher. Django 1.6 or higher is recommended.
+* Python 2.7 or PyPy 1.5 or higher, Python 3.3 or higher.
 
 ************
 Installation

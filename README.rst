@@ -9,6 +9,8 @@ unobtrusive, efficient and reliable. On the technical side, it uses an automatic
 created `Translations Model` to store translatable fields in arbitrary
 languages with a foreign key to the main model, enabling fast queries.
 
+Started in 2011, hvad has grown mature and is now used on large scale applications.
+
 Quick links:
 
 - `Documentation`_.
@@ -23,18 +25,19 @@ Features
 * **Fast** - no additional queries for reads, just an inner join to an indexed key.
 * **Complete** - supports relationships, custom managers, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
-* **Reliable** - more than 250 test cases and counting. |coverage| |build|
-* **Compatible** with Django 1.4 to 1.7, running Python 2.6+ or 3.3+.
+* **Reliable** - more than 270 test cases and counting. |coverage| |build|
+* **Compatible** with Django 1.4 to 1.7, running Python 2.7, 3.3 or 3.4.
 
 Releases
 --------
 
-Starting from v0.4, django-hvad uses the same release pattern as Django. The
-following versions are thus available:
+Django-hvad uses the same release pattern as Django. The following versions
+are thus available:
 
 * Stable branch 0.4, available through `PyPI`_ and git branch ``releases/0.4.x``.
 * Stable branch 0.5, available through `PyPI`_ and git branch ``releases/0.5.x``.
-* Development branch 0.6, available through git branch ``master``.
+* Stable branch 1.0, available through `PyPI`_ and git branch ``releases/1.0.x``.
+* Development branch 1.1, available through git branch ``master``.
 
 Stable branches have minor bugfix releases as needed, with guaranteed compatibility.
 See the `installation guide`_ for details, or have a look at the `release notes`_.
@@ -45,7 +48,7 @@ Example Use
              Book.objects.all()
 
 Compatible by default: returns all objects, without any translated fields attached.
-Starting from v0.6, default behavior can be overriden to work like next query:
+Starting from v1.0, default behavior can be overriden to work like next query:
 
              Book.objects.language().all()
 
