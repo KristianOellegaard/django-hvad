@@ -2,6 +2,18 @@
 Release Notes
 #############
 
+.. release 1.1.0
+
+*****************************
+1.1.0 - upcoming release
+*****************************
+
+.. note:: This version is being developed. If you feel like helping, or want the
+          very latest feature, you can install it from the `github repository`_.
+          Otherwise, please get a `packaged release`_ instead.
+
+Work in progress.
+
 .. release 1.0.0
 
 *****************************
