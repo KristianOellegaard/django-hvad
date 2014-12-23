@@ -1,3 +1,4 @@
+import django
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.db import models
@@ -32,6 +33,24 @@ def update_settings(*args, **kwargs):
 
 #===============================================================================
 
+def _split_together(constraints, fields, meta, name):
+    sconst, tconst = [], []
+    if name in meta:
+        warnings.warn('Passing \'%s\' to TranslatedFields is deprecated. Please use '
+                      'Please Meta.%s instead.' % (name, name), DeprecationWarning)
+        tconst.extend(meta[name])
+
+    for constraint in constraints:
+        if all(item in fields for item in constraint):
+            tconst.append(constraint)
+        elif not any(item in fields for item in constraint):
+            sconst.append(constraint)
+        else:
+            raise ImproperlyConfigured(
+                'Constraints in Meta.%s cannot mix translated and '
+                'untranslated fields, such as %r.' % (name, constraint))
+    return sconst, tconst
+
 def create_translations_model(model, related_name, meta, **fields):
     """
     Create the translations model for the shared model 'model'.
@@ -49,7 +68,6 @@ def create_translations_model(model, related_name, meta, **fields):
     Those two fields are unique together, this get's enforced in the inner Meta
     class of the translations table
     """
-    meta = meta or {}
 
     # Build a list of translation models from base classes. Depth-first scan.
     abstract = model._meta.abstract
@@ -68,7 +86,24 @@ def create_translations_model(model, related_name, meta, **fields):
     translation_bases.append(BaseTranslationModel)
 
     # Create translation model Meta
+    meta = meta or {}
     meta['abstract'] = abstract
+    meta['db_tablespace'] = model._meta.db_tablespace
+    meta['managed'] = model._meta.managed
+    if model._meta.order_with_respect_to in fields:
+        raise ImproperlyConfigured(
+            'Using a translated fields in %s.Meta.order_with_respect_to is ambiguous '
+            'and hvad does not support it.' %
+            model._meta.model_name if django.VERSION >= (1, 6) else model._meta.module_name)
+
+    sconst, tconst = _split_together(model._meta.unique_together, fields, meta, 'unique_together')
+    model._meta.unique_together = tuple(sconst)
+    meta['unique_together'] = tuple(tconst)
+    if django.VERSION >= (1, 5):
+        sconst, tconst = _split_together(model._meta.index_together, fields, meta, 'index_together')
+        model._meta.index_together = tuple(sconst)
+        meta['index_together'] = tuple(tconst)
+
     if not abstract:
         unique = [('language_code', 'master')]
         meta['unique_together'] = list(meta.get('unique_together', [])) + unique

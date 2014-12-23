@@ -2,7 +2,7 @@
 from __future__ import with_statement
 import django
 from django.core.exceptions import ImproperlyConfigured
-from django.db import connection, IntegrityError
+from django.db import connection, models, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from hvad.compat.metaclasses import with_metaclass
@@ -35,7 +35,93 @@ class DefinitionTests(HvadTestCase):
         bases = (TranslatableModel,InvalidModel2,)
         self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel2', bases, attrs)
-    
+
+    def test_order_with_respect_to_raises(self):
+        with self.assertRaises(ImproperlyConfigured):
+            class InvalidModel3(TranslatableModel):
+                translations = TranslatedFields(
+                    translated_field = models.CharField(max_length=250)
+                )
+                class Meta:
+                    order_with_respect_to = 'translated_field'
+
+    def test_unique_together(self):
+        class UniqueTogetherModel(TranslatableModel):
+            sfield_a = models.CharField(max_length=250)
+            sfield_b = models.CharField(max_length=250)
+            translations = TranslatedFields(
+                tfield_a = models.CharField(max_length=250),
+                tfield_b = models.CharField(max_length=250),
+            )
+            class Meta:
+                unique_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
+        self.assertIn(('sfield_a', 'sfield_b'),
+                         UniqueTogetherModel._meta.unique_together)
+        self.assertNotIn(('tfield_a', 'tfield_b'),
+                         UniqueTogetherModel._meta.unique_together)
+        self.assertNotIn(('sfield_a', 'sfield_b'),
+                      UniqueTogetherModel._meta.translations_model._meta.unique_together)
+        self.assertIn(('tfield_a', 'tfield_b'),
+                      UniqueTogetherModel._meta.translations_model._meta.unique_together)
+
+        with self.assertThrowsWarning(DeprecationWarning):
+            class DeprecatedUniqueTogetherModel(TranslatableModel):
+                translations = TranslatedFields(
+                    tfield_a = models.CharField(max_length=250),
+                    tfield_b = models.CharField(max_length=250),
+                    meta = { 'unique_together': [('tfield_a', 'tfield_b')] }
+                )
+        self.assertIn(('tfield_a', 'tfield_b'),
+                      DeprecatedUniqueTogetherModel._meta.translations_model._meta.unique_together)
+
+        with self.assertRaises(ImproperlyConfigured):
+            class InvalidUniqueTogetherModel(TranslatableModel):
+                sfield = models.CharField(max_length=250)
+                translations = TranslatedFields(
+                    tfield = models.CharField(max_length=250)
+                )
+                class Meta:
+                    unique_together = [('sfield', 'tfield')]
+
+    @minimumDjangoVersion(1, 5)
+    def test_index_together(self):
+        class IndexTogetherModel(TranslatableModel):
+            sfield_a = models.CharField(max_length=250)
+            sfield_b = models.CharField(max_length=250)
+            translations = TranslatedFields(
+                tfield_a = models.CharField(max_length=250),
+                tfield_b = models.CharField(max_length=250),
+            )
+            class Meta:
+                index_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
+        self.assertIn(('sfield_a', 'sfield_b'),
+                         IndexTogetherModel._meta.index_together)
+        self.assertNotIn(('tfield_a', 'tfield_b'),
+                         IndexTogetherModel._meta.index_together)
+        self.assertNotIn(('sfield_a', 'sfield_b'),
+                      IndexTogetherModel._meta.translations_model._meta.index_together)
+        self.assertIn(('tfield_a', 'tfield_b'),
+                      IndexTogetherModel._meta.translations_model._meta.index_together)
+
+        with self.assertThrowsWarning(DeprecationWarning):
+            class DeprecatedIndexTogetherModel(TranslatableModel):
+                translations = TranslatedFields(
+                    tfield_a = models.CharField(max_length=250),
+                    tfield_b = models.CharField(max_length=250),
+                    meta = { 'index_together': [('tfield_a', 'tfield_b')] }
+                )
+        self.assertIn(('tfield_a', 'tfield_b'),
+                      DeprecatedIndexTogetherModel._meta.translations_model._meta.index_together)
+
+        with self.assertRaises(ImproperlyConfigured):
+            class InvalidIndexTogetherModel(TranslatableModel):
+                sfield = models.CharField(max_length=250)
+                translations = TranslatedFields(
+                    tfield = models.CharField(max_length=250)
+                )
+                class Meta:
+                    index_together = [('sfield', 'tfield')]
+
     def test_abstract_base_model(self):
         class Meta:
             abstract = True

@@ -12,7 +12,19 @@ Release Notes
           very latest feature, you can install it from the `github repository`_.
           Otherwise, please get a `packaged release`_ instead.
 
-Work in progress.
+New features:
+
+- It is now possible to use translated fields in the
+  :attr:`~django.db.models.Options.unique_together` and
+  :attr:`~django.db.models.Options.index_together` settings on
+  :doc:`TranslatableModel <models>`. They cannot be mixed in a single constraint
+  though, as table-spanning indexes are not supported by SQL databases.
+
+Deprecation list:
+
+- Passing ``unique_together`` or ``index_together`` as a ``meta`` option on
+  :class:`~hvad.models.TranslatedFields` is now deprecated. Put them in the model's
+  :djterm:`Meta <meta-options>` instead, alongside normal fields.
 
 .. release 1.0.0
 
