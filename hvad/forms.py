@@ -163,6 +163,7 @@ class BaseTranslatableModelForm(BaseModelForm):
             is preloaded with correct language.
         '''
         if not self.is_valid():
+            # raise in 1.3, remove in 1.5
             warnings.warn('Calling save() on an invalid form is deprecated and '
                           'will fail in the future. Check the result of .is_valid() '
                           'before calling save().', DeprecationWarning, stacklevel=2)

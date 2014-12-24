@@ -20,11 +20,32 @@ New features:
   :doc:`TranslatableModel <models>`. They cannot be mixed in a single constraint
   though, as table-spanning indexes are not supported by SQL databases.
 
+Compatibility warnings:
+
+- Deprecated :meth:`~hvad.manager.TranslationManager.using_translations` has been removed.
+  It can be safely replaced by :meth:`~hvad.manager.TranslationManager.language`.
+- Deprecated :class:`~hvad.manager.TranslationFallbackManager` has been removed. Please
+  use manager's :meth:`~hvad.manager.TranslationManager.untranslated` method instead.
+- Deprecated :class:`~hvad.models.TranslatableModelBase` metaclass has been removed.
+  Since release 0.5, hvad does not trigger metaclass conflicts anymore – :issue:`188`.
+- Overriding the language in :meth:`QuerySet.get() <django.db.models.query.QuerySet.get>`
+  and :meth:`QuerySet.filter() <django.db.models.query.QuerySet.filter>` was
+  deprecated in release 0.5, and has now been removed. Either use the
+  :meth:`~hvad.manager.TranslationManager.language` method to set the
+  correct language, or specify
+  :meth:`language('all') <hvad.manager.TranslationManager.language>` to filter
+  manually through ``get`` and ``filter`` – :issue:`182`.
+
 Deprecation list:
 
 - Passing ``unique_together`` or ``index_together`` as a ``meta`` option on
-  :class:`~hvad.models.TranslatedFields` is now deprecated. Put them in the model's
-  :djterm:`Meta <meta-options>` instead, alongside normal fields.
+  :class:`~hvad.models.TranslatedFields` is now deprecated and will be unsupported
+  in release 1.3. Put them in the model's :djterm:`Meta <meta-options>`
+  instead, alongside normal fields.
+- Calling ``save()`` on an invalid :ref:`TranslatableModelForm <translatablemodelform>`
+  is a bad practice and breaks on regular Django forms. This is now deprecated,
+  and relevant checks will be removed in release 1.3. Please check the form is
+  valid before saving it.
 
 .. release 1.0.0
 

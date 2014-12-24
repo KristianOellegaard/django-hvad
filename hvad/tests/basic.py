@@ -137,10 +137,9 @@ class DefinitionTests(HvadTestCase):
             def __new__(*args, **kwargs):
                 return TranslatableModelBase.__new__(*args, **kwargs)
 
-        with self.assertThrowsWarning(DeprecationWarning):
+        with self.assertRaises(RuntimeError):
             class CustomMetaclassModel(with_metaclass(CustomMetaclass, TranslatableModel)):
                 translations = TranslatedFields()
-            self.assertIsInstance(CustomMetaclassModel, TranslatableModelBase)
 
     def test_manager_properties(self):
         manager = Normal.objects
@@ -295,7 +294,7 @@ class CreateTest(HvadTestCase):
                 ut.language_code
 
     def test_create_lang_deprecation(self):
-        with self.assertThrowsWarning(DeprecationWarning, 1):
+        with self.assertRaises(RuntimeError):
             en = Normal.objects.language('en').create(
                 language_code="en",
                 shared_field="shared",
@@ -406,10 +405,8 @@ class GetByLanguageTest(HvadTestCase, NormalFixture):
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
     def test_args_override_deprecation(self):
-        with self.assertThrowsWarning(DeprecationWarning, 1):
+        with self.assertRaises(RuntimeError):
             obj = Normal.objects.language('en').get(language_code='ja', pk=self.normal_id[1])
-            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
-            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
 
 class GetAllLanguagesTest(HvadTestCase, NormalFixture):
@@ -539,9 +536,10 @@ class TableNameTest(HvadTestCase):
             self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
 
     def test_table_name_override_rename(self):
-        with self.assertThrowsWarning(DeprecationWarning, 1):
-            with self.settings(NANI_TABLE_NAME_SEPARATOR='O_O'):
-                pass
+        override = self.settings(NANI_TABLE_NAME_SEPARATOR='O_O')
+        with self.assertRaises(ImproperlyConfigured):
+            override.enable()
+        override.disable()
 
     def test_table_name_from_meta(self):
         from hvad.models import TranslatedFields
@@ -707,7 +705,7 @@ class GetOrCreateTest(HvadTestCase):
                           shared_field='nonexistent', defaults={'language_code': 'all'})
 
     def test_get_or_create_lang_deprecation(self):
-        with self.assertThrowsWarning(DeprecationWarning, 1):
+        with self.assertRaises(RuntimeError):
             en = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
                 translated_field='English',

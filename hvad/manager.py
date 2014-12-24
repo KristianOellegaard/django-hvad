@@ -52,12 +52,6 @@ class FieldTranslator(object):
             self._cache[key] = ret
         return ret
 
-    def get(self, key): # pragma: no cover
-        warnings.warn('FieldTranslator.get is deprecated, please directly call '
-                      'the field translator: qs.field_translator(name).',
-                      DeprecationWarning, stacklevel=2)
-        return self(key)
-
     def _build(self, key):
         """
         Checks if the selected field is a shared field
@@ -389,12 +383,11 @@ class TranslationQueryset(QuerySet):
             language_code = self._language_code or get_language()
             for _, field_name in where_node_children(self.query.where):
                 if field_name == 'language_code':
-                    warnings.warn(
-                        'Overriding language_code in get() or filter() is deprecated. '
+                    # remove in 1.4
+                    raise RuntimeError(
+                        'Overriding language_code in get() or filter() is no longer supported. '
                         'Please set the language in Model.objects.language() instead, '
-                        'or use language("all") to do manual filtering on languages.',
-                        DeprecationWarning, stacklevel=3)
-                    break
+                        'or use language("all") to do manual filtering on languages.')
             else:
                 self.query.add_filter(('language_code', language_code))
             self._add_select_related(language_code)
@@ -521,12 +514,13 @@ class TranslationQueryset(QuerySet):
                 yield obj
 
     def create(self, **kwargs):
-        if 'language_code' not in kwargs:
-            kwargs['language_code'] = self._language_code or get_language()
+        if 'language_code' in kwargs:
+            if self._language_code is not None:
+                # remove in 1.4
+                raise RuntimeError('Overriding language_code in create() is no longer allowed. '
+                                   'Please set the language with language() instead.')
         else:
-            warnings.warn('Overriding language_code in create() is deprecated. '
-                          'Please set the language in Model.objects.language() instead.',
-                          DeprecationWarning, stacklevel=2)
+            kwargs['language_code'] = self._language_code or get_language()
         if kwargs['language_code'] == 'all':
             raise ValueError('Cannot create an object with language \'all\'')
         obj = self.shared_model(**kwargs)
@@ -570,12 +564,13 @@ class TranslationQueryset(QuerySet):
         params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
         params.update(defaults)
 
-        if 'language_code' not in params:
-            params['language_code'] = self._language_code or get_language()
+        if 'language_code' in params:
+            if self._language_code is not None:
+                # remove in 1.4
+                raise RuntimeError('Overriding language_code in get_or_create() is no longer allowed. '
+                                   'Please set the language in Model.objects.language() instead.')
         else:
-            warnings.warn('Overriding language_code in get_or_create() is deprecated. '
-                          'Please set the language in Model.objects.language() instead.',
-                          DeprecationWarning, stacklevel=2)
+            params['language_code'] = self._language_code or get_language()
         if params['language_code'] == 'all':
             raise ValueError('Cannot create an object with language \'all\'')
 
@@ -931,20 +926,9 @@ class TranslationFallbackManager(models.Manager): # pragma: no cover
     using `use_fallbacks()` to enable per object language fallback.
     """
     def __init__(self, *args, **kwargs):
-        warnings.warn('TranslationFallbackManager is deprecated. Please use '
-                      'TranslationManager\'s untranslated() method.',
-                      DeprecationWarning, stacklevel=2)
-        super(TranslationFallbackManager, self).__init__(*args, **kwargs)
-
-    def use_fallbacks(self, *fallbacks):
-        if django.VERSION >= (1, 6):
-            return self.get_queryset().use_fallbacks(*fallbacks)
-        else:
-            return self.get_query_set().use_fallbacks(*fallbacks)
-
-    def get_queryset(self):
-        return FallbackQueryset(self.model, using=self.db)
-    get_query_set = get_queryset        # old name for Django < 1.6
+        # remove in 1.3
+        raise RuntimeError('TranslationFallbackManager is no longer used. Please use '
+                           'TranslationManager\'s untranslated() method.')
 
 
 #===============================================================================
@@ -972,9 +956,8 @@ class TranslationManager(models.Manager):
         super(TranslationManager, self).__init__(*args, **kwargs)
 
     def using_translations(self): #pragma: no cover
-        warnings.warn('using_translations() is deprecated, use language() instead',
-                      DeprecationWarning, stacklevel=2)
-        return self.language()
+        # remove in 1.3
+        raise RuntimeError('using_translations() has been removed, use language() instead')
 
     def _make_queryset(self, klass, core_filters):
         ''' Builds a queryset of given class.
