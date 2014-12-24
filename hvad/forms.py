@@ -12,7 +12,7 @@ else:
     from django.forms.util import ErrorList
 from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
-from hvad.compat.metaclasses import with_metaclass
+from hvad.compat import with_metaclass
 from hvad.models import TranslatableModel, BaseTranslationModel
 from hvad.utils import get_cached_translation, get_translation, combine
 try:

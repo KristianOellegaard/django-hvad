@@ -199,7 +199,6 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
                 self.assertEqual(qs[0].translated_field, 'translated1_en')
 
 
-@minimumDjangoVersion(1, 4)
 class PrefetchRelatedTests(HvadTestCase, QONormalFixture):
     qonormal_count = 2
 

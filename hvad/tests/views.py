@@ -2,7 +2,6 @@
 from django.core.urlresolvers import reverse
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
-from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.project.app.models import Normal
 from hvad.views import TranslatableUpdateView
 
@@ -10,9 +9,7 @@ class ViewsTest(HvadTestCase):
     def setUp(self):
         with LanguageOverride("en"):
             self.object = Normal.objects.language().create(shared_field="test", translated_field="translated test")
-
-            self.rf = RequestFactory()
-            self.request = self.rf.post('/url/')
+            self.request = self.request_factory.post('/url/')
 
     def test_update_view_get(self):
         with LanguageOverride("en"):

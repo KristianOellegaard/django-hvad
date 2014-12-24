@@ -22,12 +22,11 @@ from django.shortcuts import render_to_response
 from django.template import TemplateDoesNotExist
 from django.template.context import RequestContext
 from django.template.loader import find_template
-from django.utils.encoding import iri_to_uri
+from django.utils.encoding import iri_to_uri, force_text
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
-from hvad.compat.force_unicode import force_unicode
-from hvad.compat.urls import urlencode, urlparse
+from hvad.compat import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 from hvad.utils import get_cached_translation, get_translation
 from hvad.manager import FALLBACK_LANGUAGES
@@ -148,11 +147,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
 
     def get_urls(self):
-        if django.VERSION >= (1, 4):
-            from django.conf.urls import patterns, url
-        else: #pragma: no cover
-            from django.conf.urls.defaults import patterns, url
-
+        from django.conf.urls import patterns, url
         urlpatterns = super(TranslatableAdmin, self).get_urls()
 
         def wrap(view):
@@ -289,14 +284,14 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         if request.POST: # The user has already confirmed the deletion.
             if perms_needed:
                 raise PermissionDenied
-            obj_display = '%s translation of %s' % (lang, force_unicode(obj.master))
+            obj_display = '%s translation of %s' % (lang, force_text(obj.master))
             self.log_deletion(request, obj, obj_display)
             self.delete_model_translation(request, obj)
 
             self.message_user(request,
                 _('The %(name)s "%(obj)s" was deleted successfully.') % {
-                    'name': force_unicode(opts.verbose_name),
-                    'obj': force_unicode(obj_display)
+                    'name': force_text(opts.verbose_name),
+                    'obj': force_text(obj_display)
                 }
             )
 
@@ -305,7 +300,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             model_name = opts.model_name if django.VERSION >= (1, 6) else opts.module_name
             return HttpResponseRedirect(self.reverse('admin:%s_%s_changelist' % (opts.app_label, model_name)))
 
-        object_name = '%s Translation' % force_unicode(opts.verbose_name)
+        object_name = '%s Translation' % force_text(opts.verbose_name)
 
         if perms_needed or protected:
             title = _("Cannot delete %(name)s") % {"name": object_name}
@@ -323,10 +318,6 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             "app_label": app_label,
         }
 
-        # in django > 1.4 root_path is removed
-        if hasattr(self.admin_site, 'root_path'):
-            context.update({"root_path": self.admin_site.root_path})
-
         return render_to_response(self.delete_confirmation_template or [
             "admin/%s/%s/delete_confirmation.html" % (app_label, opts.object_name.lower()),
             "admin/%s/delete_confirmation.html" % app_label,
@@ -336,7 +327,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def deletion_not_allowed(self, request, obj, language_code):
         opts = self.model._meta
         app_label = opts.app_label
-        object_name = force_unicode(opts.verbose_name)
+        object_name = force_text(opts.verbose_name)
         
         context = RequestContext(request)
         context['object'] = obj.master
@@ -448,11 +439,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         return translatable_inlineformset_factory(language, self.parent_model, self.model, **defaults)
 
     def get_urls(self):
-        if django.VERSION >= (1, 4):
-            from django.conf.urls import patterns, url
-        else: #pragma: no cover
-            from django.conf.urls.defaults import patterns, url
-
+        from django.conf.urls import patterns, url
         urlpatterns = super(InlineModelAdmin, self).get_urls()
 
         def wrap(view):
@@ -561,14 +548,14 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         if request.POST: # The user has already confirmed the deletion.
             if perms_needed:
                 raise PermissionDenied
-            obj_display = '%s translation of %s' % (lang, force_unicode(obj.master))
+            obj_display = '%s translation of %s' % (lang, force_text(obj.master))
             self.log_deletion(request, obj, obj_display)
             self.delete_model_translation(request, obj)
 
             self.message_user(request,
                 _('The %(name)s "%(obj)s" was deleted successfully.') % {
-                    'name': force_unicode(opts.verbose_name),
-                    'obj': force_unicode(obj_display)
+                    'name': force_text(opts.verbose_name),
+                    'obj': force_text(obj_display)
                 }
             )
 
@@ -576,7 +563,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
                 return HttpResponseRedirect(reverse('admin:index'))
             return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
 
-        object_name = '%s Translation' % force_unicode(opts.verbose_name)
+        object_name = '%s Translation' % force_text(opts.verbose_name)
 
         if perms_needed or protected:
             title = _("Cannot delete %(name)s") % {"name": object_name}
@@ -604,7 +591,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
     def deletion_not_allowed(self, request, obj, language_code):
         opts = self.model._meta
         app_label = opts.app_label
-        object_name = force_unicode(opts.verbose_name)
+        object_name = force_text(opts.verbose_name)
 
         context = RequestContext(request)
         context['object'] = obj.master

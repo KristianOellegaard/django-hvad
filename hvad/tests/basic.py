@@ -5,7 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import connection, models, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
-from hvad.compat.metaclasses import with_metaclass
+from hvad.compat import with_metaclass
 from hvad.manager import TranslationQueryset, TranslationManager
 from hvad.models import TranslatableModel, TranslatableModelBase, TranslatedFields
 from hvad.test_utils.context_managers import LanguageOverride
@@ -528,7 +528,6 @@ class TableNameTest(HvadTestCase):
             )
         self.assertTrue(MyTableNameTestModel.translations.related.model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
 
-    @minimumDjangoVersion(1, 4)
     def test_table_name_override(self):
         from hvad.models import TranslatedFields
         from django.db import models
@@ -539,7 +538,6 @@ class TableNameTest(HvadTestCase):
                 )
             self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
 
-    @minimumDjangoVersion(1, 4)
     def test_table_name_override_rename(self):
         with self.assertThrowsWarning(DeprecationWarning, 1):
             with self.settings(NANI_TABLE_NAME_SEPARATOR='O_O'):

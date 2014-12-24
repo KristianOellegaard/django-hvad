@@ -3,13 +3,7 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.manager import TranslationManager, TranslationQueryset
-if django.VERSION >= (1, 4, 2):
-    from django.utils.encoding import python_2_unicode_compatible
-else: # older versions do not run on py3, so we know we are running py2
-    def python_2_unicode_compatible(klass):
-        klass.__unicode__ = klass.__str__
-        klass.__str__ = lambda self: self.__unicode__().encode('utf-8')
-        return klass
+from django.utils.encoding import python_2_unicode_compatible
 
 #===============================================================================
 # Basic models

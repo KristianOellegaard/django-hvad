@@ -4,7 +4,6 @@ from hvad.admin import TranslatableModelAdminMixin
 from hvad.forms import translatable_inlineformset_factory, translationformset_factory
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
-from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.project.app.models import Normal, Related
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.data import NORMAL
@@ -15,8 +14,7 @@ class TestBasicInline(HvadTestCase):
     def setUp(self):
         with LanguageOverride("en"):
             self.object = Normal.objects.language().create(shared_field="test", translated_field="translated test")
-            rf = RequestFactory()
-            self.request = rf.post('/url/')
+            self.request = self.request_factory.post('/url/')
 
     def test_create_fields_inline(self):
         with LanguageOverride("en"):

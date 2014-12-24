@@ -25,8 +25,6 @@ class LimitChoicesToTests(HvadTestCase, SuperuserFixture, NormalFixture):
             # We need to attach the client's session to the request,
             # otherwise admin won't let us in 
             get_request.session = self.client.session 
-
-            # in django 1.4 request.user is required
             get_request.user = self.superuser
 
             # Let's construct the relevant admin form...

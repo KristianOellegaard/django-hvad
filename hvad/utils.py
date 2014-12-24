@@ -1,5 +1,6 @@
 import django
 from django.db.models.fields import FieldDoesNotExist
+from django.test.signals import setting_changed
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
 
@@ -96,6 +97,9 @@ class _MinimumDjangoVersionDescriptor(object):
 def minimumDjangoVersion(*args):
     if django.VERSION >= args:
         return lambda x: x
-    def decorate(f):
-        return _MinimumDjangoVersionDescriptor(f.__name__, args)
-    return decorate
+    return lambda x: _MinimumDjangoVersionDescriptor(x.__name__, args)
+
+def settings_updater(func):
+    func()
+    setting_changed.connect(func, dispatch_uid=id(func))
+    return func

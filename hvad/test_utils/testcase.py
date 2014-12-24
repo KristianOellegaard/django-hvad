@@ -1,7 +1,7 @@
 import django
 from django.test.testcases import TestCase
+from django.test.client import RequestFactory
 from hvad.test_utils.context_managers import UserLoginContext
-from hvad.test_utils.request_factory import RequestFactory
 import warnings
 
 

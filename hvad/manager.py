@@ -13,8 +13,7 @@ from django.db.models import Q
 from django.utils.translation import get_language
 from hvad.fieldtranslator import translate
 from hvad.query import q_children, where_node_children
-from hvad.utils import combine, minimumDjangoVersion
-from hvad.compat.settings import settings_updater
+from hvad.utils import combine, minimumDjangoVersion, settings_updater
 from copy import deepcopy
 import logging
 import sys

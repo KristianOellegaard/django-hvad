@@ -9,9 +9,8 @@ from django.db.models.signals import post_save, class_prepared
 from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
-from hvad.utils import SmartGetFieldByName
-from hvad.compat.method_type import MethodType
-from hvad.compat.settings import settings_updater
+from hvad.utils import SmartGetFieldByName, settings_updater
+from hvad.compat import MethodType
 import sys
 import warnings
 
@@ -387,16 +386,7 @@ def prepare_translatable_model(sender, **kwargs):
             "TranslationManager, the default manager of %r is not." % model)
 
     # If this is a proxy model, get the concrete one
-    if model._meta.proxy:
-        if hasattr(model._meta, 'concrete_model'):
-            concrete_model = model._meta.concrete_model
-        else: # pragma: no cover
-            # We need this prior to Django 1.4
-            concrete_model = model
-            while concrete_model._meta.proxy:
-                concrete_model = concrete_model._meta.proxy_for_model
-    else:
-        concrete_model = model
+    concrete_model = model._meta.concrete_model if model._meta.proxy else model
 
     # Find the instance of TranslatedFields in the concrete model's dict
     found = None

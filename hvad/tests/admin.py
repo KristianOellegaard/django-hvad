@@ -9,12 +9,11 @@ from django.utils.http import urlencode
 from django.http import HttpResponseForbidden, HttpResponseRedirect, QueryDict
 from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
-from hvad.compat.urls import urlparse
+from hvad.compat import urlparse
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.fixtures import NormalFixture, SuperuserFixture
 from hvad.test_utils.data import NORMAL
-from hvad.test_utils.request_factory import RequestFactory
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, AutoPopulated
 
@@ -64,7 +63,6 @@ class ModelHelpersTests(HvadTestCase, NormalFixture):
                 self.assertEqual(obj.safe_translation_getter('translated_field'),
                                  NORMAL[1].translated_field['ja'])
 
-    @minimumDjangoVersion(1, 4)
     def test_translation_getters_missing(self):
         # Try when both current language and first fallbacks are missing
         obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
@@ -117,7 +115,6 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
         obj = Normal()
         self.assertEqual(myadmin.all_translations(obj), "")
 
-    @minimumDjangoVersion(1, 4)
     def test_all_translations_prefetch_related(self):
         myadmin = self._get_admin(Normal)
 
@@ -144,8 +141,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
     def test_get_object(self):
         # Check if it returns a model, if there is at least one translation
         myadmin = self._get_admin(Normal)
-        rf = RequestFactory()
-        get_request = rf.get('/admin/app/normal/')
+        get_request = self.request_factory.get('/admin/app/normal/')
 
         obj = Normal.objects.language("en").get(pk=self.normal_id[1])
         with LanguageOverride('en'):
@@ -176,8 +172,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
     def test_get_object_nonexisting(self):
         # In case the object doesnt exist, it should return None
         myadmin = self._get_admin(Normal)
-        rf = RequestFactory()
-        get_request = rf.get('/admin/app/normal/')
+        get_request = self.request_factory.get('/admin/app/normal/')
         self.assertEqual(myadmin.get_object(get_request, -1), None)
 
 class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
@@ -542,7 +537,6 @@ class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalF
                 self.assertRedirects(response, expected_url)
 
 
-@minimumDjangoVersion(1, 4)
 class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture):
     def test_correct_id_in_inline(self):
         LANGUAGES = (
