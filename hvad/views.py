@@ -2,7 +2,7 @@ from django.http import Http404
 from django.views.generic.edit import UpdateView
 from .admin import TranslatableModelAdminMixin
 from .forms import translatable_modelform_factory, TranslatableModelForm
-from .utils import collect_context_modifiers
+from .utils import collect_context_modifiers, set_cached_translation
 
 class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
     form_class = TranslatableModelForm
@@ -48,7 +48,7 @@ class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin):
         new_translation = model._meta.translations_model()
         new_translation.language_code = self._language(self.request)
         new_translation.master = obj
-        setattr(obj, model._meta.translations_cache, new_translation)
+        set_cached_translation(obj, new_translation)
         return obj
 
     def context_modifier_languages_available(self, **kwargs):

@@ -134,21 +134,6 @@ TranslatableModelForm
                   it affects the behavior of :meth:`clean`, which places relevant
                   language (or lack thereof) in ``cleaned_data``.
 
-    .. method:: _get_translation(self, instance, language, enforce)
-
-        The internal method :meth:`_post_clean` and :meth:`save` delegate
-        translation checks to. Note that ``enforce`` here refers to the presence
-        of a ``language_code`` in ``cleaned_data`` and not whether the form is
-        in **enforce** mode or not.
-
-        This method must gurantee that calling it on its result is a no-op.
-        Namely, in this example the second call must do nothing and return
-        the translation as is::
-
-            translation = self._get_translation(instance, language, enforce)
-            instance = combine(translation, instance.__class__)
-            translation = self._get_translation(instance, language, enforce)
-
 
 .. function:: translatable_modelform_factory(language, model, form=TranslatableModelForm, **kwargs)
 

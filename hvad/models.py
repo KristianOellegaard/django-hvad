@@ -9,7 +9,8 @@ from django.db.models.signals import post_save, class_prepared
 from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
-from hvad.utils import SmartGetFieldByName, settings_updater
+from hvad.utils import (get_cached_translation, set_cached_translation,
+                        SmartGetFieldByName, settings_updater)
 from hvad.compat import MethodType
 import sys
 import warnings
@@ -194,78 +195,48 @@ class TranslatableModel(models.Model):
     """
     # change the default manager to the translation manager
     objects = TranslationManager()
-    
+
     class Meta:
         abstract = True
-    
+
     def __init__(self, *args, **kwargs):
-        tkwargs = {} # translated fields
-        skwargs = {} # shared fields
-        
-        if 'master' in kwargs.keys():
-            raise RuntimeError(
-                    "Cannot init  %s class with a 'master' argument" % \
-                    self.__class__.__name__
-            )
-        
-        # filter out all the translated fields (including 'master' and 'language_code')
-        primary_key_names = ('pk', self._meta.pk.name)
-        for key in list(kwargs.keys()):
-            if key in self._translated_field_names:
-                if not key in primary_key_names:
-                    # we exclude the pk of the shared model
-                    tkwargs[key] = kwargs.pop(key)
-        if not tkwargs.keys():
-            # if there where no translated options, then we assume this is a
-            # regular init and don't want to do any funky stuff
-            super(TranslatableModel, self).__init__(*args, **kwargs)
-            return
-        
-        # there was at least one of the translated fields (or a language_code) 
-        # in kwargs. We need to do magic.
-        # extract all the shared fields (including the pk)
-        for key in list(kwargs.keys()):
-            if key in self._shared_field_names:
-                skwargs[key] = kwargs.pop(key)
-        # do the regular init minus the translated fields
+        # Split arguments into shared/translatd
+        veto_names = ('pk', 'master', 'master_id', self._meta.translations_model._meta.pk.name)
+        skwargs, tkwargs = {}, {}
+        for key, value in kwargs.items():
+            if key in self._translated_field_names and not key in veto_names:
+                tkwargs[key] = value
+            else:
+                skwargs[key] = value
+
         super(TranslatableModel, self).__init__(*args, **skwargs)
-        # prepopulate the translations model cache with an translation model
-        tkwargs['language_code'] = tkwargs.get('language_code', get_language())
-        tkwargs['master'] = self
-        translated = self._meta.translations_model(*args, **tkwargs)
-        setattr(self, self._meta.translations_cache, translated)
+
+        # Create a translation if there are translated fields
+        if tkwargs:
+            tkwargs['language_code'] = tkwargs.get('language_code') or get_language()
+            set_cached_translation(self, self._meta.translations_model(**tkwargs))
 
     @classmethod
     def save_translations(cls, instance, **kwargs):
-        """
-        When this instance is saved, also save the (cached) translation
-        """
-        opts = cls._meta
-        if hasattr(instance, opts.translations_cache):
-            trans = getattr(instance, opts.translations_cache)
-            if not trans.master_id:
-                trans.master = instance
-            trans.save()
-    
+        'Signal handler for post_save'
+        translation = get_cached_translation(instance)
+        if translation is not None:
+            translation.master = instance
+            translation.save()
+
     def translate(self, language_code):
-        """
-        Returns an Model instance in the specified language.
-        Does NOT check if the translation already exists!
-        Does NOT interact with the database.
-        
-        This will refresh the translations cache attribute on the instance.
-        """
-        tkwargs = {
-            'language_code': language_code,
-            'master': self,
-        }
-        translated = self._meta.translations_model(**tkwargs)
-        setattr(self, self._meta.translations_cache, translated)
+        ''' Create a new translation for current instance.
+            Does NOT check if the translation already exists!
+        '''
+        set_cached_translation(
+            self,
+            self._meta.translations_model(language_code=language_code)
+        )
         return self
-    
+
     def safe_translation_getter(self, name, default=None):
-        cache = getattr(self, self._meta.translations_cache, None)
-        if not cache:
+        cache = get_cached_translation(self)
+        if cache is None:
             return default
         return getattr(cache, name, default)
 
@@ -299,7 +270,7 @@ class TranslatableModel(models.Model):
             # none of the fallbacks was found, pick an arbitrary translation
             translation = translation_dict.popitem()[1]
 
-        setattr(self, self._meta.translations_cache, translation)
+        set_cached_translation(self, translation)
         return getattr(translation, name, default)
 
     def get_available_languages(self):
@@ -314,35 +285,21 @@ class TranslatableModel(models.Model):
     #===========================================================================
     
     @property
-    def _shared_field_names(self):
-        if getattr(self, '_shared_field_names_cache', None) is None:
-            opts = self._meta
-            self._shared_field_names_cache = opts.get_all_field_names()
-            for name in tuple(self._shared_field_names_cache):
-                try:
-                    attname = opts.get_field(name).get_attname()
-                except FieldDoesNotExist:
-                    pass
-                else:
-                    if attname and attname != name:
-                        self._shared_field_names_cache.append(attname)
-        return self._shared_field_names_cache
-    @property
     def _translated_field_names(self):
         if getattr(self, '_translated_field_names_cache', None) is None:
             opts = self._meta.translations_model._meta
-            self._translated_field_names_cache = opts.get_all_field_names()
+            self._translated_field_names_cache = set(opts.get_all_field_names())
             for name in tuple(self._translated_field_names_cache):
                 try:
                     attname = opts.get_field(name).get_attname()
                 except FieldDoesNotExist:
                     pass
-                else:
+                else: # add attribute name for related fields
                     if attname and attname != name:
-                        self._translated_field_names_cache.append(attname)
+                        self._translated_field_names_cache.add(attname)
         return self._translated_field_names_cache
 
-
+#=============================================================================
 
 def contribute_translations(cls, rel):
     """
@@ -358,11 +315,7 @@ def contribute_translations(cls, rel):
     trans_opts = opts.translations_model._meta
 
     # Set descriptors
-    ignore_fields = [
-        'pk',
-        'master',
-        opts.translations_model._meta.pk.name,
-    ]
+    ignore_fields = ('pk', 'master', 'master_id', opts.translations_model._meta.pk.name)
     for field in trans_opts.fields:
         if field.name in ignore_fields:
             continue
