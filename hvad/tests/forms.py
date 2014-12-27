@@ -138,10 +138,11 @@ class FormDeclarationTests(HvadTestCase):
                     model = Normal
                     fields = ('shared_model', 'master')
 
-    def test_invalid_model(self):
-        'Check that TranslatableModelForm does not accept regular models'
+    def test_invalid(self):
+        'Check that TranslatableModelForm does not accept invalid arguments'
         self.assertRaises(TypeError, translatable_modelform_factory, 'en', Standard)
-
+        self.assertRaises(TypeError, translatable_modelform_factory, 'en', Normal,
+                          form=forms.ModelForm)
 
 #=============================================================================
 

@@ -136,6 +136,7 @@ def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs
             context.update(getattr(instance, thing, lambda x:x)(**extra_kwargs))
 
     if context:
+        # raise in 1.3, remove whole function in 1.5
         warnings.warn('Context modifiers are deprecated and will be removed '
                       'in hvad version 1.3. Triggering class: %r' % instance.__class__,
                       DeprecationWarning)
