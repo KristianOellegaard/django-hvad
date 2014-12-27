@@ -28,7 +28,7 @@ from django.utils.translation import ugettext_lazy as _, get_language
 from functools import update_wrapper
 from hvad.compat import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
-from hvad.utils import get_cached_translation, get_translation
+from hvad.utils import load_translation
 from hvad.manager import FALLBACK_LANGUAGES
 
 
@@ -47,17 +47,11 @@ class InlineModelForm(TranslatableModelForm):
 
         """
         opts = self._meta
-        model_opts = opts.model._meta
         object_data = {}
         language = getattr(self, 'language', get_language())
         if instance is not None:
-            trans = get_cached_translation(instance)
-            if not trans or trans.language_code != language:
-                try:
-                    trans = get_translation(instance, language)
-                except model_opts.translations_model.DoesNotExist:
-                    trans = None
-            if trans:
+            trans = load_translation(instance, language, enforce=True)
+            if trans.pk:
                 object_data = model_to_dict(trans, opts.fields, opts.exclude)
                 # Dirty hack that swaps the id from the translation id, to the master id
                 # This is necessary, because we in this case get the untranslated instance,
@@ -257,7 +251,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         translations_model = opts.translations_model
         
         try:
-            obj = translations_model.objects.select_related('maser').get(
+            obj = translations_model.objects.select_related('master').get(
                                                 master__pk=unquote(object_id),
                                                 language_code=language_code)
         except translations_model.DoesNotExist:
@@ -606,7 +600,6 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         obj.delete()
     """
     def get_queryset(self, request):
-        language = self._language(request)
         qs = self.model._default_manager.all()#.language(language)
         # TODO: this should be handled by some parameter to the ChangeList.
         ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)

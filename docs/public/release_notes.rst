@@ -35,6 +35,7 @@ Compatibility warnings:
   correct language, or specify
   :meth:`language('all') <hvad.manager.TranslationManager.language>` to filter
   manually through ``get`` and ``filter`` – :issue:`182`.
+- ``TranslatableModel``'s Internal attribute ``_shared_field_names`` has been removed.
 
 Deprecation list:
 

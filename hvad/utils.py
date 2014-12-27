@@ -3,6 +3,28 @@ from django.db.models.fields import FieldDoesNotExist
 from django.test.signals import setting_changed
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
+import warnings
+
+#=============================================================================
+# Translation manipulators
+
+def get_cached_translation(instance):
+    'Get currently cached translation of the instance'
+    return getattr(instance, instance._meta.translations_cache, None)
+
+def set_cached_translation(instance, translation):
+    '''Sets the translation cached onto instance.
+        - Passing None unsets the translation cache
+        - Returns the translation that was loaded before
+    '''
+    tcache = instance._meta.translations_cache
+    previous = getattr(instance, tcache, None)
+    if translation is None:
+        if previous is not None:
+            delattr(instance, tcache)
+    else:
+        setattr(instance, tcache, translation)
+    return previous
 
 def combine(trans, klass):
     """
@@ -15,19 +37,48 @@ def combine(trans, klass):
     combined = trans.master
     if klass._meta.proxy:
         combined.__class__ = klass
-    opts = combined._meta
-    setattr(combined, opts.translations_cache, trans)
+    setattr(combined, combined._meta.translations_cache, trans)
     return combined
 
-def get_cached_translation(instance):
-    return getattr(instance, instance._meta.translations_cache, None)
 
 def get_translation(instance, language_code=None):
-    opts = instance._meta
-    if not language_code:
-        language_code = get_language()
-    accessor = getattr(instance, opts.translations_accessor)
-    return accessor.get(language_code=language_code)
+    ''' Get translation by language. Fresh copy is loaded from DB.
+        Can leverage prefetched data, like in .prefetch_related('translations')
+    '''
+    accessor = getattr(instance, instance._meta.translations_accessor)
+
+    language_code = language_code or get_language()
+    qs = accessor.all()
+    if qs._result_cache is None:
+        return accessor.get(language_code=language_code)
+    else: # take advantage of cached translations
+        for obj in qs:
+            if obj.language_code == language_code:
+                return obj
+    raise accessor.model.DoesNotExist
+
+def load_translation(instance, language, enforce=False):
+    ''' Get or create a translation.
+        Depending on enforce argument, the language will serve as a default
+        or will be enforced by reloading a mismatching translation.
+
+        If instance's active translation is in given language, this is
+        a guaranteed no-op: it will be returned as is.
+    '''
+    trans_model = instance._meta.translations_model
+    translation = get_cached_translation(instance)
+
+    if translation is None or (enforce and translation.language_code != language):
+        if instance.pk is None:
+            translation = trans_model(language_code=language)
+        else:
+            try:
+                translation = get_translation(instance, language)
+            except trans_model.DoesNotExist:
+                translation = trans_model(language_code=language)
+    return translation
+
+#=============================================================================
 
 def get_translation_aware_manager(model):
     from hvad.manager import TranslationAwareManager
@@ -83,9 +134,20 @@ def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs
         if (thing.startswith('context_modifier_') or thing in include) and \
             not thing in exclude:
             context.update(getattr(instance, thing, lambda x:x)(**extra_kwargs))
+
+    if context:
+        warnings.warn('Context modifiers are deprecated and will be removed '
+                      'in hvad version 1.3. Triggering class: %r' % instance.__class__,
+                      DeprecationWarning)
     return context
 
+#=============================================================================
+# Internal sugar
+
 class _MinimumDjangoVersionDescriptor(object):
+    ''' Ensures methods that do not exist on current Django version raise a
+        helpful message and an actual AttributeError
+    '''
     def __init__(self, name, version):
         self.name = name
         self.version = version
@@ -95,11 +157,15 @@ class _MinimumDjangoVersionDescriptor(object):
                              (self.name, '.'.join(str(x) for x in self.version)))
 
 def minimumDjangoVersion(*args):
+    ''' Method/attribute decorator making it unavailable on older Django versions
+        e.g.: @minimumDjangoVersion(1, 4, 2)
+    '''
     if django.VERSION >= args:
         return lambda x: x
     return lambda x: _MinimumDjangoVersionDescriptor(x.__name__, args)
 
 def settings_updater(func):
+    ''' Decorator for setting globals depending on django settings '''
     func()
     setting_changed.connect(func, dispatch_uid=id(func))
     return func

@@ -17,7 +17,6 @@ from hvad.utils import combine, minimumDjangoVersion, settings_updater
 from copy import deepcopy
 import logging
 import sys
-import warnings
 
 #===============================================================================
 
@@ -1171,4 +1170,11 @@ class TranslationAwareManager(models.Manager):
 
 class TranslationsModelManager(models.Manager):
     def get_language(self, language):
-        return self.get(language_code=language)
+        qs = self.all()
+        if qs._result_cache is None:
+            return self.get(language_code=language)
+        else: # take advantage of cached translations
+            for obj in qs:
+                if obj.language_code == language:
+                    return obj
+        raise self.model.DoesNotExist

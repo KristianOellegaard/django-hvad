@@ -14,7 +14,7 @@ from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
 from hvad.compat import with_metaclass
 from hvad.models import TranslatableModel, BaseTranslationModel
-from hvad.utils import get_cached_translation, get_translation, combine
+from hvad.utils import (set_cached_translation, get_cached_translation, load_translation)
 try:
     from collections import OrderedDict
 except ImportError: #pragma: no cover (python < 2.7)
@@ -110,13 +110,8 @@ class BaseTranslatableModelForm(BaseModelForm):
         language = getattr(self, 'language', None) or get_language()
 
         if instance is not None:
-            translation = get_cached_translation(instance)
-            if translation is None or (enforce and translation.language_code != language):
-                try:
-                    translation = get_translation(instance, language)
-                except instance._meta.translations_model.DoesNotExist:
-                    pass
-            if translation is not None:
+            translation = load_translation(instance, language, enforce)
+            if translation.pk:
                 object_data.update(
                     model_to_dict(translation, self._meta.fields, self._meta.exclude)
                 )
@@ -148,9 +143,8 @@ class BaseTranslatableModelForm(BaseModelForm):
 
         enforce = 'language_code' in self.cleaned_data
         language = self.cleaned_data.get('language_code') or get_language()
-        translation = self._get_translation(self.instance, language, enforce)
-        translation.master = self.instance
-        self.instance = combine(translation, self.instance.__class__)
+        translation = load_translation(self.instance, language, enforce)
+        set_cached_translation(self.instance, translation)
         return result
 
     def save(self, commit=True):
@@ -179,40 +173,16 @@ class BaseTranslatableModelForm(BaseModelForm):
         # changed since.
         enforce = 'language_code' in self.cleaned_data
         language = self.cleaned_data.get('language_code') or get_language()
-        translation = self._get_translation(self.instance, language, enforce)
+        translation = load_translation(self.instance, language, enforce)
 
         # Fill the translated fields with values from the form
         excludes = list(self._meta.exclude) + ['master', 'language_code']
         translation = construct_instance(self, translation,
                                          self._meta.fields, excludes)
-        translation.master = self.instance
-        self.instance = combine(translation, self.instance.__class__)
+        set_cached_translation(self.instance, translation)
 
         # Delegate shared fields to super()
         return super(BaseTranslatableModelForm, self).save(commit=commit)
-
-    def _get_translation(self, instance, language, enforce):
-        ''' Get a translation for the instance.
-            Depending on enforce argument, the language will serve as a default
-            or will be enforced by reloading a mismatching translation.
-
-            If instance's active translation is in given language, this is
-            a guaranteed no-op: it will be returned as is.
-        '''
-        trans_model = instance._meta.translations_model
-        translation = get_cached_translation(instance)
-
-        if translation is None or (enforce and translation.language_code != language):
-            if instance.pk is None:
-                translation = trans_model()
-                translation.language_code = language
-            else:
-                try:
-                    translation = get_translation(self.instance, language)
-                except trans_model.DoesNotExist:
-                    translation = trans_model()
-                    translation.language_code = language
-        return translation
 
 
 if django.VERSION >= (1, 7):
@@ -303,24 +273,20 @@ class BaseTranslationFormSet(BaseInlineFormSet):
         stashed = get_cached_translation(master)
 
         for form in self.forms:
-            form.instance.master = master
-            combined = combine(form.instance, master.__class__)
+            set_cached_translation(master, form.instance)
             exclusions = form._get_validation_exclusions()
             # fields from the shared model should not be validated
-            exclusions.extend(f.name for f in combined._meta.fields)
+            exclusions.extend(f.name for f in master._meta.fields)
             try:
                 if django.VERSION >= (1, 6):
-                    combined.full_clean(exclude=exclusions,
-                                        validate_unique=form._validate_unique)
+                    master.full_clean(exclude=exclusions,
+                                      validate_unique=form._validate_unique)
                 else:
-                    combined.full_clean(exclude=exclusions)
+                    master.full_clean(exclude=exclusions)
             except ValidationError as e:
                 form._update_errors(e)
 
-        if stashed is None:
-            delattr(master, master._meta.translations_cache)
-        else:
-            setattr(master, master._meta.translations_cache, stashed)
+        set_cached_translation(master, stashed)
 
         # Validate that at least one translation exists
         forms_to_delete = self.deleted_forms
@@ -338,18 +304,12 @@ class BaseTranslationFormSet(BaseInlineFormSet):
 
         if commit:
             # We need to trigger custom save actions on the combined model
-            master = self.instance
-            stashed = get_cached_translation(master)
-            obj.master = master
-            combined = combine(obj, master.__class__)
-            combined.save()
-            if hasattr(combined, 'save_m2m'): # pragma: no cover
+            stashed = set_cached_translation(self.instance, obj)
+            self.instance.save()
+            if hasattr(obj, 'save_m2m'): # pragma: no cover
                 # cannot happen, but feature could be added, be ready
-                combined.save_m2m()
-            if stashed is None:
-                delattr(master, master._meta.translations_cache)
-            else:
-                setattr(master, master._meta.translations_cache, stashed)
+                obj.save_m2m()
+            set_cached_translation(self.instance, stashed)
         return obj
 
     def save_new(self, form, commit=True):

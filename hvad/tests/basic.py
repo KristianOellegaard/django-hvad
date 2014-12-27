@@ -141,6 +141,10 @@ class DefinitionTests(HvadTestCase):
             class CustomMetaclassModel(with_metaclass(CustomMetaclass, TranslatableModel)):
                 translations = TranslatedFields()
 
+    def test_internal_properties(self):
+        self.assertCountEqual(Normal()._translated_field_names,
+                              ['id', 'master', 'master_id', 'language_code', 'translated_field'])
+
     def test_manager_properties(self):
         manager = Normal.objects
         self.assertEqual(manager.translations_model, Normal._meta.translations_model)
@@ -191,10 +195,7 @@ class CreateTest(HvadTestCase):
         self.assertEqual(en.shared_field, "shared")
         self.assertEqual(en.translated_field, "English")
         self.assertEqual(en.language_code, "en")
-    
-    def test_invalid_instantiation(self):
-        self.assertRaises(RuntimeError, Normal, master=None)
-    
+
     def test_create_nolang(self):
         with self.assertNumQueries(2):
             with LanguageOverride('en'):
