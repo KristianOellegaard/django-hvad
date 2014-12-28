@@ -68,25 +68,18 @@ class TranslatableModelAdminMixin(object):
     query_language_key = 'language'
 
     def all_translations(self, obj):
-        """
-        use this to display all languages the object has been translated to
-        in the changelist view:
-
-        class MyAdmin(admin.ModelAdmin):
-            list_display = ('__str__', 'all_translations',)
-
-        """
-        if obj and obj.pk:
-            languages = []
-            current_language = get_language()
-            for language in obj.get_available_languages():
-                entry = '<a href="%s">%s</a>' % (self.get_url(obj, lang=language), language)
-                if language == current_language:
-                    entry = u'<strong>%s</strong>' % entry
-                languages.append(entry)
-            return u', '.join(languages)
-        else:
+        """ Get an HTML-formatted list of all translations, with links to admin pages """
+        if obj is None or not obj.pk:
             return ''
+
+        languages = []
+        current_language = get_language()
+        for language in obj.get_available_languages():
+            entry = '<a href="%s">%s</a>' % (self.get_url(obj, lang=language), language)
+            if language == current_language:
+                entry = u'<strong>%s</strong>' % entry
+            languages.append(entry)
+        return u', '.join(languages)
     all_translations.allow_tags = True
     all_translations.short_description = _('all translations')
 

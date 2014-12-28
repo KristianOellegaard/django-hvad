@@ -112,8 +112,10 @@ class BaseTranslatableModelForm(BaseModelForm):
         if instance is not None:
             translation = load_translation(instance, language, enforce)
             if translation.pk:
+                exclude = (tuple(self._meta.exclude or ()) +
+                           ('id', 'master', 'master_id', 'language_code'))
                 object_data.update(
-                    model_to_dict(translation, self._meta.fields, self._meta.exclude)
+                    model_to_dict(translation, self._meta.fields, exclude)
                 )
         if initial is not None:
             object_data.update(initial)
@@ -199,6 +201,9 @@ else:
 #=============================================================================
 
 def translatable_modelform_factory(language, model, form=TranslatableModelForm, *args, **kwargs):
+    if not issubclass(form, TranslatableModelForm):
+        raise TypeError('The form class given to translatable_modelform_factory '
+                        'must be a subclass of hvad.forms.TranslatableModelForm')
     klass = modelform_factory(model, form, *args, **kwargs)
     klass.language = language
     return klass

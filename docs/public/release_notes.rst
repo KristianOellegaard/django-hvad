@@ -47,6 +47,9 @@ Deprecation list:
   is a bad practice and breaks on regular Django forms. This is now deprecated,
   and relevant checks will be removed in release 1.3. Please check the form is
   valid before saving it.
+- Generic views in ``hvad.views`` have been refactored to follow Django generic
+  view behaviors. As a result, several non-standard methods are now deprecated.
+  Please replace them with their Django equivalents — check :issue:`225`.
 
 .. release 1.0.0
 
