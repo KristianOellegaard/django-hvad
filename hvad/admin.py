@@ -25,7 +25,6 @@ from django.template.loader import find_template
 from django.utils.encoding import iri_to_uri, force_text
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
-from functools import update_wrapper
 from hvad.compat import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 from hvad.utils import load_translation
@@ -58,11 +57,9 @@ class InlineModelForm(TranslatableModelForm):
                 # and thereafter get the correct translation on save.
                 if "id" in object_data:
                     object_data["id"] = trans.master.id
-        if initial is not None:
-            object_data.update(initial)
-        initial = object_data
+        object_data.update(initial or {})
         super(TranslatableModelForm, self).__init__(data, files, auto_id,
-                                                     prefix, initial,
+                                                     prefix, object_data,
                                                      error_class, label_suffix,
                                                      empty_permitted, instance)
 
@@ -94,10 +91,9 @@ class TranslatableModelAdminMixin(object):
     all_translations.short_description = _('all translations')
 
     def get_available_languages(self, obj):
-        if obj:
-            return obj.get_available_languages()
-        else:
+        if obj is None:
             return []
+        return obj.get_available_languages()
 
     def get_language_tabs(self, request, available_languages):
         tabs = []
@@ -144,22 +140,16 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         from django.conf.urls import patterns, url
         urlpatterns = super(TranslatableAdmin, self).get_urls()
 
-        def wrap(view):
-            def wrapper(*args, **kwargs):
-                return self.admin_site.admin_view(view)(*args, **kwargs)
-            return update_wrapper(wrapper, view)
-
         if django.VERSION >= (1, 6):
             info = self.model._meta.app_label, self.model._meta.model_name
         else:
             info = self.model._meta.app_label, self.model._meta.module_name
 
-        urlpatterns = patterns('',
+        return patterns('',
             url(r'^(.+)/delete-translation/(.+)/$',
-                wrap(self.delete_translation),
+                self.admin_site.admin_view(self.delete_translation),
                 name='%s_%s_delete_translation' % info),
         ) + urlpatterns
-        return urlpatterns
     
     def get_form(self, request, obj=None, **kwargs):
         """
@@ -181,17 +171,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 fields = flatten_fieldsets(self.declared_fieldsets)
             else:
                 fields = None
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
-        exclude.extend(kwargs.get("exclude", []))
-        exclude.extend(self.get_readonly_fields(request, obj))
-        # Exclude language_code, adding it again to the instance is done by
-        # the LanguageAwareCleanMixin (see translatable_modelform_factory)
-        exclude.append('language_code')
-        old_formfield_callback = curry(self.formfield_for_dbfield, 
-                                       request=request)
+        exclude = (
+            tuple(self.exclude or ()) +
+            tuple(kwargs.pop("exclude", ())) +
+            self.get_readonly_fields(request, obj)
+        )
+        old_formfield_callback = curry(self.formfield_for_dbfield, request=request)
         defaults = {
             "form": self.form,
             "fields": fields,
@@ -209,11 +194,13 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         lang_code = self._language(request)
         lang = get_language_name(lang_code)
         available_languages = self.get_available_languages(obj)
-        context['title'] = '%s (%s)' % (context['title'], lang)
-        context['current_is_translated'] = lang_code in available_languages
-        context['allow_deletion'] = len(available_languages) > 1
-        context['language_tabs'] = self.get_language_tabs(request, available_languages)
-        context['base_template'] = self.get_change_form_base_template()
+        context.update({
+            'title': '%s (%s)' % (context['title'], lang),
+            'current_is_translated': lang_code in available_languages,
+            'allow_deletion': len(available_languages) > 1,
+            'language_tabs': self.get_language_tabs(request, available_languages),
+            'base_template': self.get_change_form_base_template(),
+        })
 
         # Ensure form action url carries over tab language
         qs_language = request.GET.get('language')
@@ -324,12 +311,14 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         object_name = force_text(opts.verbose_name)
         
         context = RequestContext(request)
-        context['object'] = obj.master
-        context['language_code'] = language_code
-        context['opts'] = opts
-        context['app_label'] = app_label
-        context['language_name'] = get_language_name(language_code)
-        context['object_name'] = object_name
+        context.update({
+            'object': obj.master,
+            'language_code': language_code,
+            'opts': opts,
+            'app_label': app_label,
+            'language_name': get_language_name(language_code),
+            'object_name': object_name,
+        })
         return render_to_response(self.deletion_not_allowed_template, context)
         
     def delete_model_translation(self, request, obj):
@@ -382,8 +371,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 return template
             except TemplateDoesNotExist:
                 pass
-        else: # pragma: no cover
-            pass
+        return None
+
 
 class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin):
     form = InlineModelForm
@@ -408,21 +397,18 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
                 fields = flatten_fieldsets(self.declared_fieldsets)
             else:
                 fields = None
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
-        exclude.extend(kwargs.get("exclude", []))
-        exclude.extend(self.get_readonly_fields(request, obj))
-        # if exclude is an empty list we use None, since that's the actual
-        # default
-        exclude = exclude or None
+        exclude = (
+            tuple(self.exclude or ()) +
+            tuple(kwargs.pop("exclude", ())) +
+            self.get_readonly_fields(request, obj)
+        )
+
         defaults = {
             "form": self.get_form(request, obj, fields=fields),
             #"formset": self.formset,
             "fk_name": self.fk_name,
             "fields": fields,
-            "exclude": exclude,
+            "exclude": exclude or None,
             "formfield_callback": curry(self.formfield_for_dbfield, request=request),
             "extra": self.extra,
             "max_num": self.max_num,
@@ -436,19 +422,13 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         from django.conf.urls import patterns, url
         urlpatterns = super(InlineModelAdmin, self).get_urls()
 
-        def wrap(view):
-            def wrapper(*args, **kwargs):
-                return self.admin_site.admin_view(view)(*args, **kwargs)
-            return update_wrapper(wrapper, view)
-
         info = self.model._meta.app_label, self.model._meta.module_name
 
-        urlpatterns = patterns('',
+        return patterns('',
             url(r'^(.+)/delete-translation/(.+)/$',
-                wrap(self.delete_translation),
+                self.admin_site.admin_view(self.delete_translation),
                 name='%s_%s_delete_translation' % info),
         ) + urlpatterns
-        return urlpatterns
 
     def get_form(self, request, obj=None, **kwargs):
         """
@@ -469,17 +449,12 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
                 fields = flatten_fieldsets(self.declared_fieldsets)
             else:
                 fields = None
-        if self.exclude is None:
-            exclude = []
-        else:
-            exclude = list(self.exclude)
-        exclude.extend(kwargs.get("exclude", []))
-        exclude.extend(self.get_readonly_fields(request, obj))
-        # Exclude language_code, adding it again to the instance is done by
-        # the LanguageAwareCleanMixin (see translatable_modelform_factory)
-        exclude.append('language_code')
-        old_formfield_callback = curry(self.formfield_for_dbfield,
-                                       request=request)
+        exclude = (
+            tuple(self.exclude or ()) +
+            tuple(kwargs.pop("exclude", ())) +
+            self.get_readonly_fields(request, obj)
+        )
+        old_formfield_callback = curry(self.formfield_for_dbfield, request=request)
         defaults = {
             "form": self.form,
             "fields": fields,
