@@ -37,4 +37,5 @@ if django.VERSION < (1, 6): # Starting from django 1.6 we use DiscoverRunner ins
                                               PrefetchRelatedTests)
     from hvad.tests.utils import TranslationAccessorTests
     from hvad.tests.contrib.restframework import (TranslatableModelSerializerTests,
-                                                  TranslationsMixinTests)
+                                                  TranslationsMixinTests,
+                                                  CombinedTests)

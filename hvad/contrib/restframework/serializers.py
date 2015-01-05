@@ -1,57 +1,12 @@
-from django.db import models
 from django.db.models.fields import FieldDoesNotExist
-from django.utils.translation import get_language, ugettext_lazy as _l, ugettext as _
+from django.utils.translation import get_language, ugettext_lazy as _l
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.settings import api_settings
 from ...utils import set_cached_translation, load_translation
+from .utils import TranslationListSerializer
 
-#=============================================================================
+veto_fields = ('id', 'master')
 
-class TranslationListSerializer(serializers.ListSerializer):
-    'A custom serializer to output translations in a nice dict'
-    many = True
-    default_error_messages = {
-        'not_a_dict': _l('Expected a dictionary of items, but got a {input_type}.'),
-    }
-
-    def to_internal_value(self, data):
-        if not isinstance(data, dict):
-            message = self.error_messages['not_a_dict'].format(
-                input_type=type(data).__name__
-            )
-            raise ValidationError({
-                api_settings.NON_FIELD_ERRORS_KEY: [message]
-            })
-
-        ret, errors = {}, {}
-        for language, translation in data.items():
-            try:
-                validated = self.child.run_validation(translation)
-            except ValidationError as exc:
-                errors[language] = exc.detail
-            else:
-                ret[language] = validated
-                errors[language] = {}
-        if any(errors.values()):
-            raise ValidationError(errors)
-        return ret
-
-    def to_representation(self, data):
-        iterable = data.all() if isinstance(data, models.Manager) else data
-        return dict(
-            (item.language_code, self.child.to_representation(item))
-            for item in iterable
-        )
-
-    def save(self, *args, **kwargs): #pragma: no cover
-        raise NotImplementedError('TranslationList must be nested')
-    @property
-    def data(self): #pragma: no cover
-        raise NotImplementedError('TranslationList must be nested')
-    @property
-    def errors(self): #pragma: no cover
-        raise NotImplementedError('TranslationList must be nested')
 
 #=============================================================================
 
@@ -68,11 +23,35 @@ class TranslationsMixin(object):
             class NestedSerializer(serializers.ModelSerializer):
                 class Meta:
                     model = model_class._meta.translations_model
-                    exclude = ('id', 'master', 'language_code')
+                    exclude = veto_fields + ('language_code',)
                     depth = nested_depth # not -1
                     list_serializer_class = TranslationListSerializer
-            return NestedSerializer, {'many': True}
+            kwargs = {'many': True}
+            if isinstance(self, TranslatableModelMixin):
+                kwargs['required'] = False
+            return NestedSerializer, kwargs
         return super(TranslationsMixin, self).build_field(field_name, info, model_class, nested_depth)
+
+    def to_internal_value(self, data):
+        # Allow TranslationsMixin to be combined with TranslatableModelSerializer
+        # This means we allow translated fields to be absent if translations are set
+
+        if isinstance(self, TranslatableModelMixin):
+            tmodel = self.Meta.model._meta.translations_model
+
+            # Look for translated fields, and mark them read_only if translations is set
+            if self.Meta.model._meta.translations_accessor in data:
+                for name, field in self.fields.items():
+                    source = field.source or field.field_name
+                    if source in veto_fields:
+                        continue # not a translated field
+                    try:
+                        tmodel._meta.get_field(source)
+                    except FieldDoesNotExist:
+                        continue # not a translated field
+                    field.read_only = True
+
+        return super(TranslationsMixin, self).to_internal_value(data)
 
     def save(self, **kwargs):
         creating = (self.instance is None)
@@ -105,9 +84,11 @@ class TranslationsMixin(object):
         enforce = ('language_code' in data)
         language = data.pop('language_code', None) or get_language()
         translation = load_translation(instance, language, enforce=enforce)
-        set_cached_translation(instance, translation)
+        stashed = set_cached_translation(instance, translation)
 
-        return super(TranslationsMixin, self).update(instance, data)
+        result = super(TranslationsMixin, self).update(instance, data)
+        set_cached_translation(instance, stashed)
+        return result
 
 #=============================================================================
 
@@ -129,7 +110,7 @@ class TranslatableModelMixin(object):
             super(TranslatableModelMixin, self).get_default_field_names(*args)
             + list(field.name
                    for field in self.Meta.model._meta.translations_model._meta.fields
-                   if field.serialize and not field.name in ('id', 'master'))
+                   if field.serialize and not field.name in veto_fields)
         )
 
     def build_field(self, field_name, info, model_class, nested_depth):
@@ -142,7 +123,7 @@ class TranslatableModelMixin(object):
 
         # Try to find a translated field matching the description
         field = None
-        if field_name not in ('id', 'master', 'master_id', 'language_code'):
+        if field_name not in veto_fields:
             try:
                 field = model_class._meta.translations_model._meta.get_field(field_name)
             except FieldDoesNotExist:

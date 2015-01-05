@@ -31,6 +31,10 @@ class TranslationsSerializer(TranslationsMixin, ModelSerializer):
     class Meta:
         model = Normal
 
+class CombinedSerializer(TranslationsMixin, TranslatableModelSerializer):
+    class Meta:
+        model = Normal
+
 #=============================================================================
 
 class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
@@ -325,3 +329,113 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1], shared_field='shared')
         self.assertCountEqual([obj.language_code for obj in qs], self.translations)
 
+#=============================================================================
+
+class CombinedTests(HvadTestCase, NormalFixture):
+    normal_count = 1
+
+    def test_combined_fields(self):
+        'Check serializers fields are properly set'
+        serializer = CombinedSerializer()
+        self.assertCountEqual(serializer.fields,
+                              ['id', 'shared_field', 'translated_field', 'language_code', 'translations'])
+        self.assertIsInstance(serializer.fields['translations'], TranslationListSerializer)
+        self.assertCountEqual(serializer.fields['translations'].child.fields,
+                              ['translated_field'])
+
+    #---------------------------------------------------------------------
+
+    def test_serialize(self):
+        'Serialize translations as a language => fields dict + naive fields'
+        obj = Normal.objects.language('ja').prefetch_related('translations').get(pk=self.normal_id[1])
+
+        serializer = CombinedSerializer(instance=obj)
+        data = serializer.data
+        self.assertCountEqual(data, ['id', 'shared_field', 'translated_field', 'language_code', 'translations'])
+        self.assertEqual(data['id'], self.normal_id[1])
+        self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
+        self.assertEqual(data['translated_field'], NORMAL[1].translated_field['ja'])
+        self.assertEqual(data['language_code'], 'ja')
+        self.assertIsInstance(data['translations'], dict)
+        self.assertCountEqual(data['translations'], self.translations)
+        for language in self.translations:
+            translation = data['translations'][language]
+            self.assertCountEqual(translation, ['translated_field'])
+            self.assertEqual(translation['translated_field'], NORMAL[1].translated_field[language])
+
+    #---------------------------------------------------------------------
+
+    def test_create_translations(self):
+        'Create a new Normal instance, with two translations'
+        data = {
+            'shared_field': 'shared',
+            'translated_field': 'should be ignored',
+            'language_code': 'sr',
+            'translations': {
+                'en': { 'translated_field': 'English', },
+                'sr': { 'translated_field': u'српски', },
+            },
+        }
+        serializer = CombinedSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        obj = serializer.save()
+        self.assertIsNot(obj.pk, None)
+        qs = Normal.objects.language('all').filter(pk=obj.pk)
+        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+                              [('en', 'English'), ('sr', u'српски')])
+
+    def test_create_translatable(self):
+        'Create a new Normal instance, in translatablemodelserializer style'
+        data = {
+            'shared_field': 'shared',
+            'translated_field': u'српски',
+            'language_code': 'sr'
+        }
+        serializer = CombinedSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        obj = serializer.save()
+        self.assertIsNot(obj.pk, None)
+        qs = Normal.objects.language('all').filter(pk=obj.pk)
+        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+                              [('sr', u'српски')])
+
+    def test_update_translations(self):
+        'Update an existing normal instance: 1 new, 1 updated, 1 deleted translations'
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        data = {
+            'shared_field': 'shared',
+            'language_code': 'ignored',
+            'translations': {
+                'en': { 'translated_field': 'English', }, # should updated
+                'sr': { 'translated_field': u'српски', }, # should create
+            },                                            # Japanese should be deleted
+        }
+        serializer = CombinedSerializer(instance=obj, data=data)
+        self.assertTrue(serializer.is_valid())
+
+        obj = serializer.save()
+        self.assertEqual(obj.pk, self.normal_id[1])
+        qs = Normal.objects.language('all').filter(pk=self.normal_id[1])
+        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+                              [('en', 'English'), ('sr', u'српски')])
+
+    def test_update_translatable(self):
+        'Update an existing normal instance translation in translatablemodel mode'
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        data = {
+            'shared_field': 'shared',
+            'translated_field': u'српски',
+            'language_code': 'sr'
+        }
+        serializer = CombinedSerializer(instance=obj, data=data)
+        self.assertTrue(serializer.is_valid())
+
+        obj = serializer.save()
+        self.assertEqual(obj.pk, self.normal_id[1])
+        qs = Normal.objects.language('all').filter(pk=self.normal_id[1])
+        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+                              [('en', NORMAL[1].translated_field['en']),
+                               ('ja', NORMAL[1].translated_field['ja']),
+                               ('sr', u'српски')])
