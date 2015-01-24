@@ -86,7 +86,7 @@ Adding the language to the serialized data::
 
     # Now language appears in serialized representation
     serializer = BookSerializer(instance=Book.objects.language('ja').get(pk=1))
-    assert serializer.data['language_code'] == 'ja'
+    # => {"title": "星の王子さま", "author": "12", "language_code": "ja" }
 
     # It can also be set explicitly in POST/PUT/PATCH data
     print(data['language_code']) # 'fr'
@@ -187,8 +187,23 @@ allows editing all languages.
 Direct translated fields will be read-only, use the translations dictionary for
 updating.
 
-It is possible to override the representation of translations, but this is out
-of the scope of this documentation for now. Please open an issue if you need help.
+It is possible to override the representation of translations. This is done by
+specifying a custom serializer on the meta::
+
+    from rest_framework import serializers
+
+    class BookTranslationSerializer(serializers.ModelSerializer):
+        class Meta:
+            exclude = ['subtitle', 'cover']
+
+    class BookSerializer(TranslationsMixin, serializers.ModelSerializer):
+        class Meta:
+            model = Book
+            translations_serializer = BookTranslationSerializer
+
+In case advanced customisation of translations is required, be aware that your
+custom translation serializer is handed the full object. This allows building
+computed fields using both translated and untranslated data.
 
 .. _Django REST framework: http://www.django-rest-framework.org/
 .. _ModelSerializer: http://www.django-rest-framework.org/api-guide/serializers/#modelserializer

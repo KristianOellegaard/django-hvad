@@ -20,16 +20,26 @@ class TranslationsMixin(object):
     def build_field(self, field_name, info, model_class, nested_depth):
         # Force translations being nested and not relational
         if field_name == model_class._meta.translations_accessor:
-            class NestedSerializer(serializers.ModelSerializer):
-                class Meta:
-                    model = model_class._meta.translations_model
-                    exclude = veto_fields + ('language_code',)
-                    depth = nested_depth # not -1
-                    list_serializer_class = TranslationListSerializer
+            # Create a nested serializer as a subclass of configured translations_serializer
+            BaseSerializer = getattr(self.Meta, 'translations_serializer', serializers.ModelSerializer)
+            BaseMeta = getattr(BaseSerializer, 'Meta', None)
+            exclude = veto_fields + ('language_code',)
+            if BaseMeta is not None:
+                exclude += getattr(BaseMeta, 'exclude', ())
+
+            NestedMeta = type('Meta', (object,) if BaseMeta is None else (BaseMeta, object), {
+                'model': model_class._meta.translations_model,
+                'exclude': exclude,
+                'depth': nested_depth,
+                'list_serializer_class': TranslationListSerializer,
+            })
+            NestedSerializer = type('NestedSerializer', (BaseSerializer,), {'Meta': NestedMeta})
+
             kwargs = {'many': True}
             if isinstance(self, TranslatableModelMixin):
                 kwargs['required'] = False
             return NestedSerializer, kwargs
+
         return super(TranslationsMixin, self).build_field(field_name, info, model_class, nested_depth)
 
     def to_internal_value(self, data):

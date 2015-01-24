@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import django
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, CharField
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal
@@ -34,6 +34,21 @@ class TranslationsSerializer(TranslationsMixin, ModelSerializer):
 class CombinedSerializer(TranslationsMixin, TranslatableModelSerializer):
     class Meta:
         model = Normal
+
+class CustomTranslationSerializer(ModelSerializer):
+    # 'cheat' tests that shared fields are accessible to the translation serializer
+    # It is relevant, it ensures custom serializers see the full object, along with
+    # any @property. Default serializer will just get to translated fields through
+    # their accessors on the shared object and work transparently.
+    cheat = CharField(max_length=250, source='shared_field')
+    custom = CharField(max_length=250, source='translated_field')
+    class Meta:
+        exclude = ('translated_field',)
+
+class CustomSerializer(TranslationsMixin, ModelSerializer):
+    class Meta:
+        model = Normal
+        translations_serializer = CustomTranslationSerializer
 
 #=============================================================================
 
@@ -229,6 +244,13 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         self.assertCountEqual(serializer.fields['translations'].child.fields,
                               ['translated_field'])
 
+        serializer = CustomSerializer()
+        self.assertCountEqual(serializer.fields,
+                              ['id', 'shared_field', 'translations'])
+        self.assertIsInstance(serializer.fields['translations'], TranslationListSerializer)
+        self.assertIsInstance(serializer.fields['translations'].child, CustomTranslationSerializer)
+        self.assertCountEqual(serializer.fields['translations'].child.fields, ['cheat', 'custom'])
+
     #---------------------------------------------------------------------
 
     def test_serialize(self):
@@ -246,6 +268,23 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
             translation = data['translations'][language]
             self.assertCountEqual(translation, ['translated_field'])
             self.assertEqual(translation['translated_field'], NORMAL[1].translated_field[language])
+
+    def test_serialize_custom(self):
+        'Serialize nested translations as a language => fields dict'
+        obj = Normal.objects.prefetch_related('translations').get(pk=self.normal_id[1])
+
+        serializer = CustomSerializer(instance=obj)
+        data = serializer.data
+        self.assertCountEqual(data, ['id', 'shared_field', 'translations'])
+        self.assertEqual(data['id'], self.normal_id[1])
+        self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
+        self.assertIsInstance(data['translations'], dict)
+        self.assertCountEqual(data['translations'], self.translations)
+        for language in self.translations:
+            translation = data['translations'][language]
+            self.assertCountEqual(translation, ['cheat', 'custom'])
+            self.assertEqual(translation['cheat'], NORMAL[1].shared_field)
+            self.assertEqual(translation['custom'], NORMAL[1].translated_field[language])
 
     #---------------------------------------------------------------------
 

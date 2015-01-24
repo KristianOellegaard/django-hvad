@@ -3,6 +3,7 @@ from django.utils.translation import ugettext_lazy as _l
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
+from ...utils import get_cached_translation, set_cached_translation
 
 #=============================================================================
 
@@ -35,12 +36,19 @@ class TranslationListSerializer(serializers.ListSerializer):
             raise ValidationError(errors)
         return ret
 
-    def to_representation(self, data):
-        iterable = data.all() if isinstance(data, models.Manager) else data
-        return dict(
-            (item.language_code, self.child.to_representation(item))
-            for item in iterable
-        )
+    def get_attribute(self, instance):
+        ''' Override get_attribute so it returns the whole translatable model and not just translations '''
+        return instance
+
+    def to_representation(self, instance):
+        ''' Combine each translation in turn so the serializer has a full object '''
+        result = {}
+        stashed = get_cached_translation(instance)
+        for translation in getattr(instance, self.source).all():
+            set_cached_translation(instance, translation)
+            result[translation.language_code] = self.child.to_representation(instance)
+        set_cached_translation(instance, stashed)
+        return result
 
     def save(self, *args, **kwargs): #pragma: no cover
         raise NotImplementedError('TranslationList must be nested')
