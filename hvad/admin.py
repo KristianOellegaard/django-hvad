@@ -398,7 +398,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
         defaults = {
             "form": self.get_form(request, obj, fields=fields),
-            #"formset": self.formset,
+            "formset": self.formset,
             "fk_name": self.fk_name,
             "fields": fields,
             "exclude": exclude or None,
