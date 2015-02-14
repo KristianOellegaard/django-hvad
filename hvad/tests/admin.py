@@ -66,21 +66,21 @@ class ModelHelpersTests(HvadTestCase, NormalFixture):
     def test_translation_getters_missing(self):
         # Try when both current language and first fallbacks are missing
         obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
-        with self.settings(LANGUAGE_CODE='xx',
-                           LANGUAGES=(('xx', 'Missing'),
+        with self.settings(LANGUAGE_CODE='tt',
+                           LANGUAGES=(('tt', 'Missing'),
                                       ('en', 'English'),
                                       ('ja', 'Japanese'))):
-            with LanguageOverride('zh'):
+            with LanguageOverride('th'):
                 self.assertEqual(obj.lazy_translation_getter('translated_field'),
                                     NORMAL[1].translated_field['en'])
 
         # Now try with a different fallback priority
         obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
-        with self.settings(LANGUAGE_CODE='xx',
-                           LANGUAGES=(('xx', 'Missing'),
+        with self.settings(LANGUAGE_CODE='tt',
+                           LANGUAGES=(('tt', 'Missing'),
                                       ('ja', 'Japanese'),
                                       ('en', 'English'))):
-            with LanguageOverride('zh'):
+            with LanguageOverride('th'):
                 self.assertEqual(obj.lazy_translation_getter('translated_field'),
                                     NORMAL[1].translated_field['ja'])
 
@@ -107,7 +107,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
                 # Entries should be linked to the corresponding translation page
                 self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
 
-        with LanguageOverride('zh'):
+        with LanguageOverride('th'):
             with self.assertNumQueries(1):
                 self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
 
@@ -128,7 +128,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
                 # Entries should be linked to the corresponding translation page
                 self.assertTrue(myadmin.all_translations(obj).find("?language=en") != -1)
 
-        with LanguageOverride('zh'):
+        with LanguageOverride('th'):
             with self.assertNumQueries(0):
                 self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
 
@@ -153,12 +153,12 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
             self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field,
                              NORMAL[1].translated_field['en'])
 
-        with LanguageOverride('zh'):
+        with LanguageOverride('th'):
             self.assertEqual(myadmin.get_object(get_request, obj.pk).pk,
                              self.normal_id[1])
             self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field,
                              NORMAL[1].shared_field)
-            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'zh')
+            self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'th')
             self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
 
         # Check what happens if there is no translations at all
@@ -492,7 +492,12 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
     def test_get_change_form_base_template(self):
         normaladmin = self._get_admin(Normal)
         template = normaladmin.get_change_form_base_template()
-        self.assertEqual(template, 'admin/change_form.html')
+
+        #HACK navigate through incompatibility between django template engine
+        # deprecation path and django extends tag in version 1.8
+        if hasattr(template, 'template'):
+            template = template.template
+        self.assertEqual(template.name, 'admin/change_form.html')
         
     def test_translatable_modelform_factory(self):
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])

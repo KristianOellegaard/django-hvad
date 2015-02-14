@@ -154,7 +154,10 @@ class OptionsTest(HvadTestCase):
         opts = Normal._meta
         self.assertTrue(hasattr(opts, 'translations_model'))
         self.assertTrue(hasattr(opts, 'translations_accessor'))
-        relmodel = Normal._meta.get_field_by_name(opts.translations_accessor)[0].model
+        if django.VERSION >= (1, 8):
+            relmodel = Normal._meta.get_field(opts.translations_accessor).field.model
+        else:
+            relmodel = Normal._meta.get_field_by_name(opts.translations_accessor)[0].model
         self.assertEqual(relmodel, opts.translations_model)
 
 
@@ -524,7 +527,7 @@ class TableNameTest(HvadTestCase):
             translations = TranslatedFields(
                 hello = models.CharField(max_length=128)
             )
-        self.assertTrue(MyTableNameTestModel.translations.related.model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
+        self.assertTrue(MyTableNameTestModel._meta.translations_model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
 
     def test_table_name_override(self):
         from hvad.models import TranslatedFields
@@ -534,7 +537,7 @@ class TableNameTest(HvadTestCase):
                 translations = TranslatedFields(
                     hello = models.CharField(max_length=128)
                 )
-            self.assertTrue(MyOtherTableNameTestModel.translations.related.model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
+            self.assertTrue(MyOtherTableNameTestModel._meta.translations_model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
 
     def test_table_name_override_rename(self):
         override = self.settings(NANI_TABLE_NAME_SEPARATOR='O_O')
@@ -550,7 +553,7 @@ class TableNameTest(HvadTestCase):
                 hello = models.CharField(max_length=128),
                 meta = {'db_table': 'tests_mymodel_i18n'},
             )
-        self.assertEqual(MyTableNameTestNamedModel.translations.related.model._meta.db_table, 'tests_mymodel_i18n')
+        self.assertEqual(MyTableNameTestNamedModel._meta.translations_model._meta.db_table, 'tests_mymodel_i18n')
 
 
 class GetOrCreateTest(HvadTestCase):

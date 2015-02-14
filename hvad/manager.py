@@ -1,18 +1,21 @@
 from collections import defaultdict
 import django
 from django.conf import settings
+from django.core.exceptions import FieldError
 from django.db import models, transaction, IntegrityError
-from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
-if django.VERSION >= (1, 6):
-    from django.db.models.query import DateTimeQuerySet
-try:
-    from django.db.models.query import CHUNK_SIZE
-except ImportError:
-    CHUNK_SIZE = 100
-from django.db.models import Q
+if django.VERSION >= (1, 8):
+    from django.db.models.query import QuerySet, ValuesQuerySet
+elif django.VERSION >= (1, 6):
+    from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet, DateTimeQuerySet
+else:
+    from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet
+if django.VERSION >= (1, 8):
+    from django.db.models.sql.datastructures import Join, LOUTER
+from django.db.models.sql.constants import GET_ITERATOR_CHUNK_SIZE as CHUNK_SIZE
+from django.db.models import F, Q
 from django.utils.translation import get_language
-from hvad.fieldtranslator import translate
-from hvad.query import q_children, where_node_children
+from hvad.compat import string_types
+from hvad.query import query_terms, q_children, expression_nodes, where_node_children
 from hvad.utils import combine, minimumDjangoVersion, settings_updater
 from copy import deepcopy
 import logging
@@ -39,7 +42,16 @@ class FieldTranslator(object):
     """
     def __init__(self, manager):
         self._manager = manager
-        self._shared_fields = tuple(manager.shared_model._meta.get_all_field_names()) + ('pk',)
+        if django.VERSION >= (1, 8):
+            fields = set()
+            for field in manager.shared_model._meta.get_fields():
+                fields.add(field.name)
+                if hasattr(field, 'attname'):
+                    fields.add(field.attname)
+            fields.add('pk')
+            self._shared_fields = tuple(fields)
+        else:
+            self._shared_fields = tuple(manager.shared_model._meta.get_all_field_names()) + ('pk',)
         self._cache = dict()
         super(FieldTranslator, self).__init__()
 
@@ -114,9 +126,10 @@ class RawConstraint(object):
         return (self.sql % aliases, [])
 
 class BetterTranslationsField(object):
-    def __init__(self, translation_fallbacks):
+    def __init__(self, translation_fallbacks, master):
         # Filter out duplicates, while preserving order
         self._fallbacks = []
+        self._master = master
         seen = set()
         for lang in translation_fallbacks:
             if lang not in seen:
@@ -137,6 +150,9 @@ class BetterTranslationsField(object):
                      alias, related_alias)
         )
 
+    @minimumDjangoVersion(1, 8)
+    def get_joining_columns(self):
+        return ((self._master, self._master), )
 
 #===============================================================================
 # TranslationQueryset
@@ -154,9 +170,10 @@ class TranslationQueryset(QuerySet):
     """
     override_classes = {
         ValuesQuerySet: ValuesMixin,
-        DateQuerySet: SkipMasterSelectMixin,
     }
-    if django.VERSION >= (1, 6):
+    if django.VERSION < (1, 8):
+        override_classes[DateQuerySet] = SkipMasterSelectMixin
+    if django.VERSION >= (1, 6) and django.VERSION < (1, 8):
         override_classes[DateTimeQuerySet] = SkipMasterSelectMixin
     _skip_master_select = False
 
@@ -207,7 +224,15 @@ class TranslationQueryset(QuerySet):
     @property
     def shared_local_field_names(self):
         if self._local_field_names is None:
-            self._local_field_names = self.shared_model._meta.get_all_field_names()
+            if django.VERSION >= (1, 8):
+                fields = set()
+                for field in self.shared_model._meta.get_fields():
+                    fields.add(field.name)
+                    if hasattr(field, 'attname'):
+                        fields.add(field.attname)
+                self._local_field_names = tuple(fields)
+            else:
+                self._local_field_names = self.shared_model._meta.get_all_field_names()
         return self._local_field_names
 
     def _translate_args_kwargs(self, *args, **kwargs):
@@ -222,6 +247,16 @@ class TranslationQueryset(QuerySet):
         newkwargs = dict((self.field_translator(key), value)
                          for key, value in kwargs.items())
         return newargs, newkwargs
+
+    def _translate_expression(self, expr):
+        if isinstance(expr, string_types):
+            return self.field_translator(expr)
+        for node in expression_nodes(expr):
+            if isinstance(node, F):
+                node.name = self.field_translator(node.name)
+            elif hasattr(node, 'lookup'):
+                node.lookup = self.field_translator(node.lookup)
+        return expr
 
     def _translate_fieldnames(self, fieldnames):
         return [self.field_translator(name) for name in fieldnames]
@@ -275,58 +310,39 @@ class TranslationQueryset(QuerySet):
         force_unique_fields = []
 
         for query_key in fields:
-            bits = query_key.split('__')
-            model = self.shared_model
+            newbits = []
+            for term in query_terms(self.shared_model, query_key):
 
-            for depth, bit in enumerate(bits):
-                # Resolve the field
-                try:                             # lookup the field on the shared model
-                    field, _, direct, _ = model._meta.get_field_by_name.real(bit)
-                    translated = False
-                except models.FieldDoesNotExist: # nope, that's from translations
-                    field, _, direct, _ = (model._meta.translations_model
-                                                ._meta.get_field_by_name(bit))
-                    translated = True
-                except AttributeError:           # model is not translatable anyway
-                    field, _, direct, _ = model._meta.get_field_by_name(bit)
-                    translated = False
-
-                # Adjust current path bit
-                if depth == 0 and not translated:
+                # Translate term
+                if term.depth == 0 and not term.translated:
                     # on initial depth we must key to shared model
-                    bits[depth] = 'master__%s' % bit
-                elif depth > 0 and translated:
+                    newbits.append('master__%s' % term.term)
+                elif term.depth > 0 and term.translated:
                     # on deeper levels we must key to translations model
                     # this will work because translations will be seen as _unique
                     # at query time
-                    bits[depth] = '%s__%s' % (model._meta.translations_accessor, bit)
+                    newbits.append('%s__%s' % (term.model._meta.translations_accessor, term.term))
+                else:
+                    newbits.append(term.term)
 
-
-                # Find out target model
-                if direct:  # field is on model
-                    if field.rel:    # field is a foreign key, follow it
-                        if hasattr(field.rel, 'through'):
-                            raise ValueError('Cannot select_related: %s can be multiple objects. '
-                                             'Use prefetch_related instead.' % query_key)
-                        target = field.rel.to
-                    else:            # field is a regular field
-                        raise ValueError('Cannot select_related: %s is a regular field' % query_key)
-                else:       # field is a m2m or reverse fk
-                    raise ValueError('Cannot select_related: %s can be multiple objects. '
+                # Some helpful messages for common mistakes
+                if term.many:
+                    raise FieldError('Cannot select_related: %s can be multiple objects. '
                                      'Use prefetch_related instead.' % query_key)
-                    # would be target = field.model to follow
+                if term.target is None:
+                    raise FieldError('Cannot select_related: %s is a regular field' % query_key)
+                if hasattr(term.field.rel, 'through'):
+                    raise FieldError('Cannot select_related: %s can be multiple objects. '
+                                     'Use prefetch_related instead.' % query_key)
 
                 # If target is a translated model, select its translations
-                if hasattr(target._meta, 'translations_accessor'):
+                target_translations = getattr(term.target._meta, 'translations_accessor', None)
+                if target_translations is not None:
                     # Add the model
-                    target_query = '__'.join(bits[:depth+1])
-                    related_queries.append('%s__%s' % (
-                        target_query,
-                        target._meta.translations_accessor
-                    ))
+                    target_query = '__'.join(newbits)
+                    related_queries.append('%s__%s' % (target_query, target_translations))
 
                     # Add a language filter for the translation
-                    target_translations = target._meta.translations_accessor
                     language_filters.append('%s__%s__language_code' % (
                         target_query,
                         target_translations,
@@ -334,11 +350,10 @@ class TranslationQueryset(QuerySet):
 
                     # Remember to mark the field unique so JOIN is generated
                     # and row decoder gets cached items
-                    target_transfield = getattr(target, target_translations).related.field
+                    target_transfield = getattr(term.target, target_translations).related.field
                     force_unique_fields.append(target_transfield)
 
-                model = target
-            related_queries.append('__'.join(bits))
+            related_queries.append('__'.join(newbits))
 
         # Apply results to query
         self.query.add_select_related(related_queries)
@@ -367,13 +382,24 @@ class TranslationQueryset(QuerySet):
             languages = tuple(get_language() if lang is None else lang
                               for lang in (self._language_code,) + self._language_fallbacks)
 
-            masteratt = self.model._meta.get_field('master').attname
-            nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
-                        {'nullable': True, 'outer_if_first': True})
-            alias = self.query.join((self.query.get_initial_alias(), self.model._meta.db_table,
-                                     ((masteratt, masteratt),)),
-                                    join_field=BetterTranslationsField(languages),
-                                    **nullable)
+            if django.VERSION >= (1, 8):
+                masteratt = self.model._meta.get_field('master').attname
+                alias = self.query.join(Join(
+                    self.model._meta.db_table,
+                    self.query.get_initial_alias(),
+                    None,
+                    LOUTER,
+                    BetterTranslationsField(languages, master=masteratt),
+                    True
+                ))
+            else:
+                masteratt = self.model._meta.get_field('master').attname
+                nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
+                            {'nullable': True, 'outer_if_first': True})
+                alias = self.query.join((self.query.get_initial_alias(), self.model._meta.db_table,
+                                        ((masteratt, masteratt),)),
+                                        join_field=BetterTranslationsField(languages, master=masteratt),
+                                        **nullable)
             self.query.add_extra(None, None, ('%s.id IS NULL'%alias,), None, None, None)
             self.query.add_filter(('master__pk__isnull', False))
             self.query.add_select_related(('master',))
@@ -612,14 +638,10 @@ class TranslationQueryset(QuerySet):
         Loops over all the passed aggregates and translates the fieldnames
         """
         qs = self._clone()._add_language_filter()
-        newargs, newkwargs = [], {}
-        for arg in args:
-            arg.lookup = qs._translate_fieldnames([arg.lookup])[0]
-            newargs.append(arg)
-        for key in kwargs:
-            value = kwargs[key]
-            value.lookup = qs._translate_fieldnames([value.lookup])[0]
-            newkwargs[key] = value
+        newargs = tuple(qs._translate_expression(item) for item in args)
+        newkwargs = dict(
+            (k, qs._translate_expression(v)) for k, v in kwargs.items()
+        )
         response = super(TranslationQueryset, qs).aggregate(*newargs, **newkwargs)
         return qs._reverse_translate_fieldnames_dict(response)
 
@@ -699,12 +721,14 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).values_list(*fields, **kwargs)
 
     def dates(self, field_name, kind=None, order='ASC'):
-        field_name = self.field_translator(field_name)
+        if django.VERSION < (1, 8):
+            field_name = self.field_translator(field_name)
         return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
 
     @minimumDjangoVersion(1, 6)
     def datetimes(self, field, *args, **kwargs):
-        field = self.field_translator(field)
+        if django.VERSION < (1, 8):
+            field = self.field_translator(field)
         return super(TranslationQueryset, self).datetimes(field, *args, **kwargs)
 
     def select_related(self, *fields):
@@ -729,7 +753,11 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self)._filter_or_exclude(None, *newargs, **newkwargs)
 
     def annotate(self, *args, **kwargs):
-        raise NotImplementedError()
+        newargs = tuple(self._translate_expression(item) for item in args)
+        newkwargs = dict(
+            (k, self._translate_expression(v)) for k, v in kwargs.items()
+        )
+        return super(TranslationQueryset, self).annotate(*newargs, **newkwargs)
 
     def order_by(self, *field_names):
         """
@@ -875,7 +903,7 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
             taccessorcache = getattr(self.model, taccessor).related.get_cache_name()
             tcache = self.model._meta.translations_cache
             masteratt = tmodel._meta.get_field('master').attname
-            field = BetterTranslationsField(fallbacks)
+            field = BetterTranslationsField(fallbacks, master=masteratt)
 
             qs = self._clone()
 
@@ -883,15 +911,33 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
             # This join will be reused by the select_related. We must provide it
             # anyway because the order matters and add_select_related does not
             # populate joins right away.
-            nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
-                        {'nullable': True, 'outer_if_first': True})
-            alias1 = qs.query.join((qs.query.get_initial_alias(), tmodel._meta.db_table,
-                                    ((qs.model._meta.pk.attname, masteratt),)),
-                                   join_field=getattr(qs.model, taccessor).related.field.rel,
-                                   **nullable)
-            alias2 = qs.query.join((tmodel._meta.db_table, tmodel._meta.db_table,
-                                    ((masteratt, masteratt),)),
-                                   join_field=field, **nullable)
+            if django.VERSION >= (1, 8):
+                alias1 = qs.query.join(Join(
+                    tmodel._meta.db_table,
+                    qs.query.get_initial_alias(),
+                    None,
+                    LOUTER,
+                    getattr(qs.model, taccessor).related.field.rel,
+                    True
+                ))
+                alias2 = qs.query.join(Join(
+                    tmodel._meta.db_table,
+                    alias1,
+                    None,
+                    LOUTER,
+                    field,
+                    True
+                ))
+            else:
+                nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
+                            {'nullable': True, 'outer_if_first': True})
+                alias1 = qs.query.join((qs.query.get_initial_alias(), tmodel._meta.db_table,
+                                        ((qs.model._meta.pk.attname, masteratt),)),
+                                    join_field=getattr(qs.model, taccessor).related.field.rel,
+                                    **nullable)
+                alias2 = qs.query.join((tmodel._meta.db_table, tmodel._meta.db_table,
+                                        ((masteratt, masteratt),)),
+                                    join_field=field, **nullable)
             qs.query.add_extra(None, None, ('%s.id IS NULL'%alias2,), None, None, None)
 
             # We must force the _unique field so get_cached_row populates the cache
@@ -1006,9 +1052,17 @@ class TranslationAwareQueryset(QuerySet):
             language_joins must be a set that will be updated with required
             language joins for given key
         '''
-        newkey, joins = translate(key, model)
-        language_joins.update(joins)
-        return newkey
+        newkey = []
+        for term in query_terms(model, key):
+            if term.translated:
+                newkey.append('%s__%s' % (term.model._meta.translations_accessor, term.term))
+            else:
+                newkey.append(term.term)
+            if term.target is not None:
+                taccessor = getattr(term.target._meta, 'translations_accessor', None)
+                if taccessor is not None:
+                    language_joins.add('__'.join(newkey + [taccessor, 'language_code']))
+        return '__'.join(newkey)
 
     def _translate_args_kwargs(self, *args, **kwargs):
         self.language(self._language_code)

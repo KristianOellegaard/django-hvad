@@ -415,13 +415,13 @@ class ForwardDeclaringForeignKeyTests(HvadTestCase):
                 translated = models.ForeignKey("ReverseRelated", related_name='rel', null=True),
             )
         
-        
         class ReverseRelated(TranslatableModel):
             shared_field = models.CharField(max_length=255)
         
             translated_fields = TranslatedFields(
                 translated = models.CharField(max_length=1)
             )
+
     def test_issue_22_non_translatable_model(self):
         class ForwardRelated2(models.Model):
             shared_field = models.CharField(max_length=255)
@@ -447,11 +447,11 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
             SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1")
 
     def test_select_related_bad_field(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(FieldError):
             list(Normal.objects.language().select_related('simplerel'))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(FieldError):
             list(Related.objects.language().select_related('normal__shared_field'))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(FieldError):
             list(RelatedRelated.objects.language().select_related('simple__manynormals'))
 
     @minimumDjangoVersion(1, 6)
