@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from django import forms
 from django.http import Http404
+from django.utils import translation
 from django.contrib.auth.models import User
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
@@ -54,7 +54,7 @@ class CreateViewTests(HvadTestCase):
 
     def test_get(self):
         'Display an empty form'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
 
@@ -63,7 +63,7 @@ class CreateViewTests(HvadTestCase):
 
     def test_post(self):
         'Create a new object in current language'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # Valid form
             request = self.request_factory.post('/url/', {
                 'shared_field': 'shared',
@@ -89,7 +89,7 @@ class CreateViewTests(HvadTestCase):
 
     def test_post_language(self):
         'Create a new object with given language'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.post('/url/?language=ja', {
                 'shared_field': 'shared',
                 'translated_field': 'translated',
@@ -160,7 +160,7 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
 
     def test_get_default(self):
         'Display an existing object in a new form'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # Using pk
             request = self.request_factory.get('/url/')
             request.user = self.user
@@ -189,7 +189,7 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
 
     def test_get_language(self):
         'Display an existing object in a new form with a specific language'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # Using pk
             request = self.request_factory.get('/url/?language=ja')
             request.user = self.user
@@ -244,7 +244,7 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
         'Update an object with default language'
 
         # Valid form, existing translation
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.post('/url/', data={
                 'shared_field': 'shared',
                 'translated_field': 'translated',
@@ -259,7 +259,7 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
 
 
         # Valid form, nonexisting translation
-        with LanguageOverride('sr'):
+        with translation.override('sr'):
             request = self.request_factory.post('/url/', data={
                 'shared_field': 'shared-bis',
                 'translated_field': 'translated-bis',
@@ -273,7 +273,7 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
             self.assertEqual(obj.translated_field, 'translated-bis')
 
         # Invalid form
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.post('/url/', data={
                 'shared_field': 'shared',
                 'translated_field': 'x'*999,
@@ -287,7 +287,7 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
 
     def test_post_language(self):
         'Update an object with default language'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # Valid form, existing translation
             request = self.request_factory.post('/url/?language=ja', data={
                 'shared_field': 'shared',
@@ -336,7 +336,7 @@ class TransitionTests(HvadTestCase, NormalFixture):
         self.user = User.objects.create(username='admin', is_superuser=True)
 
     def test__get_object_deprecation(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
 
@@ -350,7 +350,7 @@ class TransitionTests(HvadTestCase, NormalFixture):
             self.assertEqual(data['translated_field'], NORMAL[1].translated_field['en'])
 
     def test_filter_kwargs_deprecation(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
 
@@ -364,7 +364,7 @@ class TransitionTests(HvadTestCase, NormalFixture):
             self.assertEqual(data['translated_field'], NORMAL[1].translated_field['en'])
 
     def test_object_id_deprecation(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
 
@@ -391,7 +391,7 @@ class TransitionTests(HvadTestCase, NormalFixture):
         self.assertEqual(data['translated_field'], NORMAL[1].translated_field['ja'])
 
     def test_context_modifiers_deprecation(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
 

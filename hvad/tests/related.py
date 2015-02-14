@@ -3,9 +3,9 @@ import django
 from django.core.exceptions import FieldError
 from django.db import connection, models, IntegrityError
 from django.db.models.query_utils import Q
+from django.utils import translation
 from hvad.exceptions import WrongManager
 from hvad.models import (TranslatedFields, TranslatableModel)
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL, STANDARD
 from hvad.test_utils.fixtures import NormalFixture, StandardFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
@@ -56,13 +56,13 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         ja = Normal.objects.language('ja').get(pk=self.normal_id[1])
         related = Standard.objects.get(pk=self.standard_id[1])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             related = self.reload(related)
             self.assertEqual(related.normal.pk, en.pk)
             self.assertEqual(related.normal.shared_field, en.shared_field)
             self.assertEqual(related.normal.translated_field, en.translated_field)
             self.assertTrue(related in en.standards.all())
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             related = self.reload(related)
             self.assertEqual(related.normal.pk, ja.pk)
             self.assertEqual(related.normal.shared_field, ja.shared_field)
@@ -70,7 +70,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             self.assertTrue(related in ja.standards.all())
 
     def test_num_queries(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             en = Normal.objects.language('en').get(pk=self.normal_id[1])
             with self.assertNumQueries(1):
                 related = Standard.objects.select_related('normal').get(pk=self.standard_id[1])
@@ -83,7 +83,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_lookup_by_pk(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         by_pk = Standard.objects.get(normal__pk=en.pk)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(by_pk.normal.pk, en.pk)
             self.assertEqual(by_pk.normal.shared_field, en.shared_field)
             self.assertEqual(by_pk.normal.translated_field, en.translated_field)
@@ -92,7 +92,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_lookup_by_shared_field(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         by_shared_field = Standard.objects.get(normal__shared_field=en.shared_field)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(by_shared_field.normal.pk, en.pk)
             self.assertEqual(by_shared_field.normal.shared_field, en.shared_field)
             self.assertEqual(by_shared_field.normal.translated_field, en.translated_field)
@@ -101,7 +101,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_lookup_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             by_translated_field = translation_aware_manager.get(
                 normal__translated_field=en.translated_field
             )
@@ -112,12 +112,12 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_lookup_by_translated_field_requires_translation_aware_manager(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertRaises(WrongManager, Standard.objects.get,
                               normal__translated_field=en.translated_field)
 
     def test_lookup_by_non_existing_field(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             if django.VERSION >= (1, 7):
                 self.assertRaises(TypeError, Standard.objects.get,
                                   normal__non_existing_field=1)
@@ -128,7 +128,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             q = Q(normal__translated_field=en.translated_field)
             by_translated_field = translation_aware_manager.get(q)
             self.assertEqual(by_translated_field.normal.pk, en.pk)
@@ -138,7 +138,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_filter_by_shared_field(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             by_shared_field = Standard.objects.filter(normal__shared_field=en.shared_field)
             normals = [obj.normal.pk for obj in by_shared_field]
             expected = [en.pk]
@@ -154,7 +154,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_exclude_by_shared_field(self):
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = manager.exclude(
                 normal__shared_field=NORMAL[STANDARD[1].normal].shared_field
             )
@@ -173,7 +173,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_filter_by_translated_field(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             by_translated_field = translation_aware_manager.filter(
                 normal__translated_field=en.translated_field
             )
@@ -191,14 +191,14 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_filter_by_translated_field_requires_translation_aware_manager(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertRaises(WrongManager, Standard.objects.filter,
                               normal__translated_field=en.translated_field)
 
     def test_filter_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         translation_aware_manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             q = Q(normal__translated_field=en.translated_field)
             by_translated_field = translation_aware_manager.filter(q)
             normals = [obj.normal.pk for obj in by_translated_field]
@@ -226,7 +226,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             obj.save()
 
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(manager.earliest('date__shared_date').pk,
                              self.standard_id[1])
             self.assertEqual(manager.earliest('date__translated_date').pk,
@@ -244,7 +244,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             obj.save()
 
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(manager.latest('date__shared_date').pk,
                              self.standard_id[self.standard_count])
             self.assertEqual(manager.latest('date__translated_date').pk,
@@ -252,7 +252,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_in_bulk(self):
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = manager.filter(
                 normal__translated_field=NORMAL[STANDARD[1].normal].translated_field['en']
             )
@@ -264,7 +264,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_values(self):
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = manager.filter(
                 normal__translated_field=NORMAL[STANDARD[1].normal].translated_field['en']
             ).values('normal_field', 'normal__shared_field', 'normal__translated_field')
@@ -278,7 +278,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_values_list(self):
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = manager.filter(
                 normal__translated_field=NORMAL[STANDARD[1].normal].translated_field['en']
             ).values_list('normal_field', 'normal__shared_field', 'normal__translated_field')
@@ -291,7 +291,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_not_implemented_methods(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         manager = get_translation_aware_manager(Standard)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertRaises(NotImplementedError, manager.aggregate)
             self.assertRaises(NotImplementedError, manager.dates, 'dummy', 'dummy')
             if django.VERSION < (1, 6):
@@ -324,20 +324,20 @@ class TripleRelationTests(HvadTestCase, StandardFixture, NormalFixture):
         self.assertEqual(obj.pk, normal.pk)
 
         # We created an english Normal object, so we want to make sure that we use 'en'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = get_translation_aware_manager(Standard).get(normal__simplerel__pk=simple.pk)
             self.assertEqual(obj.pk, standard.pk)
 
         # If we don't use language 'en', it should give DoesNotExist, when using the
         # translation aware manager
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             manager = get_translation_aware_manager(Standard)
             self.assertRaises(Standard.DoesNotExist, manager.get, normal__simplerel__pk=simple.pk)
 
         # However, if we don't use the translation aware manager, we can query any
         # the shared fields in any language, and it should return the object,
         # even though there is no translated Normal objects
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             obj = Standard.objects.get(normal__simplerel__pk=simple.pk)
             self.assertEqual(obj.pk, standard.pk)
 
@@ -349,7 +349,7 @@ class ManyToManyTest(HvadTestCase, NormalFixture):
         normal1 = Normal.objects.language('en').get(pk=self.normal_id[1])
         many = normal1.manyrels.create(name="many1")
         
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # Get the Normal objects associated with the Many object "many1":
             normals = Normal.objects.language().filter(manyrels__id=many.pk).order_by("translated_field")
             self.assertEqual([n.pk for n in normals], [normal1.pk])
@@ -365,7 +365,7 @@ class ManyToManyTest(HvadTestCase, NormalFixture):
         simplerel = SimpleRelated.objects.language('en').create(
             normal=normal1, translated_field='test1'
         )
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(simplerel.manynormals.count(), 0)
             simplerel.manynormals.add(normal1)
             self.assertEqual(simplerel.manynormals.count(), 1)
@@ -388,7 +388,7 @@ class ManyToManyTest(HvadTestCase, NormalFixture):
         simplerel = SimpleRelated.objects.language('en').create(
             normal=normal1, translated_field='test1'
         )
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(normal1.manysimplerel.count(), 0)
             normal1.manysimplerel.add(simplerel)
             self.assertEqual(normal1.manysimplerel.count(), 1)
@@ -441,7 +441,7 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
 
     def create_fixtures(self):
         super(SelectRelatedTests, self).create_fixtures()
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.normal1 = Normal.objects.language().get(pk=self.normal_id[1])
             self.normal2 = Normal.objects.language().get(pk=self.normal_id[2])
             SimpleRelated.objects.language().create(normal=self.normal1, translated_field="test1")
@@ -473,7 +473,7 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
         self.assertCountEqual(qs._raw_select_related, [])
 
     def test_select_related(self):
-        with LanguageOverride('en'):  
+        with translation.override('en'):
             SimpleRelated.objects.language().create(normal=self.normal2, translated_field="test2")
 
             with self.assertNumQueries(1):
@@ -488,13 +488,13 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
                                  check)
 
     def test_select_related_cleans_cache(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             rel_objects = SimpleRelated.objects.language().select_related('normal')
             cache = getattr(Normal, Normal._meta.translations_accessor).related.get_cache_name()
             self.assertFalse(hasattr(rel_objects[0].normal, cache))
 
     def test_select_related_using_get(self):
-        with LanguageOverride('en'):  
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 r = SimpleRelated.objects.language().select_related('normal').get(translated_field="test1")
                 self.assertEqual(r.normal.pk, self.normal_id[1])
@@ -502,7 +502,7 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
                 self.assertEqual(self.normal1.translated_field, r.normal.translated_field)
                 
     def test_select_related_from_translated_field(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             Related.objects.language().create(pk=1, translated=self.normal1).save()
             with self.assertNumQueries(1):
                 r = Related.objects.language().select_related('translated').get(translated=self.normal1)
@@ -511,7 +511,7 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
                 self.assertEqual(self.normal1.translated_field, r.translated.translated_field)
 
     def test_select_related_with_null_relation(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # First, two Normal objects are created by TwoTranslatedNormalMixin (in English and Japanese)
             related1 = Related.objects.language().create(normal=self.normal1, translated=self.normal1)
             # Now we create another, but with relations set to None:
@@ -537,7 +537,7 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
 
     def create_fixtures(self):
         super(DeepSelectRelatedTests, self).create_fixtures()
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.normal1 = Normal.objects.language().get(pk=self.normal_id[1])
             self.normal2 = Normal.objects.language().get(pk=self.normal_id[2])
             self.standard1 = Standard.objects.get(pk=self.standard_id[1])
@@ -565,7 +565,7 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
             )
 
     def test_deep_select_related(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 qs = RelatedRelated.objects.language().select_related('related__normal', 'simple__normal', 'related__translated')
                 self.assertCountEqual((obj.pk for obj in qs),
@@ -591,7 +591,7 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
                         self.assertEqual(obj.simple, None)
 
     def test_deep_select_related_through_vanilla(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 obj = (StandardRelated.objects.language()
                                               .select_related('standard__normal')
@@ -602,7 +602,7 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
 
 
     def test_deep_select_related_using_get(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 obj = (RelatedRelated.objects.language()
                                              .select_related('related__normal', 'simple__normal')
@@ -620,7 +620,7 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
                                  NORMAL[1].translated_field['en'])
 
     def test_deep_select_related_from_translated_field(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 qs = RelatedRelated.objects.language().select_related( 'trans_related__normal', 'trans_simple__normal')
                 self.assertCountEqual((obj.pk for obj in qs),

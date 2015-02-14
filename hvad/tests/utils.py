@@ -1,6 +1,6 @@
+from django.utils import translation
 from hvad.utils import (get_cached_translation, set_cached_translation,
                         combine, get_translation, load_translation)
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase

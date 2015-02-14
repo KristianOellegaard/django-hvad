@@ -6,16 +6,19 @@ This code was mostly taken from the django-cms
 from django.utils.translation import get_language, activate
 from shutil import rmtree as _rmtree
 from tempfile import template, mkdtemp, _exists
-
+import warnings
 
 class LanguageOverride(object):
     def __init__(self, language):
         self.newlang = language
-        
+        warnings.warn('LanguageOverride is deprecated and will be removed in '
+                      'hvad v1.2.0. Please use django.utils.translation.override '
+                      'instead', DeprecationWarning, stacklevel=2)
+
     def __enter__(self):
         self.oldlang = get_language()
         activate(self.newlang)
-        
+
     def __exit__(self, type, value, traceback):
         activate(self.oldlang)
 

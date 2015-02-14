@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.forms import ModelForm
+from django.utils import translation
 from hvad.admin import TranslatableModelAdminMixin
 from hvad.forms import translatable_inlineformset_factory, translationformset_factory
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, Related
 from hvad.test_utils.fixtures import NormalFixture
@@ -12,12 +12,12 @@ from hvad.test_utils.forms import FormData
 
 class TestBasicInline(HvadTestCase):
     def setUp(self):
-        with LanguageOverride("en"):
+        with translation.override("en"):
             self.object = Normal.objects.language().create(shared_field="test", translated_field="translated test")
             self.request = self.request_factory.post('/url/')
 
     def test_create_fields_inline(self):
-        with LanguageOverride("en"):
+        with translation.override("en"):
             # Fixtures (should eventually be shared with other tests)
 
             translate_mixin = TranslatableModelAdminMixin()

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.context_managers import LanguageOverride
+from django.utils import translation
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal
@@ -12,28 +12,28 @@ class FallbackTests(HvadTestCase, NormalFixture):
 
     def test_single_instance_fallback(self):
         # fetch an object in a language that does not exist
-        with LanguageOverride('de'):
+        with translation.override('de'):
             with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 obj = Normal.objects.untranslated().use_fallbacks('en', 'ja').get(pk=self.normal_id[1])
                 self.assertEqual(obj.language_code, 'en')
                 self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
 
     def test_deferred_fallbacks(self):
-        with LanguageOverride('de'):
+        with translation.override('de'):
             qs = Normal.objects.untranslated().use_fallbacks('ru', None, 'en')
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 obj = qs.get(pk=self.normal_id[1])
                 self.assertEqual(obj.language_code, 'ja')
                 self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
                 obj = qs.get(pk=self.normal_id[1])
                 self.assertEqual(obj.language_code, 'en')
                 self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
 
     def test_shared_only(self):
-        with LanguageOverride('de'):
+        with translation.override('de'):
             with self.assertNumQueries(1):
                 obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
                 self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
@@ -41,7 +41,7 @@ class FallbackTests(HvadTestCase, NormalFixture):
                 self.assertRaises(AttributeError, getattr, obj, 'translated_field')
 
     def test_mixed_fallback(self):
-        with LanguageOverride('de'):
+        with translation.override('de'):
             pk = Normal.objects.language('ja').create(
                 shared_field='shared_field',
                 translated_field=u'日本語三',
@@ -60,7 +60,7 @@ class FallbackFilterTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
     def test_simple_filter_untranslated(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = Normal.objects.untranslated() .filter(shared_field__contains='2')
             with self.assertNumQueries(1):
                 self.assertEqual(qs.count(), 1)
@@ -146,7 +146,7 @@ class FallbackIterTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
     def test_simple_iter_fallbacks(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 for index, obj in enumerate(Normal.objects.untranslated().order_by('pk'), 1):
                     self.assertEqual(obj.shared_field, NORMAL[index].shared_field)
@@ -212,7 +212,7 @@ class FallbackInBulkTests(HvadTestCase, NormalFixture):
 
     def test_in_bulk_untranslated(self):
         pk1, pk2 = self.normal_id[1], self.normal_id[2]
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 result = Normal.objects.untranslated().in_bulk([pk1, pk2])
             with self.assertNumQueries(0):
@@ -222,7 +222,7 @@ class FallbackInBulkTests(HvadTestCase, NormalFixture):
                 self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['en'])
             with self.assertNumQueries(0):
                 self.assertEqual(result[pk1].language_code, 'en')
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(0):
                 self.assertEqual(result[pk2].shared_field, NORMAL[2].shared_field)
             with self.assertNumQueries(1):

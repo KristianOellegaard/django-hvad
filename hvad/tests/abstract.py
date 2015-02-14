@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import ConcreteAB, ConcreteABProxy
 from hvad.test_utils.fixtures import ConcreteABFixture
 from hvad.test_utils.data import NORMAL, CONCRETEAB
-
+from django.utils import translation
 
 class AbstractTests(HvadTestCase, ConcreteABFixture):
     normal_count = 2
     concreteab_count = 2
 
     def test_filter_and_iter(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 qs = (ConcreteAB.objects.language()
                                         .filter(shared_field_a__startswith='Shared')
@@ -36,7 +35,7 @@ class AbstractTests(HvadTestCase, ConcreteABFixture):
                                   self.normal_id[CONCRETEAB[2].translated_field_a['en']]])
 
         qs = qs.all()   # discard cached results
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(1):
                 self.assertEqual(len(qs), 2)
             with self.assertNumQueries(0):
@@ -52,7 +51,7 @@ class AbstractTests(HvadTestCase, ConcreteABFixture):
                                   self.normal_id[CONCRETEAB[2].translated_field_a['ja']]])
 
     def test_select_related(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = (ConcreteAB.objects.language()
                                     .select_related('shared_field_b', 'translated_field_a')
                                     .filter(shared_field_ab=CONCRETEAB[2].shared_field_ab))

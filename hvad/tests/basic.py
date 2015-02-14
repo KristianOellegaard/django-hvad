@@ -5,10 +5,10 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import connection, models, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
+from django.utils import translation
 from hvad.compat import with_metaclass
 from hvad.manager import TranslationQueryset, TranslationManager
 from hvad.models import TranslatableModel, TranslatableModelBase, TranslatedFields
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
@@ -201,7 +201,7 @@ class CreateTest(HvadTestCase):
 
     def test_create_nolang(self):
         with self.assertNumQueries(2):
-            with LanguageOverride('en'):
+            with translation.override('en'):
                 en = Normal.objects.create(
                     shared_field="shared",
                     translated_field='English',
@@ -247,7 +247,7 @@ class CreateTest(HvadTestCase):
         self.assertEqual(en.language_code, "en")
         
     def test_create_instance_simple_nolang(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = Normal(language_code='en')
             obj.shared_field = "shared"
             obj.translated_field = "English"
@@ -258,7 +258,7 @@ class CreateTest(HvadTestCase):
             self.assertEqual(en.language_code, "en")
         
     def test_create_instance_shared_nolang(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = Normal(language_code='en', shared_field = "shared")
             obj.save()
             en = Normal.objects.language('en').get(pk=obj.pk)
@@ -266,7 +266,7 @@ class CreateTest(HvadTestCase):
             self.assertEqual(en.language_code, "en")
         
     def test_create_instance_translated_nolang(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = Normal(language_code='en', translated_field = "English")
             obj.save()
             en = Normal.objects.language('en').get(pk=obj.pk)
@@ -274,7 +274,7 @@ class CreateTest(HvadTestCase):
             self.assertEqual(en.language_code, "en")
     
     def test_create_instance_both_nolang(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = Normal(language_code='en', shared_field = "shared",
                          translated_field = "English")
             obj.save()
@@ -285,7 +285,7 @@ class CreateTest(HvadTestCase):
 
     def test_create_instance_untranslated(self):
         with self.assertNumQueries(1):
-            with LanguageOverride('en'):
+            with translation.override('en'):
                 ut = Normal.objects.create(
                     shared_field="shared",
                 )
@@ -310,7 +310,7 @@ class DeleteTest(HvadTestCase, NormalFixture):
     normal_count = 2
 
     def test_basic_delete(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             Normal.objects.language().filter(pk=self.normal_id[1]).delete()
             self.assertEquals(Normal.objects.untranslated().count(), self.normal_count - 1)
             self.assertEquals(Normal.objects.language().count(), self.normal_count - 1)
@@ -321,7 +321,7 @@ class DeleteTest(HvadTestCase, NormalFixture):
             )
 
     def test_multi_delete(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             Normal.objects.language().delete()
             self.assertFalse(Normal.objects.untranslated().exists())
             self.assertFalse(Normal.objects.language().exists())
@@ -348,11 +348,11 @@ class TranslatedTest(HvadTestCase, NormalFixture):
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = self.reload(ja)
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             obj = self.reload(en)
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
@@ -376,11 +376,11 @@ class GetTest(HvadTestCase, NormalFixture):
 
     def test_safe_translation_getter(self):
         untranslated = Normal.objects.untranslated().get(pk=self.normal_id[1])
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(untranslated.safe_translation_getter('translated_field', None), None)
             Normal.objects.untranslated().get(pk=self.normal_id[1])
             self.assertEqual(untranslated.safe_translation_getter('translated_field', "English"), "English")
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             self.assertEqual(untranslated.safe_translation_getter('translated_field', None), None)
             self.assertEqual(untranslated.safe_translation_getter('translated_field', "Test"), "Test")
 
@@ -389,21 +389,21 @@ class GetByLanguageTest(HvadTestCase, NormalFixture):
     normal_count = 2
 
     def test_args(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             q = Q(language_code='ja', pk=self.normal_id[1])
             obj = Normal.objects.language('all').get(q)
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
     def test_kwargs(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             kwargs = {'language_code':'ja', 'pk':self.normal_id[1]}
             obj = Normal.objects.language('all').get(**kwargs)
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
     def test_language(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = Normal.objects.language('ja').get(pk=self.normal_id[1])
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
@@ -417,7 +417,7 @@ class GetAllLanguagesTest(HvadTestCase, NormalFixture):
     normal_count = 2
 
     def test_args(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             q = Q(pk=self.normal_id[1])
             with self.assertNumQueries(1):
                 objs = Normal.objects.language('all').filter(q)
@@ -428,7 +428,7 @@ class GetAllLanguagesTest(HvadTestCase, NormalFixture):
                                       (objs[0].language_code, objs[1].language_code))
 
     def test_kwargs(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             kwargs = {'pk': self.normal_id[1]}
             with self.assertNumQueries(1):
                 objs = Normal.objects.language('all').filter(**kwargs)
@@ -439,7 +439,7 @@ class GetAllLanguagesTest(HvadTestCase, NormalFixture):
                                       (objs[0].language_code, objs[1].language_code))
 
     def test_translated_unique(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(1):
                 obj = Normal.objects.language('all').get(
                     translated_field=NORMAL[1].translated_field['ja']

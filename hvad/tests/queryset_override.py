@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import django
+from django.utils import translation
 from django.db.models.query_utils import Q
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.data import QONORMAL
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import QONormal, QOSimpleRelated, QOMany
@@ -34,7 +34,7 @@ class FilterTests(HvadTestCase, QONormalFixture):
     qonormal_count = 2
 
     def test_simple_filter(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(2):
                 qs = QONormal.objects.filter(shared_field__contains='2')
                 self.assertEqual(qs.count(), 1)
@@ -42,7 +42,7 @@ class FilterTests(HvadTestCase, QONormalFixture):
             with self.assertNumQueries(0):
                 self.assertEqual(obj.shared_field, QONORMAL[2].shared_field)
                 self.assertEqual(obj.translated_field, QONORMAL[2].translated_field['en'])
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(2):
                 qs = QONormal.objects.filter(shared_field__contains='1')
                 self.assertEqual(qs.count(), 1)
@@ -52,7 +52,7 @@ class FilterTests(HvadTestCase, QONormalFixture):
                 self.assertEqual(obj.translated_field, QONORMAL[1].translated_field['ja'])
 
     def test_translated_filter(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(2):
                 qs = QONormal.objects.filter(translated_field__contains='English').order_by('shared_field')
                 self.assertEqual(qs.count(), 2)
@@ -64,12 +64,12 @@ class FilterTests(HvadTestCase, QONormalFixture):
                 self.assertEqual(obj2.translated_field, QONORMAL[2].translated_field['en'])
 
     def test_deferred_language_filter(self):
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             qs = QONormal.objects.filter(translated_field__contains='English').order_by('shared_field')
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(qs.count(), 2)
             obj1, obj2 = qs
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             self.assertEqual(obj1.shared_field, QONORMAL[1].shared_field)
             self.assertEqual(obj1.translated_field, QONORMAL[1].translated_field['en'])
             self.assertEqual(obj2.shared_field, QONORMAL[2].shared_field)
@@ -81,7 +81,7 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
 
     def setUp(self):
         super(RelatedManagerTests, self).setUp()
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.normal1 = QONormal.objects.get(shared_field=QONORMAL[1].shared_field)
             self.normal2 = QONormal.objects.get(shared_field=QONORMAL[2].shared_field)
             self.related = QOSimpleRelated.objects.create(normal=self.normal1,
@@ -103,7 +103,7 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
         """ ForeignKey accessor should use the TranslationQueryset and fetch
             the translation when it retrieves the shared model.
         """
-        with LanguageOverride('en'):
+        with translation.override('en'):
             related = QOSimpleRelated.objects.get(pk=self.related.pk)
             self.assertEqual(related.translated_field, self.related.translated_field)
 
@@ -114,20 +114,20 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
 
     def test_reverse_foreign_key_query(self):
         """ Reverse foreign key should use the TranslationQueryset """
-        with LanguageOverride('en'):
+        with translation.override('en'):
             qs = list(self.normal1.simplerel.all())
             self.assertEqual(len(qs), 1)
             with self.assertNumQueries(0):
                 self.assertEqual(qs[0].normal_id, self.qonormal_id[1])
                 self.assertEqual(qs[0].translated_field, self.related.translated_field)
 
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             qs = list(self.normal1.simplerel.all())
             self.assertEqual(len(qs), 0)
 
     def test_reverse_foreign_key_updates(self):
         """ Reverse foreign key should use the TranslationQueryset for adding/removing """
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.assertEqual(self.normal1.simplerel.count(), 1)
             self.normal1.simplerel.clear()
             self.assertEqual(self.normal1.simplerel.count(), 0)
@@ -145,7 +145,7 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
     def test_forward_many_to_many_query(self):
         """ Forward side of many to many relation should use the TranslationQueryset
         """
-        with LanguageOverride('en'):
+        with translation.override('en'):
             many = QOMany.objects.get(translated_field='translated1_en')
 
             qs = many.normals.all()
@@ -165,7 +165,7 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
                 self.assertEqual(qs[0].translated_field, QONORMAL[1].translated_field['en'])
 
     def test_forward_many_to_many_updates(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             many = QOMany.objects.get(translated_field='translated1_en')
 
             many.normals.add(self.normal1, self.normal2)
@@ -183,7 +183,7 @@ class RelatedManagerTests(HvadTestCase, QONormalFixture):
     def test_reverse_many_to_many_query(self):
         """ Reverse side of many to many relation should use the TranslationQueryset
         """
-        with LanguageOverride('en'):
+        with translation.override('en'):
             many = QOMany.objects.get(translated_field='translated1_en')
             many.normals.add(self.normal1)
 
@@ -204,7 +204,7 @@ class PrefetchRelatedTests(HvadTestCase, QONormalFixture):
 
     def setUp(self):
         super(PrefetchRelatedTests, self).setUp()
-        with LanguageOverride('en'):
+        with translation.override('en'):
             self.normal1 = QONormal.objects.get(shared_field=QONORMAL[1].shared_field)
             self.normal2 = QONormal.objects.get(shared_field=QONORMAL[2].shared_field)
             self.related = QOSimpleRelated.objects.create(normal=self.normal1,
@@ -223,7 +223,7 @@ class PrefetchRelatedTests(HvadTestCase, QONormalFixture):
             obj.translate('ja').save()
 
     def test_reverse_foreign_key(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(2):
                 obj = QONormal.objects.prefetch_related('simplerel').get(pk=self.qonormal_id[1])
             with self.assertNumQueries(0):
@@ -232,7 +232,7 @@ class PrefetchRelatedTests(HvadTestCase, QONormalFixture):
                 # this is the crucial part: translation should be cached, too
                 self.assertEqual(obj.simplerel.all()[0].translated_field, 'translated1_en')
 
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(2):
                 obj = QONormal.objects.prefetch_related('simplerel').get(pk=self.qonormal_id[1])
             with self.assertNumQueries(0):
@@ -241,14 +241,14 @@ class PrefetchRelatedTests(HvadTestCase, QONormalFixture):
 
     def test_forward_many_to_many(self):
         self.many1.normals.add(self.normal1)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(2):
                 obj = QOMany.objects.prefetch_related('normals').get(pk=self.many1.pk)
             with self.assertNumQueries(0):
                 self.assertEqual(len(obj.normals.all()), 1)
                 self.assertEqual(obj.normals.all()[0].translated_field,
                                  QONORMAL[1].translated_field['en'])
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(2):
                 obj = QOMany.objects.prefetch_related('normals').get(pk=self.many1.pk)
             with self.assertNumQueries(0):
@@ -258,14 +258,14 @@ class PrefetchRelatedTests(HvadTestCase, QONormalFixture):
 
     def test_reverse_many_to_many(self):
         self.many1.normals.add(self.normal1)
-        with LanguageOverride('en'):
+        with translation.override('en'):
             with self.assertNumQueries(2):
                 obj = QONormal.objects.prefetch_related('manyrels').get(pk=self.qonormal_id[1])
             with self.assertNumQueries(0):
                 self.assertEqual(len(obj.manyrels.all()), 1)
                 self.assertEqual(obj.manyrels.all()[0].translated_field,
                                  'translated1_en')
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             with self.assertNumQueries(2):
                 obj = QONormal.objects.prefetch_related('manyrels').get(pk=self.qonormal_id[1])
             with self.assertNumQueries(0):

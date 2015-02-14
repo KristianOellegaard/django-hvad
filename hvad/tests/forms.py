@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import django
 from django.core.exceptions import FieldError
+from django.utils import translation
 from hvad.forms import (TranslatableModelForm,
                         translatable_modelform_factory, translatable_modelformset_factory)
 from hvad.utils import get_cached_translation
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, Standard
 from hvad.test_utils.data import NORMAL
@@ -163,13 +163,13 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertIn('layout.css', str(form.media))
 
     def test_simple_related_form(self):
-        with LanguageOverride('en'):
+        with translation.override('en'):
             form = SimpleRelatedForm()
             rendered = form['normal'].as_widget()
             for index in self.normal_id:
                 self.assertIn(NORMAL[index].translated_field['en'], rendered)
 
-        with LanguageOverride('ja'):
+        with translation.override('ja'):
             form = SimpleRelatedForm()
             rendered = form['normal'].as_widget()
             for index in self.normal_id:
@@ -201,7 +201,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
 
     def test_instance_untranslated(self):
         # no language enforced, should load anyway
-        with LanguageOverride('en'):
+        with translation.override('en'):
             form = NormalForm(instance=Normal.objects.untranslated().get(pk=self.normal_id[1]))
         self.assertFalse(form.is_valid())
         self.assertCountEqual(form.initial, ['shared_field', 'translated_field'])
@@ -212,7 +212,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertIs(get_cached_translation(form.instance), None)
 
         # enforce japanese language
-        with LanguageOverride('en'):
+        with translation.override('en'):
             Form = translatable_modelform_factory('ja', Normal, form=NormalForm)
             form = Form(instance=Normal.objects.untranslated().get(pk=self.normal_id[1]))
         self.assertFalse(form.is_valid())
@@ -357,7 +357,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
             'translated_field': u'српски',
         }
         # no instance, should use current language
-        with LanguageOverride('sr'):
+        with translation.override('sr'):
             form = NormalForm(data)
             with self.assertNumQueries(2):
                 obj = form.save()
@@ -368,7 +368,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
                 self.assertEqual(obj.translated_field, u'српски')
 
         # an instance with a translation loaded, should use that
-        with LanguageOverride('en'):
+        with translation.override('en'):
             form = NormalForm(data, instance=Normal(language_code='sr'))
             with self.assertNumQueries(2):
                 obj = form.save()
@@ -385,7 +385,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
             'shared_field': 'shared',
             'translated_field': 'Japanese',
         }
-        with LanguageOverride('en'):
+        with translation.override('en'):
             form = Form(data, instance=Normal(language_code='sr'))
             with self.assertNumQueries(2):
                 obj = form.save()
@@ -401,7 +401,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
             'shared_field': 'shared',
             'translated_field': 'translated',
         }
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # translation is loaded, use it
             form = NormalForm(data, instance=Normal.objects.language('ja').get(pk=self.normal_id[1]))
             with self.assertNumQueries(2 if django.VERSION >= (1, 6) else 4):
@@ -446,7 +446,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
             'shared_field': 'shared',
             'translated_field': u'српски',
         }
-        with LanguageOverride('en'):
+        with translation.override('en'):
             # wrong translation is loaded, override it
             form = Form(data, instance=Normal.objects.language('ja').get(pk=self.normal_id[1]))
             with self.assertNumQueries(3 if django.VERSION >= (1, 6) else 4):
@@ -466,7 +466,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
         data = {
             'shared_field': 'shared',
         }
-        with LanguageOverride('en'):
+        with translation.override('en'):
             form = Form(data, instance=Normal.objects.language('ja').get(pk=self.normal_id[1]))
             with self.assertNumQueries(1):
                 self.assertTrue(form.is_valid())
@@ -483,7 +483,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
 
     def test_nocommit(self):
         'The commit=False should be properly honored'
-        with LanguageOverride('en'):
+        with translation.override('en'):
             data = {
                 'shared_field': 'shared',
                 'translated_field': 'English',
