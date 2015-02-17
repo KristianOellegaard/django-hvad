@@ -23,10 +23,86 @@ Features
 * **Simple** - only 3 new queryset methods.
 * **Natural** - use Django ORM as usual, it just became language aware.
 * **Fast** - no additional queries for reads, just an inner join to an indexed key.
-* **Complete** - supports relationships, custom managers, proxy models, and abstract models.
+* **Complete** - relationships, custom managers and querysets, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
-* **Reliable** - more than 270 test cases and counting. |coverage| |build|
-* **Compatible** with Django 1.4 to 1.7, running Python 2.7, 3.3 or 3.4.
+* **Reliable** - more than 290 test cases and counting. |coverage| |build|
+* **Compatible** with Django 1.4 to 1.8, running Python 2.7, 3.3 or 3.4.
+
+Example Uses
+------------
+
+Declaring a translatable ``Book`` model::
+
+    class Book(TranslatableModel):
+        author = models.ForeignKey(Author)
+        release = models.Date()
+
+        translations = TranslatedFields(
+            title = models.CharField(max_length=250)
+        )
+
+Thus, only the title will vary based on the language. Release date and
+author are shared among all languages. Let's now create a ``Book`` instance::
+
+    # The recommended way:
+    book = Book.objects.language('en').create(
+        author = Author.objects.get(name='Antoine de Saint Exupéry'),
+        release = datetime.date(1943, 4, 6),
+        title = "The Little Prince",
+    )
+
+    # Also works
+    book = Book(language_code='en')
+    book.author = Author.objects.get(name='Antoine de Saint Exupéry')
+    book.release = datetime.date(1943, 4, 6)
+    book.title = "The Little Prince"
+    book.save()
+
+Provding some translations::
+
+    book.translate('fr')
+    book.title = "Le Petit Prince"
+    book.save()
+    book.translate('de')
+    book.title = "Der kleine Prinz"
+    book.save()
+
+Every call to ``translate()`` creates a new translation from scratch and switches
+to that translation; ``save()`` only saves the latest translation. Let's now perform
+some language-aware queries::
+
+    Book.objects.all()
+
+Compatible by default: returns all objects, without any translated fields attached.
+Starting from v1.0, default behavior can be overriden to work like next query::
+
+    Book.objects.language().all()
+
+Returns all objects as translated instances, but only the ones that are translated
+into the currect language. You can also specify which language to get, using e.g.::
+
+    Book.objects.language("en").all()
+
+Usual queryset methods work like they always did: let's get all books as translated instances,
+filtering on the ``title`` attribute, returning those that have
+``Petit Prince`` in their French title, ordered by publication date (in their
+French edition)::
+
+    Book.objects.language("fr").filter(title__contains='Petit Prince').order_by('release')
+
+Other random examples::
+
+    # last German book published in year 1948
+    Book.objects.language("de").filter(release__year=1948).latest()
+
+    # other books from the same author as mybook. Cache author as well.
+    Book.objects.language().select_related('author').filter(author__books=mybook)
+
+    # books that have "Django" in their title, regardless of the language
+    Book.objects.language('all').filter(title__icontains='Django')
+
+
+More examples in the `quickstart guide`_.
 
 Releases
 --------
@@ -34,49 +110,13 @@ Releases
 Django-hvad uses the same release pattern as Django. The following versions
 are thus available:
 
-* Stable branch 0.4, available through `PyPI`_ and git branch ``releases/0.4.x``.
 * Stable branch 0.5, available through `PyPI`_ and git branch ``releases/0.5.x``.
 * Stable branch 1.0, available through `PyPI`_ and git branch ``releases/1.0.x``.
-* Development branch 1.1, available through git branch ``master``.
+* Stable branch 1.1, available through `PyPI`_ and git branch ``releases/1.1.x``.
+* Development branch 1.2, available through git branch ``master``.
 
 Stable branches have minor bugfix releases as needed, with guaranteed compatibility.
 See the `installation guide`_ for details, or have a look at the `release notes`_.
-
-Example Use
------------
-
-             Book.objects.all()
-
-Compatible by default: returns all objects, without any translated fields attached.
-Starting from v1.0, default behavior can be overriden to work like next query:
-
-             Book.objects.language().all()
-
-Returns all objects as translated instances, but only the ones that are translated
-into the currect language. You can also specify which language to get, using e.g.:
-
-             Book.objects.language("en").all()
-
-Usual queryset methods work as usual: let's get all books as translated instances,
-filtering on the translatable ``title`` attribute, returning those that have
-``Petit Prince`` in their French title, ordered by publication date (in their
-French edition):
-
-             Book.objects.language("fr").filter(title__contains='Petit Prince').order_by('release')
-
-Other random examples:
-
-            # last German book published in year 1948
-            Book.objects.language("de").filter(release__year=1948).latest()
-
-            # other books from the same author as mybook. Cache author as well.
-            Book.objects.language().select_related('author').filter(author__books=mybook)
-
-            # books that have "Django" in their title, regardless of the language
-            Book.objects.language('all').filter(title__icontains='Django')
-
-
-More examples in the `quickstart guide`_.
 
 Thanks to
 ---------

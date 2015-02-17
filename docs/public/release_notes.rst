@@ -5,16 +5,16 @@ Release Notes
 .. release 1.1.0
 
 *****************************
-1.1.0 - upcoming release
+1.1.0 - current release
 *****************************
 
-.. note:: This version is being developed. If you feel like helping, or want the
-          very latest feature, you can install it from the `github repository`_.
-          Otherwise, please get a `packaged release`_ instead.
+Released on February 17, 2015
 
 Python and Django versions supported:
 
 - hvad now supports Django 1.8.
+- Django 1.5 has reached its end of life, and support will be dropped in hvad 1.2.
+  Note however that Django 1.4 will still be supported.
 
 New features:
 
@@ -28,7 +28,7 @@ New features:
 
 Compatibility warnings:
 
-- Internal module ``fieldtranslator`` was no longer used, and was incompatible with
+- Internal module ``hvad.fieldtranslator`` was no longer used, and was incompatible with
   Django 1.8. It has been removed.
 - Deprecated :meth:`~hvad.manager.TranslationManager.using_translations` has been removed.
   It can be safely replaced by :meth:`~hvad.manager.TranslationManager.language`.
@@ -62,7 +62,7 @@ Deprecation list:
 .. release 1.0.0
 
 *****************************
-1.0.0 - current release
+1.0.0
 *****************************
 
 Released on December 19, 2014

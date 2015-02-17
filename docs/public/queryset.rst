@@ -109,7 +109,6 @@ not implemented (yet) in django-hvad:
 * :meth:`~hvad.manager.TranslationQueryset.bulk_create`
 * :meth:`~hvad.manager.TranslationQueryset.update_or_create`
 * :meth:`~hvad.manager.TranslationQueryset.complex_filter`
-* :meth:`~hvad.manager.TranslationQueryset.annotate`
 * :meth:`~hvad.manager.TranslationQueryset.defer`
 * :meth:`~hvad.manager.TranslationQueryset.only`
 
