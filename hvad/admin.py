@@ -125,7 +125,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         info = ct.app_label, ct.model
         if lang:
             get.update({self.query_language_key: lang})
-        url = '%s?%s' % (self.reverse('admin:%s_%s_change' % info, args=(obj.id,)), urlencode(get))
+        url = '%s?%s' % (self.reverse('admin:%s_%s_change' % info, args=(obj.pk,)), urlencode(get))
         return url
 
 
