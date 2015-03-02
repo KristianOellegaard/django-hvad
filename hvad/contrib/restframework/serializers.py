@@ -25,7 +25,7 @@ class TranslationsMixin(object):
             BaseMeta = getattr(BaseSerializer, 'Meta', None)
             exclude = veto_fields + ('language_code',)
             if BaseMeta is not None:
-                exclude += getattr(BaseMeta, 'exclude', ())
+                exclude += tuple(getattr(BaseMeta, 'exclude', ()))
 
             NestedMeta = type('Meta', (object,) if BaseMeta is None else (BaseMeta, object), {
                 'model': model_class._meta.translations_model,
