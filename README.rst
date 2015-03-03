@@ -58,7 +58,7 @@ author are shared among all languages. Let's now create a ``Book`` instance::
     book.title = "The Little Prince"
     book.save()
 
-Provding some translations::
+Providing some translations::
 
     book.translate('fr')
     book.title = "Le Petit Prince"
