@@ -2,10 +2,23 @@
 Release Notes
 #############
 
+.. release 1.1.1
+
+*****************************
+1.1.1 - current release
+*****************************
+
+Released on March 5, 2015
+
+Fixes:
+
+- Backwards compatibility issue in get_field implementation — :issue:`233`.
+- Admin no longer breaks on models using another ``pk`` field than ``id``.
+
 .. release 1.1.0
 
 *****************************
-1.1.0 - current release
+1.1.0
 *****************************
 
 Released on February 17, 2015
