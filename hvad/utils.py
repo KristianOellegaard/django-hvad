@@ -121,12 +121,12 @@ class SmartGetField(object):
         assert not isinstance(real, SmartGetField)
         self.real = real
 
-    def __call__(self, meta, name):
+    def __call__(self, meta, name, *args, **kwargs):
         try:
-            return self.real(name)
+            return self.real(name, *args, **kwargs)
         except FieldDoesNotExist as e:
             try:
-                meta.translations_model._meta.get_field(name)
+                meta.translations_model._meta.get_field(name, *args, **kwargs)
             except FieldDoesNotExist:
                 raise e
             else:
