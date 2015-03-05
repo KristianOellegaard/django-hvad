@@ -45,6 +45,7 @@ Contents
     public/queryset
     public/forms
     public/admin
+    public/restframework
     public/faq
     public/release_notes
     public/contact
