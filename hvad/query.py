@@ -1,6 +1,9 @@
 import django
 from django.db.models import Q, FieldDoesNotExist
-from django.db.models.expressions import ExpressionNode
+if django.VERSION >= (1, 8):
+    from django.db.models.expressions import Expression
+else:
+    from django.db.models.expressions import ExpressionNode as Expression
 from django.db.models.sql.where import WhereNode
 from collections import namedtuple
 
@@ -118,7 +121,7 @@ if django.VERSION >= (1, 8):
             expression = todo.pop()
             if expression is not None:
                 yield expression
-            if isinstance(expression, ExpressionNode):
+            if isinstance(expression, Expression):
                 todo.extend(expression.get_source_expressions())
 
 else:
@@ -131,7 +134,7 @@ else:
             expression = todo.pop()
             if expression is not None:
                 yield expression
-            if isinstance(expression, ExpressionNode):
+            if isinstance(expression, Expression):
                 todo.extend(expression.children or ())
 
 
