@@ -50,12 +50,12 @@ as part of the field list.
 
 Like :ref:`TranslatableModelForm <translatablemodelform>`,
 ``TranslatableModelSerializer`` can work in either normal mode, or **enforce** mode.
-The semantics of both mode are exactly the same as with forms, effecting the way
+The semantics of both mode are exactly the same as with forms, selecting the way
 a language is chosen for serializing and deserializing.
 
 * A serializer is in normal mode if it has no language set. This is the default. In
   this mode, it will use the language of the ``instance`` it is given, defaulting
-  to current language if not ``instance`` is specified.
+  to current language if no ``instance`` is specified.
 * A serializer is in **enforce** mode if is has a language set. This is achieved
   by giving it a ``language=`` argument at instanciation.
   When in **enforce** mode, the serializer will always use its language, disregarding

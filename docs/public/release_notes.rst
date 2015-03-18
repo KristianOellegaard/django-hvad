@@ -2,10 +2,43 @@
 Release Notes
 #############
 
+.. release 1.2.0
+
+*****************************
+1.2.0 - current release
+*****************************
+
+Released on March 19, 2015
+
+This is a feature release, to push REST framework support onto the main package.
+
+Python and Django versions supported:
+
+- Due to this version being released early, end of support for
+  Django 1.5 has been postponed until next release.
+
+New features:
+
+- Support for Django REST framework is now included. It requires REST framework
+  version 3.1 or newer — :issue:`220`.
+
+.. release 1.1.1
+
+*****************************
+1.1.1
+*****************************
+
+Released on March 5, 2015
+
+Fixes:
+
+- Backwards compatibility issue in get_field implementation — :issue:`233`.
+- Admin no longer breaks on models using another ``pk`` field than ``id`` — :issue:`231`.
+
 .. release 1.1.0
 
 *****************************
-1.1.0 - current release
+1.1.0
 *****************************
 
 Released on February 17, 2015

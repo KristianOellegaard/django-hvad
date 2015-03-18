@@ -25,7 +25,7 @@ Features
 * **Fast** - no additional queries for reads, just an inner join to an indexed key.
 * **Complete** - relationships, custom managers and querysets, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
-* **Reliable** - more than 290 test cases and counting. |coverage| |build|
+* **Reliable** - more than 300 test cases and counting. |coverage| |build|
 * **Compatible** with Django 1.4 to 1.8, running Python 2.7, 3.3 or 3.4.
 
 Example Uses
@@ -58,7 +58,7 @@ author are shared among all languages. Let's now create a ``Book`` instance::
     book.title = "The Little Prince"
     book.save()
 
-Provding some translations::
+Providing some translations::
 
     book.translate('fr')
     book.title = "Le Petit Prince"
@@ -110,10 +110,10 @@ Releases
 Django-hvad uses the same release pattern as Django. The following versions
 are thus available:
 
-* Stable branch 0.5, available through `PyPI`_ and git branch ``releases/0.5.x``.
 * Stable branch 1.0, available through `PyPI`_ and git branch ``releases/1.0.x``.
 * Stable branch 1.1, available through `PyPI`_ and git branch ``releases/1.1.x``.
-* Development branch 1.2, available through git branch ``master``.
+* Stable branch 1.2, available through `PyPI`_ and git branch ``releases/1.2.x``.
+* Development branch 1.3, available through git branch ``master``.
 
 Stable branches have minor bugfix releases as needed, with guaranteed compatibility.
 See the `installation guide`_ for details, or have a look at the `release notes`_.
