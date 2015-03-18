@@ -59,6 +59,18 @@ class HvadTestCase(TestCase):
     def assertThrowsWarning(self, klass, number=1):
         return _AssertThrowsWarningContext(self, klass, number)
 
+    def assertSavedObject(self, obj, language, **kwargs):
+        'Checks the object was saved in given language with given attributes'
+        self.assertEqual(language, kwargs.pop('language_code', language),
+                         'Test error: mismatching language and language_code.')
+        for key, value in kwargs.items():
+            self.assertEqual(getattr(obj, key), value)
+        self.assertEqual(obj.language_code, language)
+        self.assertCountEqual(
+            obj.__class__.objects.language(language).filter(**kwargs).values_list('pk', flat=True),
+            [obj.pk]
+        )
+
 # method was renamed from assertItemsEqual in Python 3
 if not hasattr(HvadTestCase, 'assertCountEqual'):
     HvadTestCase.assertCountEqual = HvadTestCase.assertItemsEqual
