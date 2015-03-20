@@ -28,6 +28,9 @@ Features
 * **Reliable** - more than 300 test cases and counting. |coverage| |build|
 * **Compatible** with Django 1.4 to 1.8, running Python 2.7, 3.3 or 3.4.
 
+Django-hvad also features support for `Django REST framework`_, including
+translation-aware serializers.
+
 Example Uses
 ------------
 
@@ -133,6 +136,7 @@ Jonas Obrist (https://github.com/ojii) for making django-nani and for helping me
 .. _release notes: https://django-hvad.readthedocs.org/en/latest/public/release_notes.html
 .. _issue tracker: https://github.com/KristianOellegaard/django-hvad/issues
 .. _PyPI: https://pypi.python.org/pypi/django-hvad
+.. _Django REST framework: http://www.django-rest-framework.org/
 .. _installation guide: http://django-hvad.readthedocs.org/en/latest/public/installation.html
 .. _quickstart guide: http://django-hvad.readthedocs.org/en/latest/public/quickstart.html
 

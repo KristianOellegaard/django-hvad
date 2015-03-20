@@ -49,13 +49,13 @@ def get_translation(instance, language_code=None):
 
     language_code = language_code or get_language()
     qs = accessor.all()
-    if qs._result_cache is None:
-        return accessor.get(language_code=language_code)
-    else: # take advantage of cached translations
+    if qs._result_cache is not None:
+        # Take advantage of translation cache
         for obj in qs:
             if obj.language_code == language_code:
                 return obj
-    raise accessor.model.DoesNotExist
+        raise accessor.model.DoesNotExist
+    return accessor.get(language_code=language_code)
 
 def load_translation(instance, language, enforce=False):
     ''' Get or create a translation.

@@ -31,4 +31,5 @@ This part of the documentation is grouped by file, not by topic.
     forms
     manager
     models
+    query
     utils

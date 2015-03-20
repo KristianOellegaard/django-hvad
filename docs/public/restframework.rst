@@ -4,7 +4,7 @@
 REST Framework
 ##############
 
-.. versionadded:: 1.1
+.. versionadded:: 1.2
 
 What would be a modern application without dynamic components? Well, it would not
 be so modern to begin with. This is why django-hvad provides fully tested and integrated
@@ -58,7 +58,7 @@ a language is chosen for serializing and deserializing.
   to current language if no ``instance`` is specified.
 * A serializer is in **enforce** mode if is has a language set. This is achieved
   by giving it a ``language=`` argument at instanciation.
-  When in **enforce** mode, the serializer will always use its language, disregarding
+  When in **enforce** mode, the serializer will always use its own language, disregarding
   current language and reloading the ``instance`` it is given if it has another
   language loaded.
 * The language can be overriden manually by providing a custom ``validate()``
@@ -69,15 +69,15 @@ a language is chosen for serializing and deserializing.
 
 When the serializer is in normal mode, it is possible to send ``'language_code'``
 as part of the serialized representation. More on this below. In **enforce** mode
-however, including a language code is an error that will raise a ``ValidationError``
-as appropriate.
+however, including a language code in a POST, PATCH or PUT request is an error that
+will raise a ``ValidationError`` as appropriate.
 
-All features of regular REST framework serializer work as usual.
+All features of regular REST framework serializers work as usual.
 
 Examples
 --------
 
-Adding the language to the serialized data::
+Adding the language to the serialized data, in **normal** mode::
 
     class BookSerializer(TranslatableModelSerializer):
         class Meta:
@@ -117,6 +117,8 @@ Manually overriding deserialized language::
 
     class UserBookSerializer(TranslatableModelSerializer):
         def validate(self, data):
+            # assuming you made a custom User model that has an associated
+            # preferences object including the user's preferred language
             data = super(UserBookSerializer, self).validate(data)
             data['language_code'] = self.context['request'].user.preferences.language
             return data
@@ -181,11 +183,11 @@ will be created. Any existing translation that is not in the data will be delete
 
 For convenience, you can include both the translations dictionary and translated
 fields in the same serializer. This can be handy if only some parts of your
-application care about all the translations. For instance, an object list might
+application care about all the translations. For instance, a book listing might
 just want the title in the preferred language, while the book editing dialog
 allows editing all languages.
-Direct translated fields will be read-only, use the translations dictionary for
-updating.
+In this case, direct translated fields will be read-only, use the translations
+dictionary for updating.
 
 It is possible to override the representation of translations. This is done by
 specifying a custom serializer on the meta::

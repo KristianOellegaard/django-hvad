@@ -542,6 +542,20 @@ FallbackQueryset
     A queryset that can optionally use fallbacks and by default only fetches the
     :term:`Shared Model`.
 
+    There are actually two underlying implementations, the ``LegacyFallbackQueryset``
+    and the ``SelfJoinFallbackQueryset``. Implementation is chosen at initialization
+    based on the ``HVAD_LEGACY_FALLBACKS`` setting. It defaults to ``False``
+    (use SelfJoin) on Django 1.6 and newer, and ``True`` (use Legacy) on older
+    versions.
+
+    The ``LegacyFallbackQueryset`` generates lots of queries as it walks through
+    batches of models, fetches their translations and matches them onto the models.
+
+    The ``SelfJoinFallbackQueryset`` uses a single self outer join to achieve the same
+    result in only one (complex) query. Performance is good as the number of items
+    per model in the cross-product is limited to the number of languages that
+    Django supports. Implementation digs deeper into Django internals, though.
+
     .. attribute:: _translation_fallbacks
     
         List of fallbacks to use (or ``None``).
@@ -569,26 +583,6 @@ FallbackQueryset
     .. method:: _clone(self, klass=None, setup=False, **kwargs)
     
         Injects *translation_fallbacks* into *kwargs* and calls the superclass.
-
-
-**************************
-TranslationFallbackManager
-**************************
-
-.. warning:: This class is deprecated and will be removed in next release.
-                Please use :meth:`~hvad.manager.TranslationManager.untranslated`
-                instead.
-
-.. class:: TranslationFallbackManager
-
-    .. method:: use_fallbacks(self, *fallbacks)
-    
-        Proxies to :meth:`FallbackQueryset.use_fallbacks` by calling
-        :meth:`get_queryset` first.
-
-    .. method:: get_queryset(self)
-    
-        Returns an instance of :class:`FallbackQueryset` for this manager.
 
 
 ************************
@@ -742,7 +736,9 @@ TranslationAwareQueryset
         object provided in *extra_filters* and returns a queryset from the
         superclass, so that the methods that call this method can directely
         access methods on the superclass to reduce boilerplate code.
-    
+
+        .. warning:: This internal method returns a ``super()`` proxy object,
+                     be sure to understand the implications before using it.
     
 ***********************
 TranslationAwareManager
