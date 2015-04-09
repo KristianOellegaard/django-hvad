@@ -126,7 +126,7 @@ class SmartGetField(object):
             return self.real(name, *args, **kwargs)
         except FieldDoesNotExist as e:
             try:
-                meta.translations_model._meta.get_field(name, *args, **kwargs)
+                return meta.translations_model._meta.get_field(name, *args, **kwargs)
             except FieldDoesNotExist:
                 raise e
             else:
