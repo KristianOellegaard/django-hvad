@@ -20,6 +20,9 @@ hvad providing the following extensions:
 - :ref:`TranslationsMixin` can be plugged into a `ModelSerializer` to add a
   dictionary of all available translations. Writing is supported as well.
 
+.. note:: Support for REST framework requires Django REST Framework version 3.1
+          or newer.
+
 --------
 
 .. _TranslatableModelSerializer:

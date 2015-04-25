@@ -28,7 +28,7 @@ Features
 * **Reliable** - more than 300 test cases and counting. |coverage| |build|
 * **Compatible** with Django 1.4 to 1.8, running Python 2.7, 3.3 or 3.4.
 
-Django-hvad also features support for `Django REST framework`_, including
+Django-hvad also features support for `Django REST framework`_ 3.1 or newer, including
 translation-aware serializers.
 
 Example Uses

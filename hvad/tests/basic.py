@@ -37,9 +37,16 @@ class DefinitionTests(HvadTestCase):
         self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel2', bases, attrs)
 
+    def test_multi_table_raises(self):
+        with self.assertRaises(TypeError):
+            class InvalidModel3(Normal):
+                translations = TranslatedFields(
+                    other_translated = models.CharField(max_length=250)
+                )
+
     def test_order_with_respect_to_raises(self):
-        with self.assertRaises(ImproperlyConfigured):
-            class InvalidModel3(TranslatableModel):
+        with self.assertRaises(ValueError):
+            class InvalidModel4(TranslatableModel):
                 translations = TranslatedFields(
                     translated_field = models.CharField(max_length=250)
                 )
