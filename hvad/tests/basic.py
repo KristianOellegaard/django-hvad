@@ -14,6 +14,7 @@ from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, Unique, Related, MultipleFields, Boolean, Standard
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
+from copy import deepcopy
 
 
 class DefinitionTests(HvadTestCase):
@@ -162,6 +163,11 @@ class OptionsTest(HvadTestCase):
 
 
 class QuerysetTest(HvadTestCase):
+    def test_deepcopy(self):
+        qs = Normal.objects.language().all()
+        other = deepcopy(qs)
+        self.assertEquals(other.model, qs.model)
+
     def test_bad_model(self):
         with self.assertRaises(TypeError):
             TranslationQueryset(Standard)

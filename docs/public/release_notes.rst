@@ -2,6 +2,17 @@
 Release Notes
 #############
 
+.. release 1.2.1
+
+*****************************
+1.2.1 - upcoming release
+*****************************
+
+Fixes:
+
+- Make passing the ``model`` argument to queryset's ``__init__`` optional. Still
+  allow it to be passed either as a positional or named argument — :issue:`241`.
+
 .. release 1.2.0
 
 *****************************
