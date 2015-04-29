@@ -177,12 +177,20 @@ class TranslationQueryset(QuerySet):
         override_classes[DateTimeQuerySet] = SkipMasterSelectMixin
     _skip_master_select = False
 
-    def __init__(self, model, *args, **kwargs):
-        if hasattr(model._meta, 'translations_model'):
-            # normal creation gets a shared model that we must flip around
-            model, self.shared_model = model._meta.translations_model, model
-        elif not hasattr(model._meta, 'shared_model'):
-            raise TypeError('TranslationQueryset only works on translatable models')
+    def __init__(self, *args, **kwargs):
+        # model can be either first positional, or a named arg
+        if len(args) >= 1:
+            model, args = args[0], args[1:]
+        else:
+            model = kwargs.pop('model', None)
+
+        if model is not None:  # check the given model is correct
+            if hasattr(model._meta, 'translations_model'):
+                # normal creation gets a shared model that we must flip around
+                model, self.shared_model = model._meta.translations_model, model
+            elif not hasattr(model._meta, 'shared_model'):
+                raise TypeError('TranslationQueryset only works on translatable models')
+
         self._local_field_names = None
         self._field_translator = None
         self._language_code = None

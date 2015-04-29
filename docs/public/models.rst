@@ -187,6 +187,12 @@ following restrictions:
 
 The ``__init__`` method and signals for the concrete model will still be called.
 
+Multi-table Inheritance
+=======================
+
+Unfortunately, multi-table inheritance is not supported, and unlikely to be.
+Please read :issue:`230` about the issues with multi-table inheritance.
+
 .. _custom-managers:
 
 *****************************

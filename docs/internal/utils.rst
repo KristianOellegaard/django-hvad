@@ -42,9 +42,9 @@
 
     Returns the translation for an instance.
 
-    * If ``enforce`` is false, then ``language`` is used as a default language,
+    * If ``enforce`` is False, then ``language`` is used as a default language,
       if the ``instance`` has no language currently loaded.
-    * If ``enforce`` is true, then ``language`` will be enforced upon the
+    * If ``enforce`` is True, then ``language`` will be enforced upon the
       translation, ignoring cached translation if it is not in the given
       language.
 
@@ -66,11 +66,47 @@
     (meta) of Django models that raises a more useful exception when one tries
     to access translated fields with the wrong manager.
 
+    This descriptor is pending deprecation as the associated method is being
+    removed from Django.
+
     .. method:: __init__(self, real)
+
+        Retains a reference to the actual method this descriptor is replacing.
     
     .. method:: __call__(self, meta, name)
 
-.. function:: permissive_field_by_name(self, name)
-    
-    Returns the field from the :term:`Shared Model` or
-    :term:`Translations Model`, if it is on either.
+        Catches improper use of the ``get_field_by_name`` method to access
+        translated fields and raise a ``WrongManager`` exception.
+
+.. class:: SmartGetField
+
+    Smart version of the standard :meth:`get_field` on the options
+    (meta) of Django models that raises a more useful exception when one tries
+    to access translated fields with the wrong manager.
+
+    .. method:: __init__(self, real)
+
+        Retains a reference to the actual method this descriptor is replacing.
+
+    .. method:: __call__(self, meta, name)
+
+        Catches improper use of the ``get_field`` method to access
+        translated fields and raise a ``WrongManager`` exception.
+
+.. class:: _MinimumDjangoVersionDescriptor
+
+    Helper class used by :func:`minimumDjangoVersion` decorator.
+
+.. function:: minimumDjangoVersion(*args)
+
+    Decorator that will catch attempts to use methods on a Django version that
+    does not support them and raise a helpful exception.
+
+    Arguments must be the minimum allowable Django version, the will be compared
+    against the ``django.VERSION`` tuple.
+
+.. function:: settings_updater(func):
+
+    Decorator for setting globals depending on Django settings. It simply invokes
+    the decorated function immediately, then calls it again every time the
+    ``setting_changed`` signal is sent by Django.

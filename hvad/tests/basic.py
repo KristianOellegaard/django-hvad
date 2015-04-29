@@ -14,6 +14,7 @@ from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, Unique, Related, MultipleFields, Boolean, Standard
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
+from copy import deepcopy
 
 
 class DefinitionTests(HvadTestCase):
@@ -36,9 +37,16 @@ class DefinitionTests(HvadTestCase):
         self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel2', bases, attrs)
 
+    def test_multi_table_raises(self):
+        with self.assertRaises(TypeError):
+            class InvalidModel3(Normal):
+                translations = TranslatedFields(
+                    other_translated = models.CharField(max_length=250)
+                )
+
     def test_order_with_respect_to_raises(self):
-        with self.assertRaises(ImproperlyConfigured):
-            class InvalidModel3(TranslatableModel):
+        with self.assertRaises(ValueError):
+            class InvalidModel4(TranslatableModel):
                 translations = TranslatedFields(
                     translated_field = models.CharField(max_length=250)
                 )
@@ -162,6 +170,11 @@ class OptionsTest(HvadTestCase):
 
 
 class QuerysetTest(HvadTestCase):
+    def test_deepcopy(self):
+        qs = Normal.objects.language().all()
+        other = deepcopy(qs)
+        self.assertEquals(other.model, qs.model)
+
     def test_bad_model(self):
         with self.assertRaises(TypeError):
             TranslationQueryset(Standard)

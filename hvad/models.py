@@ -78,6 +78,12 @@ def create_translations_model(model, related_name, meta, **fields):
         base = scan_bases.pop()
         if not issubclass(base, TranslatableModel) or base is TranslatableModel:
             continue
+        if not base._meta.abstract:
+            raise TypeError(
+                'Multi-table inheritance of translatable models is not supported. '
+                'Concrete model %s is not a valid base model for %s.' % (
+                    base._meta.model_name if django.VERSION >= (1, 6) else base._meta.module_name,
+                    model._meta.model_name if django.VERSION >= (1, 6) else model._meta.module_name))
         try:
             # The base may have translations model, then just inherit that
             translation_bases.append(base._meta.translations_model)
@@ -92,7 +98,7 @@ def create_translations_model(model, related_name, meta, **fields):
     meta['db_tablespace'] = model._meta.db_tablespace
     meta['managed'] = model._meta.managed
     if model._meta.order_with_respect_to in fields:
-        raise ImproperlyConfigured(
+        raise ValueError(
             'Using a translated fields in %s.Meta.order_with_respect_to is ambiguous '
             'and hvad does not support it.' %
             model._meta.model_name if django.VERSION >= (1, 6) else model._meta.module_name)

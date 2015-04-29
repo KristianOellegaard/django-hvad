@@ -12,7 +12,7 @@ Common Setup
 
 * ``virtualenv env``
 * ``source env/bin/activate``
-* ``pip install django sphinx``
+* ``pip install django sphinx djangorestframework``
 
 Postgres Setup
 ==============
@@ -39,6 +39,7 @@ with the user ``username`` and password ``password`` and database name ``hvad``:
 
 * ``DATABASE_URL=postgres://username:password@myserver.com:5432/hvad python runtests.py``
 
+If in doubt, you can check ``.travis.yml`` for some examples.
 
 *****************
 Contributing Code

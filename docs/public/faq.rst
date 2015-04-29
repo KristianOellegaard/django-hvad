@@ -134,51 +134,16 @@ to force it to be in the user's preferred language by adding another query::
 How do I use hvad with MPTT?
 ****************************
 
-.. warning:: Since version 0.5, hvad no longer uses a custom metaclass, making this
-             solution unneeded. Although it will not break the way it is written
-             here, it becomes a verbose no-op and should be removed.
-
-             You might want to keep the manager subclassing at the end though.
+.. note:: Since version 0.5, hvad no longer uses a custom metaclass, making
+          the old metaclass workaround unneeded.
 
 The `mptt`_ application implements Modified Preorder Tree Traversal
 for Django models. If you have any model in your project that is organized
 in a hierarchy of items, you should be using it.
 
-However, this code will break mysteriously if you are not familiar with python
-metaclasses::
-
-    class Folder(MPTTModel, TranslatableModel):
-        parent = TreeForeignKey('self', null=True, blank=True, related_name='children')
-        order = models.PositiveIntegerField()
-        translations = TranslatedFields(
-            name = models.CharField(max_length=50)
-        )
-
-        class MPTTMeta:
-            order_insertion_by = ['order']
-
-This will result in the following exception being thrown::
-
-    Traceback (most recent call last):
-    File "<stdin>", line 1, in <module>
-    TypeError: metaclass conflict: the metaclass of a derived class must be a (non-strict) subclass of the metaclasses of all its bases
-
-This is because both `MPTTModel` and :class:`~hvad.models.TranslatableModel`
-use metaclasses and Python is confused: which should it use for the Folder model?
-We need to create one by ourselves, like this::
-
-    class FolderBase(TranslatableModelBase, MPTTModelBase):
-        pass
-
-    class Folder(MPTTModel, TranslatableModel):
-        __metaclass__ = FolderBase
-        # ...
-
-.. note:: If you have multiple levels of inheritance, you have to specify the
-          metaclass for each class.
-
-While you are there, it is very likely you will want to use the features of
-the MPTT manager as well. Doing so is relatively straightforward::
+MPTT and hvad can cooperate pretty well by merging the ``TranslationManager``
+from hvad with the ``MPTTManager`` from MPTT.
+Doing so is relatively straightforward::
 
     class FolderManager(TranslationManager, MPTTManager):
         use_for_related_fields = True
@@ -214,7 +179,7 @@ custom :meth:`~django.contrib.admin.ModelAdmin.get_fieldsets` as such::
             )
 
 The model admin will then be generated with two fieldsets, one for common fields
-and one for translated fields. At the point though, language tabs still appear
+and one for translated fields. At this point though, language tabs still appear
 at the top, with both fieldsets beneath. This can be changed by providing a
 custom template for rendering the form. This is a 2-step process. First, we
 specify a custom template on the admin::
