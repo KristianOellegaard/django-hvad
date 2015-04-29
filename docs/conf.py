@@ -45,7 +45,7 @@ project = u'django-hvad'
 copyright = u'2011-2015, Kristian Øllegaard, Jonas Obrist & contributors'
 
 version = '1.2'
-release = '1.2.0'
+release = '1.2.1'
 
 
 # The name of the Pygments (syntax highlighting) style to use.
