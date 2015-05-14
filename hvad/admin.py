@@ -25,10 +25,12 @@ from django.template.loader import select_template
 from django.utils.encoding import iri_to_uri, force_text
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _, get_language
-from hvad.compat import urlencode, urlparse
-from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
-from hvad.utils import load_translation
-from hvad.manager import FALLBACK_LANGUAGES
+if django.VERSION >= (1, 7):
+    from .checks import TranslatableAdminChecks
+from .compat import urlencode, urlparse
+from .forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
+from .utils import load_translation
+from .manager import FALLBACK_LANGUAGES
 
 
 atomic = (transaction.atomic if django.VERSION >= (1, 6) else
@@ -109,6 +111,8 @@ class TranslatableModelAdminMixin(object):
 
 
 class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
+    if django.VERSION >= (1, 7):
+        checks_class = TranslatableAdminChecks
     form = TranslatableModelForm
     
     change_form_template = 'admin/hvad/change_form.html'

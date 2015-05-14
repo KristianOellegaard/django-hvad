@@ -3,6 +3,7 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.manager import TranslationManager, TranslationQueryset
+from hvad.utils import get_cached_translation
 from django.utils.encoding import python_2_unicode_compatible
 
 #===============================================================================
@@ -198,6 +199,36 @@ class ConcreteABProxy(ConcreteAB):
         )
     class Meta:
         proxy = True
+
+#===============================================================================
+# Models for testing admin module
+
+@python_2_unicode_compatible
+class AdvancedAdminModel(TranslatableModel):
+    shared = models.CharField(max_length=255)
+    time_field = models.DateTimeField()
+    translations = TranslatedFields(
+        translated = models.CharField(max_length=255),
+        translated_ro = models.CharField(max_length=255),
+        translated_hidden = models.CharField(max_length=255),
+        translated_rel = models.ForeignKey(Normal, related_name='+', null=True),
+    )
+
+    def __str__(self):
+        shared = '%s / %s' % (
+            self.shared, self.time_field,
+        )
+        if get_cached_translation(self) is None:
+            translated = '[none]'
+        else:
+            translated = '%s / %s / %s [%s]' % (
+                self.translated,
+                self.translated_ro,
+                self.translated_hidden,
+                self.language_code,
+            )
+        return '%s / %s' % (shared, translated)
+
 
 #===============================================================================
 # Models for testing choice limiting in foreign keys
