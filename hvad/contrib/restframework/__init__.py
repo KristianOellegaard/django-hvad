@@ -1,3 +1,3 @@
-from .serializers import (TranslationsMixin,
-                          TranslatableModelSerializer,
-                          HyperlinkedTranslatableModelSerializer)
+from hvad.contrib.restframework.serializers import (
+    TranslationsMixin, TranslatableModelSerializer, HyperlinkedTranslatableModelSerializer
+)

@@ -1,4 +1,5 @@
 import django
+from django.utils.functional import cached_property
 from django.test.testcases import TestCase
 from django.test.client import RequestFactory
 from hvad.test_utils.context_managers import UserLoginContext
@@ -37,24 +38,16 @@ class _AssertThrowsWarningContext(object):
 
 class HvadTestCase(TestCase):
     def setUp(self):
-        if callable(getattr(self, 'create_fixtures', None)):
+
+        if hasattr(self, 'create_fixtures'):
             self.create_fixtures()
 
-    @property
+    @cached_property
     def request_factory(self):
-        if not hasattr(self, '_request_factory'):
-            self._request_factory = RequestFactory()
-        return self._request_factory
-    
-    def reload(self, obj):
-        model = obj.__class__
-        qs = model.objects
-        if callable(getattr(qs, 'language', None)):
-            qs = qs.language()
-        return qs.get(**{obj._meta.pk.name: obj.pk})
+        return RequestFactory()
 
-    def login_user_context(self, **kwargs):
-        return UserLoginContext(self, **kwargs)
+    def login_user_context(self, username):
+        return UserLoginContext(self, username=username, password=username)
 
     def assertThrowsWarning(self, klass, number=1):
         return _AssertThrowsWarningContext(self, klass, number)

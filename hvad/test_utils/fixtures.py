@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.models import User
-from hvad.test_utils.data import NORMAL, STANDARD, CONCRETEAB, DATE, QONORMAL
+from hvad.test_utils.data import USER, NORMAL, STANDARD, CONCRETEAB, DATE, QONORMAL
 from hvad.test_utils.project.app.models import Normal, Standard, ConcreteAB, Date, QONormal
-
 
 class Fixture(object):
     translations = ('en', 'ja')
@@ -116,17 +115,21 @@ class DateFixture(Fixture):
         return obj
 
 
-class SuperuserFixture(Fixture):
+class UsersFixture(Fixture):
     def create_fixtures(self):
-        super(SuperuserFixture, self).create_fixtures()
+        super(UsersFixture, self).create_fixtures()
 
-        su = User(
-            email='admin@admin.com',
-            is_staff=True,
-            is_superuser=True,
-            is_active=True,
-            username='admin',
-        )
-        su.set_password('admin')
-        su.save()
-        self.superuser = su
+        self.user_id = {}
+        for user in USER:
+            self.user_id[user['username']] = self.create_user(user).pk
+
+    def create_user(self, data):
+        kwargs = data.copy()
+        kwargs.setdefault('email', '%s@hvad.com' % kwargs['username'])
+        kwargs.setdefault('is_superuser', False)
+        kwargs.setdefault('is_staff', kwargs['is_superuser'])
+        obj = User(**kwargs)
+        obj.set_password(data['username'])
+        obj.save()
+        return obj
+

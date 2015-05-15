@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-import django
 from django.utils import translation
-from django.db.models.query_utils import Q
 from hvad.test_utils.data import QONORMAL
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import QONormal, QOSimpleRelated, QOMany
-from hvad.test_utils.fixtures import NormalFixture, QONormalFixture
-from hvad.manager import TranslationManager, TranslationQueryset
+from hvad.test_utils.fixtures import QONormalFixture
+from hvad.manager import TranslationQueryset
 
 
 class BasicTests(HvadTestCase):

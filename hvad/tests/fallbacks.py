@@ -95,7 +95,7 @@ class FallbackFilterTests(HvadTestCase, NormalFixture):
 
     def test_translated_filter(self):
         with self.assertRaises(WrongManager):
-            qs = Normal.objects.untranslated().filter(translated_field__contains='English')
+            Normal.objects.untranslated().filter(translated_field__contains='English')
 
 
 class FallbackCachingTests(HvadTestCase, NormalFixture):
@@ -145,13 +145,14 @@ class FallbackCachingTests(HvadTestCase, NormalFixture):
 class FallbackIterTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
-    def test_simple_iter_fallbacks(self):
+    def test_simple_iter_no_fallbacks(self):
         with translation.override('en'):
             with self.assertNumQueries(1):
-                for index, obj in enumerate(Normal.objects.untranslated().order_by('pk'), 1):
-                    self.assertEqual(obj.shared_field, NORMAL[index].shared_field)
-                    with self.assertNumQueries(1):
-                        self.assertEqual(obj.translated_field, NORMAL[index].translated_field['en'])
+                objs = list(Normal.objects.untranslated().order_by('pk'))
+            for index, obj in enumerate(objs, 1):
+                self.assertEqual(obj.shared_field, NORMAL[index].shared_field)
+                with self.assertNumQueries(1):
+                    self.assertEqual(obj.translated_field, NORMAL[index].translated_field['en'])
 
     def test_simple_iter_fallbacks(self):
         with self.assertNumQueries(2 if LEGACY_FALLBACKS else 1):
@@ -184,7 +185,7 @@ class FallbackValuesListTests(HvadTestCase, NormalFixture):
 
     def test_values_list_translated(self):
         with self.assertRaises(WrongManager):
-            values = Normal.objects.untranslated().values_list('translated_field', flat=True)
+            Normal.objects.untranslated().values_list('translated_field', flat=True)
 
 
 class FallbackValuesTests(HvadTestCase, NormalFixture):
@@ -204,7 +205,7 @@ class FallbackValuesTests(HvadTestCase, NormalFixture):
 
     def test_values_translated(self):
         with self.assertRaises(WrongManager):
-            values = Normal.objects.untranslated().values('translated_field')
+            Normal.objects.untranslated().values('translated_field')
 
 
 class FallbackInBulkTests(HvadTestCase, NormalFixture):

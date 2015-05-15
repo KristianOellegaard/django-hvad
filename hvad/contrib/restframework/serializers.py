@@ -2,8 +2,8 @@ from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language, ugettext_lazy as _l
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from ...utils import set_cached_translation, load_translation
-from .utils import TranslationListSerializer
+from hvad.utils import set_cached_translation, load_translation
+from hvad.contrib.restframework.utils import TranslationListSerializer
 
 veto_fields = ('id', 'master')
 

@@ -1,4 +1,3 @@
-from django.utils import translation
 from hvad.utils import (get_cached_translation, set_cached_translation,
                         combine, get_translation, load_translation)
 from hvad.test_utils.data import NORMAL

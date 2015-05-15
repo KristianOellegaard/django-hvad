@@ -4,6 +4,14 @@ from collections import namedtuple
 
 #===============================================================================
 
+USER = [
+    dict(username='admin', is_superuser=True),
+    dict(username='staff', is_staff=True),
+    dict(username='user'),
+]
+
+#===============================================================================
+
 NormalData = namedtuple('NormalData', 'shared_field translated_field')
 
 NORMAL = {

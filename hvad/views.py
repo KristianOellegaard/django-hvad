@@ -1,8 +1,8 @@
 from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView, BaseDeleteView
 from django.utils.translation import get_language
-from .forms import translatable_modelform_factory
-from .utils import collect_context_modifiers
+from hvad.forms import translatable_modelform_factory
+from hvad.utils import collect_context_modifiers
 import warnings
 
 class _TransitionObjectMixin(SingleObjectMixin):
@@ -112,8 +112,8 @@ class TranslatableDeleteView(SingleObjectTemplateResponseMixin, TranslatableBase
 #=============================================================================
 
 from django.views.generic.edit import UpdateView
-from .admin import TranslatableModelAdminMixin
-from .forms import TranslatableModelForm
+from hvad.admin import TranslatableModelAdminMixin
+from hvad.forms import TranslatableModelForm
 
 class TranslatableBaseView(UpdateView, TranslatableModelAdminMixin): #pragma: no cover
     form_class = TranslatableModelForm

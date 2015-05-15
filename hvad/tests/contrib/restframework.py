@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import django
 from rest_framework.serializers import ModelSerializer, CharField
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
@@ -7,8 +6,7 @@ from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.contrib.restframework import (TranslationsMixin,
-                                        TranslatableModelSerializer,
-                                        HyperlinkedTranslatableModelSerializer)
+                                        TranslatableModelSerializer)
 from hvad.contrib.restframework.serializers import TranslationListSerializer
 
 #=============================================================================

@@ -55,15 +55,15 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
     def test_relation(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         ja = Normal.objects.language('ja').get(pk=self.normal_id[1])
-        related = Standard.objects.get(pk=self.standard_id[1])
+
         with translation.override('en'):
-            related = self.reload(related)
+            related = Standard.objects.get(pk=self.standard_id[1])
             self.assertEqual(related.normal.pk, en.pk)
             self.assertEqual(related.normal.shared_field, en.shared_field)
             self.assertEqual(related.normal.translated_field, en.translated_field)
             self.assertTrue(related in en.standards.all())
         with translation.override('ja'):
-            related = self.reload(related)
+            related = Standard.objects.get(pk=self.standard_id[1])
             self.assertEqual(related.normal.pk, ja.pk)
             self.assertEqual(related.normal.shared_field, ja.shared_field)
             self.assertEqual(related.normal.translated_field, ja.translated_field)
@@ -289,7 +289,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             ])
 
     def test_not_implemented_methods(self):
-        en = Normal.objects.language('en').get(pk=self.normal_id[1])
+        Normal.objects.language('en').get(pk=self.normal_id[1])
         manager = get_translation_aware_manager(Standard)
         with translation.override('en'):
             self.assertRaises(NotImplementedError, manager.aggregate)

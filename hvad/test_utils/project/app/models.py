@@ -1,4 +1,3 @@
-import django
 from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields

@@ -2,19 +2,17 @@
 import django
 from django.conf import settings
 from django.contrib import admin
-from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 from django.utils import translation
-from django.utils.http import urlencode
 from django.http import HttpResponseForbidden, HttpResponseRedirect, QueryDict
 from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
 from hvad.compat import urlparse
 from hvad.forms import TranslatableModelForm
-from hvad.test_utils.fixtures import NormalFixture, SuperuserFixture
+from hvad.test_utils.fixtures import NormalFixture, UsersFixture
 from hvad.test_utils.data import NORMAL
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, AutoPopulated
 
 
@@ -175,12 +173,12 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
         get_request = self.request_factory.get('/admin/app/normal/')
         self.assertEqual(myadmin.get_object(get_request, -1), None)
 
-class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture):
     normal_count = 1
 
     def test_admin_simple(self):
         with translation.override('en'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 SHARED = 'shared_new'
                 TRANS = 'trans_new'
                 url = reverse('admin:app_normal_add')
@@ -206,7 +204,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
         """
 
         with translation.override('en'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 danish_string = u"rød grød med fløde"
                 url = reverse('admin:app_autopopulated_add')
                 data = {
@@ -221,7 +219,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
 
     def test_admin_change_form_title(self):
         with translation.override('en'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 200)
@@ -229,7 +227,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
 
     def test_admin_change_form_language_tabs_urls(self):
         with translation.override('en'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 get_url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 test_urls = [
                     '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam'),
@@ -250,7 +248,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
 
     def test_admin_change_form_action_url(self):
         with translation.override('en'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 tests = (
                     '',
@@ -269,7 +267,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
     def test_admin_change_form_redirect_add_another(self):
         lang = 'en'
         with translation.override('ja'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 url = '%s?language=%s' % (reverse('admin:app_normal_change',
                                                   args=(self.normal_id[1],)), lang)
                 data = {
@@ -292,7 +290,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
     def test_admin_change_form_redirect_continue_edit(self):
         lang = 'en'
         with translation.override('ja'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 url = '%s?language=%s' % (reverse('admin:app_normal_change',
                                                   args=(self.normal_id[1],)), lang)
                 data = {
@@ -328,7 +326,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
     def test_admin_change_form(self):
         lang = 'en'
         with translation.override(lang):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 data = {
                     'translated_field': 'English NEW',
@@ -348,7 +346,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
         SHARED = 'shared_new'
         TRANS_EN = 'English'
         TRANS_JA = u'日本語'
-        with self.login_user_context(username='admin', password='admin'):
+        with self.login_user_context('admin'):
             url = reverse('admin:app_normal_add')
             data_en = {
                 'shared_field': SHARED,
@@ -381,7 +379,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
 
     def test_admin_with_param(self):
         with translation.override('ja'):
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 SHARED = 'shared_new'
                 TRANS = 'trans'
                 url = reverse('admin:app_normal_add')
@@ -400,7 +398,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFix
                 self.assertEqual(obj.translated_field, TRANS)
 
 
-class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, SuperuserFixture):
+class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, UsersFixture):
     normal_count = 2
 
     def test_changelist(self):
@@ -415,14 +413,14 @@ class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, SuperuserFixtu
             self.assertEqual(queryset.count(), self.normal_count)
 
 
-class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture):
     normal_count = 1
     translations = ('en', 'ja')
 
     def test_delete_last_translation(self):
         Normal.objects.language('ja').delete_translations()
         url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
-        with self.login_user_context(username='admin', password='admin'):
+        with self.login_user_context('admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(response, 'admin/hvad/deletion_not_allowed.html')
@@ -430,7 +428,7 @@ class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserFixtur
 
     def test_delete_translation_get(self):
         url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
-        with self.login_user_context(username='admin', password='admin'):
+        with self.login_user_context('admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertTemplateUsed(response, 'admin/delete_confirmation.html')
@@ -439,7 +437,7 @@ class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserFixtur
 
     def test_delete_translation_post(self):
         url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
-        with self.login_user_context(username='admin', password='admin'):
+        with self.login_user_context('admin'):
             response = self.client.post(url, {'post': 'yes'})
             self.assertEqual(response.status_code, HttpResponseRedirect.status_code)
             self.assertRaises(Normal.DoesNotExist,
@@ -448,17 +446,13 @@ class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, SuperuserFixtur
 
     def test_delete_translation_no_obj(self):
         url = reverse('admin:app_normal_delete_translation', args=(-1, 'en'))
-        with self.login_user_context(username='admin', password='admin'):
+        with self.login_user_context('admin'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 404)
 
     def test_delete_no_perms(self):
-        user = User(username='staff', is_active=True, is_staff=True)
-        user.set_password('staff')
-        user.save()
-
         url = reverse('admin:app_normal_delete_translation', args=(self.normal_id[1], 'en'))
-        with self.login_user_context(username='staff', password='staff'):
+        with self.login_user_context('staff'):
             response = self.client.get(url)
             self.assertEqual(response.status_code, HttpResponseForbidden.status_code)
 
@@ -518,7 +512,7 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
         self.assertEqual(t.Meta.exclude, ['id', 'language_code', 'translations'])
         
 
-class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalFixture):
+class AdminRelationTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture):
     normal_count = 1
 
     def test_adding_related_object(self):
@@ -526,7 +520,7 @@ class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalF
         TRANS_FIELD = "English Content" 
         with translation.override('en'):
             en = Normal.objects.get(pk=self.normal_id[1])
-            with self.login_user_context(username='admin', password='admin'):
+            with self.login_user_context('admin'):
                 data = {
                     'normal': self.normal_id[1],
                     'translated_field': TRANS_FIELD,
@@ -542,7 +536,7 @@ class AdminRelationTests(HvadTestCase, BaseAdminTests, SuperuserFixture, NormalF
                 self.assertRedirects(response, expected_url)
 
 
-class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, SuperuserFixture):
+class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, UsersFixture):
     def test_correct_id_in_inline(self):
         LANGUAGES = (
             ('en', u'English'),

@@ -1,9 +1,8 @@
-from django.db import models
 from django.utils.translation import ugettext_lazy as _l
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
-from ...utils import get_cached_translation, set_cached_translation
+from hvad.utils import get_cached_translation, set_cached_translation
 
 #=============================================================================
 

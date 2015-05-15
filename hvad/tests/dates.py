@@ -1,5 +1,4 @@
-import django
-from hvad.test_utils.data import DATE, DATE_REVERSED, DATE_VALUES
+from hvad.test_utils.data import DATE_REVERSED, DATE_VALUES
 from hvad.test_utils.fixtures import DateFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Date

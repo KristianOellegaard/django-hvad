@@ -312,7 +312,7 @@ class CreateTest(HvadTestCase):
 
     def test_create_lang_deprecation(self):
         with self.assertRaises(RuntimeError):
-            en = Normal.objects.language('en').create(
+            Normal.objects.language('en').create(
                 language_code="en",
                 shared_field="shared",
                 translated_field='English',
@@ -361,14 +361,14 @@ class TranslatedTest(HvadTestCase, NormalFixture):
         self.assertEqual(Normal._meta.translations_model.objects.count(), 2)
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
-        with translation.override('en'):
-            obj = self.reload(ja)
-            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
-            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
-        with translation.override('ja'):
-            obj = self.reload(en)
-            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
-            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
+
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
+        self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+
+        obj = Normal.objects.language('ja').get(pk=self.normal_id[1])
+        self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
 
 class GetTest(HvadTestCase, NormalFixture):
@@ -423,7 +423,7 @@ class GetByLanguageTest(HvadTestCase, NormalFixture):
 
     def test_args_override_deprecation(self):
         with self.assertRaises(RuntimeError):
-            obj = Normal.objects.language('en').get(language_code='ja', pk=self.normal_id[1])
+            Normal.objects.language('en').get(language_code='ja', pk=self.normal_id[1])
 
 
 class GetAllLanguagesTest(HvadTestCase, NormalFixture):
@@ -707,7 +707,7 @@ class GetOrCreateTest(HvadTestCase):
         self.assertNotEqual(en.pk, ja.pk)
 
     def test_get_or_create_integrity_exception(self):
-        obj = Unique.objects.language('en').create(
+        Unique.objects.language('en').create(
             shared_field='duplicated',
             translated_field='English',
         )
@@ -723,7 +723,7 @@ class GetOrCreateTest(HvadTestCase):
 
     def test_get_or_create_lang_deprecation(self):
         with self.assertRaises(RuntimeError):
-            en = Normal.objects.language('en').get_or_create(
+            Normal.objects.language('en').get_or_create(
                 shared_field="shared",
                 translated_field='English',
                 defaults={
