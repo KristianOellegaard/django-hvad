@@ -5,8 +5,10 @@ Release Notes
 .. release 1.2.2
 
 *****************************
-1.2.2 - upcoming release
+1.2.2 - current release
 *****************************
+
+Released on June 3, 2015
 
 Fixes:
 
@@ -16,7 +18,7 @@ Fixes:
 .. release 1.2.1
 
 *****************************
-1.2.1 - current release
+1.2.1
 *****************************
 
 Released on April 29, 2015
