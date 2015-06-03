@@ -6,6 +6,22 @@ Frequent Questions
     :depth: 1
     :local:
 
+.. _whyhvad:
+
+*************************************************
+Why “django-*hvad*”?
+*************************************************
+
+The project first started as “django-*nani*”, created by Jonas Obrist. The word
+*nani* is the romanized form of “なに”, which means *What?*.
+
+When Kristian Øllegaard took responsibility for updating and maintaining the project,
+including a major refactor of the internals, the project was renamed to *hvad*,
+which is the Danish word for *What?*.
+
+If we were to continue the trend, we would rename to django-*quoi*, but that is
+very unlikely unless Django introduces major breaking changes in a future version.
+
 .. _localemiddleware:
 
 *************************************************
