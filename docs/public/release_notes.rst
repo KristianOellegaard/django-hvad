@@ -2,6 +2,17 @@
 Release Notes
 #############
 
+.. release 1.2.2
+
+*****************************
+1.2.2 - upcoming release
+*****************************
+
+Fixes:
+
+- Properly handle ``language_code`` in ``Meta.unique_together`` and
+  ``Meta.index_together`` — :issue:`244`.
+
 .. release 1.2.1
 
 *****************************

@@ -82,6 +82,7 @@ class DefinitionTests(HvadTestCase):
         self.assertIn(('tfield_a', 'tfield_b'),
                       DeprecatedUniqueTogetherModel._meta.translations_model._meta.unique_together)
 
+    def test_unique_together_invalid(self):
         with self.assertRaises(ImproperlyConfigured):
             class InvalidUniqueTogetherModel(TranslatableModel):
                 sfield = models.CharField(max_length=250)
@@ -90,6 +91,18 @@ class DefinitionTests(HvadTestCase):
                 )
                 class Meta:
                     unique_together = [('sfield', 'tfield')]
+
+    def test_unique_together_language_code(self):
+        class UniqueTogetherModel2(TranslatableModel):
+            sfield = models.CharField(max_length=250)
+            translations = TranslatedFields(
+                tfield_a = models.CharField(max_length=250),
+                tfield_b = models.CharField(max_length=250),
+            )
+            class Meta:
+                unique_together = [('tfield_a', 'tfield_b', 'language_code')]
+        self.assertIn(('tfield_a', 'tfield_b', 'language_code'),
+                      UniqueTogetherModel2._meta.translations_model._meta.unique_together)
 
     @minimumDjangoVersion(1, 5)
     def test_index_together(self):
