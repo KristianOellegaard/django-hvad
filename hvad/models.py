@@ -103,11 +103,21 @@ def create_translations_model(model, related_name, meta, **fields):
             'and hvad does not support it.' %
             model._meta.model_name if django.VERSION >= (1, 6) else model._meta.module_name)
 
-    sconst, tconst = _split_together(model._meta.unique_together, fields, meta, 'unique_together')
+    sconst, tconst = _split_together(
+        model._meta.unique_together,
+        tuple(fields.keys()) + ('language_code',),
+        meta,
+        'unique_together'
+    )
     model._meta.unique_together = tuple(sconst)
     meta['unique_together'] = tuple(tconst)
     if django.VERSION >= (1, 5):
-        sconst, tconst = _split_together(model._meta.index_together, fields, meta, 'index_together')
+        sconst, tconst = _split_together(
+            model._meta.index_together,
+            tuple(fields.keys()) + ('language_code',),
+            meta,
+            'index_together'
+        )
         model._meta.index_together = tuple(sconst)
         meta['index_together'] = tuple(tconst)
 
