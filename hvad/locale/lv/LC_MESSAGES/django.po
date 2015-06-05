@@ -1,0 +1,95 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-06-05 10:07+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: JURIS MALINENS <jurism.malinens@inbox.lv>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : "
+"2);\n"
+
+#: .\admin.py:84
+msgid "all translations"
+msgstr "visi tulkojumi"
+
+#: .\admin.py:271
+#, python-format
+msgid "The %(name)s \"%(obj)s\" was deleted successfully."
+msgstr "%(name)s \"%(obj)s\" veiksmīgi dzēsts."
+
+#: .\admin.py:285
+#, python-format
+msgid "Cannot delete %(name)s"
+msgstr "Nevar dzēst %(name)s"
+
+#: .\admin.py:287
+msgid "Are you sure?"
+msgstr "Vai tiešām?"
+
+#: .\forms.py:167
+#, python-format
+msgid "The %s could not be created because the data didn't validate."
+msgstr "%s nebija iespējams izveidot, jo notika datu validācijas kļūda."
+
+#: .\forms.py:169
+#, python-format
+msgid "The %s could not be changed because the data didn't validate."
+msgstr "%s nebija iespējams mainīt, jo notika datu validācijas kļūda."
+
+#: .\forms.py:303
+msgid "At least one translation must be provided"
+msgstr "Vismaz viens tulkojums ir obligāts"
+
+#: .\templates\admin\hvad\change_form.html:38
+#: .\templates\admin\hvad\change_form.html:40
+#: .\templates\admin\hvad\deletion_not_allowed.html:10
+#: .\templates\admin\hvad\includes\translation_tabs.html:6
+#: .\templates\admin\hvad\includes\translation_tabs.html:8
+msgid "Delete Translation"
+msgstr "Dzēst tulkojumu"
+
+#: .\templates\admin\hvad\deletion_not_allowed.html:6
+msgid "Home"
+msgstr "Galvenā"
+
+#: .\templates\admin\hvad\deletion_not_allowed.html:15
+#, python-format
+msgid ""
+"Deletion of the %(language_name)s translation of %(object_name)s "
+"'%(escaped_object)s' is not allowed, because it is the last available "
+"translation of this instance."
+msgstr ""
+"%(language_name)s valodas dzēšana %(object_name)s "
+"'%(escaped_object)s' nav atļauta, jo tas ir vienīgais "
+"šīs instances tulkojums."
+
+#: .\templates\admin\hvad\edit_inline\stacked.html:10
+#: .\templates\admin\hvad\edit_inline\tabular.html:30
+msgid "View on site"
+msgstr "Skatīt tīmekļa vietnē"
+
+#: .\templates\admin\hvad\edit_inline\stacked.html:68
+#: .\templates\admin\hvad\edit_inline\tabular.html:115
+#, python-format
+msgid "Add another %(verbose_name)s"
+msgstr "%(verbose_name)s - pievienot jaunu"
+
+#: .\templates\admin\hvad\edit_inline\stacked.html:71
+#: .\templates\admin\hvad\edit_inline\tabular.html:118
+msgid "Remove"
+msgstr "Dzēst"
+
+#: .\templates\admin\hvad\edit_inline\tabular.html:17
+msgid "Delete?"
+msgstr "Dzēst?"
