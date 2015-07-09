@@ -1,7 +1,8 @@
 import functools
 import django
 from django.conf import settings
-from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
+from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin, IS_POPUP_VAR
+
 if django.VERSION >= (1, 7):
     from django.contrib.admin.utils import (flatten_fieldsets, unquote,
         get_deleted_objects)
@@ -217,7 +218,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             app_label, model_name = self.model._meta.app_label, self.model._meta.model_name
         else:
             app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
-        if redirect['Location'] in (uri, "../add/", self.reverse('admin:%s_%s_add' % (app_label, model_name))):
+        if IS_POPUP_VAR not in request.POST and redirect['Location'] in (uri, "../add/",
+           self.reverse('admin:%s_%s_add' % (app_label, model_name))):
             if self.query_language_key in request.GET:
                 redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
                     self.query_language_key, request.GET[self.query_language_key])
