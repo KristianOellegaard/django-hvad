@@ -300,46 +300,68 @@ class TranslatableModel(models.Model):
         return qs.values_list('language_code', flat=True)
 
     #===========================================================================
-    # Checks
+    # Checks - require Django 1.7 or newer
     #===========================================================================
 
-    @classmethod
-    def _check_local_fields(cls, fields, option):
-        """ Remove fields we recognize as translated fields from tests """
-        to_check = []
-        for field in fields:
-            try:
-                cls._meta.translations_model._meta.get_field(field)
-            except FieldDoesNotExist:
-                to_check.append(field)
-        return super(TranslatableModel, cls)._check_local_fields(to_check, option)
+    if django.VERSION >= (1, 7):
+        @classmethod
+        def check(cls, **kwargs):
+            errors = super(TranslatableModel, cls).check(**kwargs)
+            errors.extend(cls._check_shared_translated_clash())
+            return errors
 
-    @classmethod
-    def _check_ordering(cls):
-        if not cls._meta.ordering:
-            return []
+        @classmethod
+        def _check_shared_translated_clash(cls):
+            fields = set(chain.from_iterable(
+                (f.name, f.attname)
+                for f in cls._meta.fields
+            ))
+            tfields = set(chain.from_iterable(
+                (f.name, f.attname)
+                for f in cls._meta.translations_model._meta.fields
+                if f.name not in ('id', 'master')
+            ))
+            return [checks.Error("translated field '%s' clashes with untranslated field." % field,
+                                hint=None, obj=cls, id='hvad.models.E01')
+                    for field in tfields.intersection(fields)]
 
-        if not isinstance(cls._meta.ordering, (list, tuple)):
-            return [checks.Error("'ordering' must be a tuple or list.",
-                                 hint=None, obj=cls, id='models.E014')]
+        @classmethod
+        def _check_local_fields(cls, fields, option):
+            """ Remove fields we recognize as translated fields from tests """
+            to_check = []
+            for field in fields:
+                try:
+                    cls._meta.translations_model._meta.get_field(field)
+                except FieldDoesNotExist:
+                    to_check.append(field)
+            return super(TranslatableModel, cls)._check_local_fields(to_check, option)
 
-        fields = [f for f in cls._meta.ordering if f != '?']
-        fields = [f[1:] if f.startswith('-') else f for f in fields]
-        fields = set(f for f in fields if f not in ('_order', 'pk') and '__' not in f)
+        @classmethod
+        def _check_ordering(cls):
+            if not cls._meta.ordering:
+                return []
 
-        valid_fields = set(chain.from_iterable(
-            (f.name, f.attname)
-            for f in cls._meta.fields
-        ))
-        valid_tfields = set(chain.from_iterable(
-            (f.name, f.attname)
-            for f in cls._meta.translations_model._meta.fields
-            if f.name not in ('master', 'language_code')
-        ))
+            if not isinstance(cls._meta.ordering, (list, tuple)):
+                return [checks.Error("'ordering' must be a tuple or list.",
+                                    hint=None, obj=cls, id='models.E014')]
 
-        return [checks.Error("'ordering' refers to the non-existent field '%s' --hvad." % field,
-                             hint=None, obj=cls, id='models.E015')
-                for field in fields - valid_fields - valid_tfields]
+            fields = [f for f in cls._meta.ordering if f != '?']
+            fields = [f[1:] if f.startswith('-') else f for f in fields]
+            fields = set(f for f in fields if f not in ('_order', 'pk') and '__' not in f)
+
+            valid_fields = set(chain.from_iterable(
+                (f.name, f.attname)
+                for f in cls._meta.fields
+            ))
+            valid_tfields = set(chain.from_iterable(
+                (f.name, f.attname)
+                for f in cls._meta.translations_model._meta.fields
+                if f.name not in ('master', 'language_code')
+            ))
+
+            return [checks.Error("'ordering' refers to the non-existent field '%s' --hvad." % field,
+                                hint=None, obj=cls, id='models.E015')
+                    for field in fields - valid_fields - valid_tfields]
 
     #===========================================================================
     # Internals

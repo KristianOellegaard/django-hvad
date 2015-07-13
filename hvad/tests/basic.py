@@ -37,6 +37,17 @@ class DefinitionTests(HvadTestCase):
         self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel2', bases, attrs)
 
+    @minimumDjangoVersion(1, 7)
+    def test_field_name_clash_check(self):
+        class ClashingFieldsModel(TranslatableModel):
+            field = models.CharField(max_length=50)
+            translations = TranslatedFields(
+                field=models.CharField(max_length=50)
+            )
+        errors = ClashingFieldsModel.check()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, 'hvad.models.E01')
+
     def test_multi_table_raises(self):
         with self.assertRaises(TypeError):
             class InvalidModel3(Normal):
