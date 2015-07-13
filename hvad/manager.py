@@ -15,7 +15,8 @@ from django.db.models.sql.constants import GET_ITERATOR_CHUNK_SIZE as CHUNK_SIZE
 from django.db.models import F, Q
 from django.utils.translation import get_language
 from hvad.compat import string_types
-from hvad.query import query_terms, q_children, expression_nodes, where_node_children
+from hvad.query import (query_terms, q_children, expression_nodes, where_node_children,
+                        add_alias_constraints)
 from hvad.utils import combine, minimumDjangoVersion, settings_updater
 from copy import deepcopy
 import logging
@@ -408,8 +409,9 @@ class TranslationQueryset(QuerySet):
                                         ((masteratt, masteratt),)),
                                         join_field=BetterTranslationsField(languages, master=masteratt),
                                         **nullable)
-            self.query.add_extra(None, None, ('%s.id IS NULL'%alias,), None, None, None)
-            self.query.add_filter(('master__pk__isnull', False))
+
+            add_alias_constraints(self, (self.model, alias), id__isnull=True)
+            self.query.add_filter(('%s__isnull' % masteratt, False))
             self.query.add_select_related(('master',))
 
         else:
@@ -946,7 +948,8 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
                 alias2 = qs.query.join((tmodel._meta.db_table, tmodel._meta.db_table,
                                         ((masteratt, masteratt),)),
                                     join_field=field, **nullable)
-            qs.query.add_extra(None, None, ('%s.id IS NULL'%alias2,), None, None, None)
+
+            add_alias_constraints(qs, (tmodel, alias2), id__isnull=True)
 
             # We must force the _unique field so get_cached_row populates the cache
             # Unfortunately, this means we must load everything in one go

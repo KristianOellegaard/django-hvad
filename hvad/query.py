@@ -1,10 +1,10 @@
 import django
 from django.db.models import Q, FieldDoesNotExist
 if django.VERSION >= (1, 8):
-    from django.db.models.expressions import Expression
+    from django.db.models.expressions import Expression, Col
 else:
     from django.db.models.expressions import ExpressionNode as Expression
-from django.db.models.sql.where import WhereNode
+from django.db.models.sql.where import WhereNode, AND, Constraint
 from collections import namedtuple
 
 #===============================================================================
@@ -156,3 +156,28 @@ def where_node_children(node):
                 yield child, field_name
             if isinstance(child, WhereNode):
                 todo.append(child)
+
+#===============================================================================
+# Query manipulations
+
+if django.VERSION >= (1, 8):
+    def add_alias_constraints(queryset, alias, **kwargs):
+        model, alias = alias
+        clause = queryset.query.where_class()
+        for lookup, value in kwargs.items():
+            field_name, lookup = lookup.split('__')
+            clause.add(queryset.query.build_lookup(
+                [lookup],
+                Col(alias, model._meta.get_field(field_name)),
+                value
+            ), AND)
+        queryset.query.where.add(clause, AND)
+else:
+    def add_alias_constraints(queryset, alias, **kwargs):
+        model, alias = alias
+        clause = queryset.query.where_class()
+        for lookup, value in kwargs.items():
+            field_name, lookup = lookup.split('__')
+            field = model._meta.get_field(field_name)
+            clause.add((Constraint(alias, field.column, field), lookup, value), AND)
+        queryset.query.where.add(clause, AND)

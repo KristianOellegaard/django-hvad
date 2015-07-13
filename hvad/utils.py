@@ -54,7 +54,7 @@ def get_translation(instance, language_code=None):
         for obj in qs:
             if obj.language_code == language_code:
                 return obj
-        raise accessor.model.DoesNotExist
+        raise accessor.model.DoesNotExist('%r is not translated in %r' % (instance, language_code))
     return accessor.get(language_code=language_code)
 
 def load_translation(instance, language, enforce=False):

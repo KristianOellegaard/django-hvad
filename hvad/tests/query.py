@@ -268,6 +268,18 @@ class UpdateTests(HvadTestCase, NormalFixture):
         self.assertEqual(newja1.translated_field, ja1.translated_field)
         self.assertEqual(newja2.translated_field, ja2.translated_field)
 
+    @minimumDjangoVersion(1, 6)
+    def test_update_fallbacks(self):
+        # Test it works - note that is it still not recommended as the query is much
+        # more complicated that it need to be
+        qs = Normal.objects.language().fallbacks()
+        with self.assertNumQueries(1 if connection.features.update_can_self_select else 2):
+            qs.filter(shared_field=NORMAL[1].shared_field).update(shared_field='updated')
+
+        self.assertEqual(Normal.objects.language('ja').get(shared_field='updated').pk, self.normal_id[1])
+        self.assertEqual(Normal.objects.language('en').get(shared_field='updated').pk, self.normal_id[1])
+
+
 class ValuesListTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -467,6 +479,14 @@ class DeleteTests(HvadTestCase, NormalFixture):
 
         self.assertEqual(Normal.objects.language('ja').count(), 2)
         self.assertEqual(Normal.objects.language('en').count(), 0)
+
+    @minimumDjangoVersion(1, 6)
+    def test_delete_fallbacks(self):
+        qs = Normal.objects.language().fallbacks()
+        qs.filter(shared_field=NORMAL[1].shared_field).delete()
+
+        self.assertEqual(Normal.objects.language('ja').count(), self.normal_count - 1)
+        self.assertEqual(Normal.objects.language('en').count(), self.normal_count - 1)
 
 
 class GetTranslationFromInstanceTests(HvadTestCase, NormalFixture):
