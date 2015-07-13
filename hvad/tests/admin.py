@@ -12,7 +12,7 @@ from hvad.compat import urlparse
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.fixtures import NormalFixture, UsersFixture
 from hvad.test_utils.data import NORMAL
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, AutoPopulated
 
 
@@ -324,8 +324,7 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                 self.assertEqual(obj.translated_field, "English NEW")
 
     def test_admin_change_form(self):
-        lang = 'en'
-        with translation.override(lang):
+        with translation.override('en'):
             with self.login_user_context('admin'):
                 url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
                 data = {
@@ -396,6 +395,26 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                 obj = Normal.objects.language('en').get(shared_field=SHARED)
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
+
+    @minimumDjangoVersion(1, 6)
+    def test_admin_change_popup(self):
+        from django.contrib.admin.options import IS_POPUP_VAR
+        with translation.override('en'):
+            with self.login_user_context('admin'):
+                url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
+                data = {
+                    'translated_field': 'English NEW',
+                    'shared_field': NORMAL[1].shared_field,
+                    'simplerel-TOTAL_FORMS': '0',
+                    'simplerel-INITIAL_FORMS': '0',
+                    'simplerel-MAX_NUM_FORMS': '0',
+                    IS_POPUP_VAR: '1',
+                }
+                response = self.client.post(url, data)
+                expected_url = reverse('admin:app_normal_changelist')
+                self.assertIn(response.status_code, [200, 302], response.content)
+                obj = Normal.objects.language('en').get(pk=self.normal_id[1])
+                self.assertEqual(obj.translated_field, "English NEW")
 
 
 class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, UsersFixture):

@@ -211,17 +211,18 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                                                                   form_url, obj)
         
     def response_change(self, request, obj):
-        redirect = super(TranslatableAdmin, self).response_change(request, obj)
-        uri = iri_to_uri(request.path)
-        if django.VERSION >= (1, 6):
-            app_label, model_name = self.model._meta.app_label, self.model._meta.model_name
-        else:
-            app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
-        if redirect['Location'] in (uri, "../add/", self.reverse('admin:%s_%s_add' % (app_label, model_name))):
-            if self.query_language_key in request.GET:
-                redirect['Location'] = '%s?%s=%s' % (redirect['Location'],
-                    self.query_language_key, request.GET[self.query_language_key])
-        return redirect
+        response = super(TranslatableAdmin, self).response_change(request, obj)
+        if 'Location' in response:
+            uri = iri_to_uri(request.path)
+            if django.VERSION >= (1, 6):
+                app_label, model_name = self.model._meta.app_label, self.model._meta.model_name
+            else:
+                app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
+            if response['Location'] in (uri, "../add/", self.reverse('admin:%s_%s_add' % (app_label, model_name))):
+                if self.query_language_key in request.GET:
+                    response['Location'] = '%s?%s=%s' % (response['Location'],
+                        self.query_language_key, request.GET[self.query_language_key])
+        return response
     
     @csrf_protect_m
     @atomic
