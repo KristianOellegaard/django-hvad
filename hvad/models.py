@@ -300,6 +300,22 @@ class TranslatableModel(models.Model):
         return qs.values_list('language_code', flat=True)
 
     #===========================================================================
+    # Validation
+    #===========================================================================
+
+    def clean_fields(self, exclude=None):
+        super(TranslatableModel, self).clean_fields(exclude=exclude)
+        translation = get_cached_translation(self)
+        if translation is not None:
+            translation.clean_fields(exclude=exclude)
+
+    def validate_unique(self, exclude=None):
+        super(TranslatableModel, self).validate_unique(exclude=exclude)
+        translation = get_cached_translation(self)
+        if translation is not None:
+            translation.validate_unique(exclude=exclude)
+
+    #===========================================================================
     # Checks - require Django 1.7 or newer
     #===========================================================================
 

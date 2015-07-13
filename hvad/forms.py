@@ -141,13 +141,30 @@ class BaseTranslatableModelForm(BaseModelForm):
             to allow an overriden save to set some translated field values before
             invoking super().
         '''
-        result = super(BaseTranslatableModelForm, self)._post_clean()
-
         enforce = 'language_code' in self.cleaned_data
         language = self.cleaned_data.get('language_code') or get_language()
         translation = load_translation(self.instance, language, enforce)
+
+        exclude = self._get_validation_exclusions()
+        translation = construct_instance(self, translation, self._meta.fields, exclude)
         set_cached_translation(self.instance, translation)
+        result = super(BaseTranslatableModelForm, self)._post_clean()
         return result
+
+    def _get_validation_exclusions(self):
+        exclude = super(BaseTranslatableModelForm, self)._get_validation_exclusions()
+        for f in self.instance._meta.translations_model._meta.fields:
+            if ((f.name not in self.fields) or
+                (self._meta.fields and f.name not in self._meta.fields) or
+                (self._meta.exclude and f.name in self._meta.exclude) or
+                (f.name in self._errors)):
+                exclude.append(f.name)
+            else:
+                form_field = self.fields[f.name]
+                field_value = self.cleaned_data.get(f.name, None)
+                if not f.blank and not form_field.required and field_valud in form_field.empty_values:
+                    exclude.append(f.name)
+        return exclude
 
     def save(self, commit=True):
         ''' Saves the model
@@ -283,11 +300,7 @@ class BaseTranslationFormSet(BaseInlineFormSet):
             # fields from the shared model should not be validated
             exclusions.extend(f.name for f in master._meta.fields)
             try:
-                if django.VERSION >= (1, 6):
-                    master.full_clean(exclude=exclusions,
-                                      validate_unique=form._validate_unique)
-                else:
-                    master.full_clean(exclude=exclusions)
+                master.clean()
             except ValidationError as e:
                 form._update_errors(e)
 

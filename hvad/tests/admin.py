@@ -13,7 +13,7 @@ from hvad.forms import TranslatableModelForm
 from hvad.test_utils.fixtures import NormalFixture, UsersFixture
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
-from hvad.test_utils.project.app.models import Normal, SimpleRelated, AutoPopulated
+from hvad.test_utils.project.app.models import Normal, Unique, SimpleRelated, AutoPopulated
 
 
 class BaseAdminTests(object):
@@ -195,6 +195,21 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                 obj = Normal.objects.language('en').get(shared_field=SHARED)
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
+
+    def test_admin_duplicate(self):
+        with translation.override('en'):
+            Unique.objects.language('en').create(
+                shared_field='shared',
+                translated_field='translated_duplicate'
+            )
+            with self.login_user_context('admin'):
+                response = self.client.post(reverse('admin:app_unique_add'), {
+                    'shared_field': 'shared2',
+                    'translated_field': 'translated_duplicate',
+                })
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(len(response.context_data['errors']), 1)
+                self.assertEqual(Unique.objects.count(), 1)
 
     def test_admin_auto_populated(self):
         """
