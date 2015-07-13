@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import django
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.exceptions import WrongManager
@@ -41,6 +41,29 @@ class OrderingTest(HvadTestCase, NormalFixture):
 
 class DefaultOrderingTest(HvadTestCase, NormalFixture):
     normal_count = 2
+
+    @minimumDjangoVersion(1, 7)
+    def test_checks(self):
+        from django.db import models
+        from hvad.models import TranslatableModel, TranslatedFields
+
+        class ModelWithOrdering1(TranslatableModel):
+            translations = TranslatedFields(
+                translated_field=models.CharField(max_length=50),
+            )
+            class Meta:
+                ordering = ('translated_field',)
+        errors = ModelWithOrdering1.check()
+        self.assertFalse(errors)
+
+        class ModelWithOrdering2(TranslatableModel):
+            translations = TranslatedFields(
+                translated_field=models.CharField(max_length=50),
+            )
+            class Meta:
+                ordering = ('language_code',)
+        errors = ModelWithOrdering2.check()
+        self.assertTrue(errors)
 
     def test_minus_order_by_shared(self):
         class ProxyWithOrder1(Normal):

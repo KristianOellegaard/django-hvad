@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy, RelatedProxy, SimpleRelatedProxy
 
 
 class ProxyTests(HvadTestCase):
+    @minimumDjangoVersion(1, 7)
+    def test_check(self):
+        self.assertEqual(len(NormalProxy.check()), 0)
+        self.assertEqual(len(NormalProxyProxy.check()), 0)
+        self.assertEqual(len(RelatedProxy.check()), 0)
+        self.assertEqual(len(SimpleRelatedProxy.check()), 0)
+
     def test_proxy(self):
         self.assertEqual(NormalProxy.objects.count(), 0)
         self.assertEqual(NormalProxy.objects.language('en').count(), 0)

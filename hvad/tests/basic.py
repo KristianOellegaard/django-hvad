@@ -63,6 +63,11 @@ class DefinitionTests(HvadTestCase):
             )
             class Meta:
                 unique_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
+
+        if django.VERSION >= (1, 7):
+            errors = UniqueTogetherModel.check()
+            self.assertFalse(errors)
+
         self.assertIn(('sfield_a', 'sfield_b'),
                          UniqueTogetherModel._meta.unique_together)
         self.assertNotIn(('tfield_a', 'tfield_b'),
@@ -115,6 +120,11 @@ class DefinitionTests(HvadTestCase):
             )
             class Meta:
                 index_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
+
+        if django.VERSION >= (1, 7):
+            errors = IndexTogetherModel.check()
+            self.assertFalse(errors)
+
         self.assertIn(('sfield_a', 'sfield_b'),
                          IndexTogetherModel._meta.index_together)
         self.assertNotIn(('tfield_a', 'tfield_b'),
