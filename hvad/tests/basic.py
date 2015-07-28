@@ -744,10 +744,12 @@ class GetOrCreateTest(HvadTestCase):
         Unique.objects.language('en').create(
             shared_field='duplicated',
             translated_field='English',
+            unique_by_lang='English'
         )
         with self.assertRaises(IntegrityError):
             Unique.objects.language('en').get_or_create(
                 translated_field='inexistent',
+                unique_by_lang='inexistent',
                 defaults={'shared_field': 'duplicated'}
             )
 

@@ -55,12 +55,12 @@ class FormDeclarationTests(HvadTestCase):
         class Form(TranslatableModelForm):
             pass
         self.assertIs(Form._meta.fields, None)
-        self.assertCountEqual(Form._meta.exclude, ['language_code'])
+        self.assertCountEqual(Form._meta.exclude, [])
         self.assertCountEqual(Form.base_fields, [])
 
         engineered = translatable_modelform_factory('en', Normal, form=Form)
         self.assertIs(Form._meta.fields, None)
-        self.assertCountEqual(engineered._meta.exclude, ['language_code', 'translations'])
+        self.assertCountEqual(engineered._meta.exclude, ['translations'])
         self.assertCountEqual(engineered.base_fields, ['shared_field', 'translated_field'])
 
     def test_only_model(self):
@@ -69,7 +69,7 @@ class FormDeclarationTests(HvadTestCase):
             class Meta:
                 model = Normal
         self.assertIs(Form._meta.fields, None)
-        self.assertCountEqual(Form._meta.exclude, ['language_code', 'translations'])
+        self.assertCountEqual(Form._meta.exclude, ['translations'])
         self.assertCountEqual(Form.base_fields, ['shared_field', 'translated_field'])
 
     def test_only_fields(self):
@@ -78,12 +78,12 @@ class FormDeclarationTests(HvadTestCase):
             class Meta:
                 fields = ('shared_field', 'translated_field')
         self.assertCountEqual(Form._meta.fields, ['shared_field', 'translated_field'])
-        self.assertCountEqual(Form._meta.exclude, ['language_code'])
+        self.assertCountEqual(Form._meta.exclude, [])
         self.assertCountEqual(Form.base_fields, [])
 
         engineered = translatable_modelform_factory('en', Normal, form=Form)
         self.assertCountEqual(engineered._meta.fields, ['shared_field', 'translated_field'])
-        self.assertCountEqual(engineered._meta.exclude, ['language_code', 'translations'])
+        self.assertCountEqual(engineered._meta.exclude, ['translations'])
         self.assertCountEqual(engineered.base_fields, ['shared_field', 'translated_field'])
 
     def test_model_and_fields(self):
@@ -93,7 +93,7 @@ class FormDeclarationTests(HvadTestCase):
                 model = Normal
                 fields = ('shared_field', 'translated_field')
         self.assertCountEqual(Form1._meta.fields, ['shared_field', 'translated_field'])
-        self.assertCountEqual(Form1._meta.exclude, ['language_code', 'translations'])
+        self.assertCountEqual(Form1._meta.exclude, ['translations'])
         self.assertCountEqual(Form1.base_fields, ['shared_field', 'translated_field'])
 
         class Form2(TranslatableModelForm):     # only shared fields
@@ -101,7 +101,7 @@ class FormDeclarationTests(HvadTestCase):
                 model = Normal
                 fields = ('shared_field',)
         self.assertCountEqual(Form2._meta.fields, ['shared_field'])
-        self.assertCountEqual(Form2._meta.exclude, ['language_code', 'translations'])
+        self.assertCountEqual(Form2._meta.exclude, ['translations'])
         self.assertCountEqual(Form2.base_fields, ['shared_field'])
 
         class Form3(TranslatableModelForm):     # only translated fields
@@ -109,7 +109,7 @@ class FormDeclarationTests(HvadTestCase):
                 model = Normal
                 fields = ('translated_field',)
         self.assertCountEqual(Form3._meta.fields, ['translated_field'])
-        self.assertCountEqual(Form3._meta.exclude, ['language_code', 'translations'])
+        self.assertCountEqual(Form3._meta.exclude, ['translations'])
         self.assertCountEqual(Form3.base_fields, ['translated_field'])
 
         with self.assertRaises(FieldError):     # invalid fields

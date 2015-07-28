@@ -192,6 +192,15 @@ class BaseTranslationModel(models.Model):
     Needed for detection of translation models. Due to the way dynamic classes
     are created, we cannot put the 'language_code' field on here.
     """
+    def _get_unique_checks(self, exclude=None):
+        # Due to the way translations are handled, checking for unicity of
+        # the ('language_code', 'master') constraint is useless. We filter it out
+        # here so as to avoid a useless query
+        unique_checks, date_checks = super(BaseTranslationModel, self)._get_unique_checks(exclude=exclude)
+        unique_checks = [check for check in unique_checks
+                         if check != (self.__class__, ('language_code', 'master'))]
+        return unique_checks, date_checks
+
     class Meta:
         abstract = True
 
@@ -309,7 +318,7 @@ class TranslatableModel(models.Model):
         super(TranslatableModel, self).clean_fields(exclude=exclude)
         translation = get_cached_translation(self)
         if translation is not None:
-            translation.clean_fields(exclude=exclude)
+            translation.clean_fields(exclude=exclude + ['id', 'master', 'master_id', 'language_code'])
 
     def validate_unique(self, exclude=None):
         super(TranslatableModel, self).validate_unique(exclude=exclude)

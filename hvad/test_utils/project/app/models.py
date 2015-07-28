@@ -21,8 +21,12 @@ class Normal(TranslatableModel):
 class Unique(TranslatableModel):
     shared_field = models.CharField(max_length=255, unique=True)
     translations = TranslatedFields(
-        translated_field = models.CharField(max_length=255, unique=True)
+        translated_field = models.CharField(max_length=255, unique=True),
+        unique_by_lang = models.CharField(max_length=255),
     )
+
+    class Meta:
+        unique_together = [('language_code', 'unique_by_lang')]
 
     def __str__(self):
         return self.safe_translation_getter('translated_field', self.shared_field)

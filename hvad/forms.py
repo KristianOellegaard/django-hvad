@@ -21,6 +21,8 @@ except ImportError: #pragma: no cover (python < 2.7)
     from django.utils.datastructures import SortedDict as OrderedDict
 import warnings
 
+veto_fields = ('id', 'master', 'master_id', 'language_code')
+
 #=============================================================================
 
 class TranslatableModelFormMetaclass(ModelFormMetaclass):
@@ -40,8 +42,6 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
 
         # Force exclusion of language_code as we use cleaned_data['language_code']
         exclude = meta.exclude = list(getattr(meta, 'exclude', ()))
-        if 'language_code' not in exclude:
-            exclude.append('language_code')
         if fields is not None and 'language_code' in fields:
             raise FieldError('Field \'language_code\' is invalid.')
 
@@ -60,7 +60,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             tfields = fields_for_model(
                 model._meta.translations_model,
                 fields=fields,
-                exclude=exclude + ['master'], # only exclude master here, it is valid shared field
+                exclude=exclude + list(veto_fields),
                 widgets=getattr(meta, 'widgets', None),
                 formfield_callback=attrs.get('formfield_callback')
             )
@@ -112,8 +112,7 @@ class BaseTranslatableModelForm(BaseModelForm):
         if instance is not None:
             translation = load_translation(instance, language, enforce)
             if translation.pk:
-                exclude = (tuple(self._meta.exclude or ()) +
-                           ('id', 'master', 'master_id', 'language_code'))
+                exclude = (tuple(self._meta.exclude or ()) + veto_fields)
                 object_data.update(
                     model_to_dict(translation, self._meta.fields, exclude)
                 )
@@ -154,7 +153,9 @@ class BaseTranslatableModelForm(BaseModelForm):
     def _get_validation_exclusions(self):
         exclude = super(BaseTranslatableModelForm, self)._get_validation_exclusions()
         for f in self.instance._meta.translations_model._meta.fields:
-            if ((f.name not in self.fields) or
+            if f.name in veto_fields:
+                pass
+            elif ((f.name not in self.fields) or
                 (self._meta.fields and f.name not in self._meta.fields) or
                 (self._meta.exclude and f.name in self._meta.exclude) or
                 (f.name in self._errors)):
@@ -162,7 +163,7 @@ class BaseTranslatableModelForm(BaseModelForm):
             else:
                 form_field = self.fields[f.name]
                 field_value = self.cleaned_data.get(f.name, None)
-                if not f.blank and not form_field.required and field_valud in form_field.empty_values:
+                if not f.blank and not form_field.required and field_value in form_field.empty_values:
                     exclude.append(f.name)
         return exclude
 

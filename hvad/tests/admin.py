@@ -196,16 +196,35 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
 
-    def test_admin_duplicate(self):
+    def test_admin_duplicate_simple(self):
         with translation.override('en'):
             Unique.objects.language('en').create(
                 shared_field='shared',
-                translated_field='translated_duplicate'
+                translated_field='translated_duplicate',
+                unique_by_lang='unique_by_lang_1',
             )
             with self.login_user_context('admin'):
                 response = self.client.post(reverse('admin:app_unique_add'), {
                     'shared_field': 'shared2',
                     'translated_field': 'translated_duplicate',
+                    'unique_by_lang': 'unique_by_lang_2',
+                })
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(len(response.context_data['errors']), 1)
+                self.assertEqual(Unique.objects.count(), 1)
+
+    def test_admin_duplicate_by_lang(self):
+        with translation.override('en'):
+            Unique.objects.language('en').create(
+                shared_field='shared',
+                translated_field='translated',
+                unique_by_lang='unique_by_lang_duplicate',
+            )
+            with self.login_user_context('admin'):
+                response = self.client.post(reverse('admin:app_unique_add'), {
+                    'shared_field': 'shared2',
+                    'translated_field': 'translated2',
+                    'unique_by_lang': 'unique_by_lang_duplicate',
                 })
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(len(response.context_data['errors']), 1)
@@ -530,11 +549,11 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
     def test_translatable_modelform_factory(self):
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id', 'language_code', 'translations'])
+        self.assertEqual(t.Meta.exclude, ['id', 'translations'])
         
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id', 'language_code', 'translations'])
+        self.assertEqual(t.Meta.exclude, ['id', 'translations'])
         
         class TestForm(TranslatableModelForm):
             class Meta:
@@ -543,7 +562,7 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
                
         t = translatable_modelform_factory('en', Normal, form=TestForm)
         self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id', 'language_code', 'translations'])
+        self.assertEqual(t.Meta.exclude, ['id', 'translations'])
         
 
 class AdminRelationTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture):
