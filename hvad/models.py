@@ -76,6 +76,7 @@ def create_translations_model(model, related_name, meta, **fields):
     # Build a list of translation models from base classes. Depth-first scan.
     abstract = model._meta.abstract
     translation_bases = []
+    translation_base_fields = set()
     scan_bases = list(reversed(model.__bases__)) # backwards so we can use pop/extend
     while scan_bases:
         base = scan_bases.pop()
@@ -90,6 +91,7 @@ def create_translations_model(model, related_name, meta, **fields):
         try:
             # The base may have translations model, then just inherit that
             translation_bases.append(base._meta.translations_model)
+            translation_base_fields.update(field.name for field in base._meta.translations_model._meta.fields)
         except AttributeError:
             # But it may not, and simply inherit other abstract bases, scan them
             scan_bases.extend(reversed(base.__bases__))
@@ -108,7 +110,7 @@ def create_translations_model(model, related_name, meta, **fields):
 
     sconst, tconst = _split_together(
         model._meta.unique_together,
-        tuple(fields.keys()) + ('language_code',),
+        translation_base_fields.union(fields).union(('language_code',)),
         meta,
         'unique_together'
     )
@@ -117,7 +119,7 @@ def create_translations_model(model, related_name, meta, **fields):
     if django.VERSION >= (1, 5):
         sconst, tconst = _split_together(
             model._meta.index_together,
-            tuple(fields.keys()) + ('language_code',),
+            translation_base_fields.union(fields).union(('language_code',)),
             meta,
             'index_together'
         )
