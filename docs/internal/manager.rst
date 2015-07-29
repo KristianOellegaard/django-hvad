@@ -501,11 +501,6 @@ TranslationManager
         will filter by language, returning only objects that have a translation
         in the specified language. Translated fields will be available on the
         objects, in the specified language.
-
-    .. method:: using_translations(self)
-
-        Functionally equivalent to calling :meth:`language` with no argument. This
-        method is deprecated and will be removed in the future.
     
     .. method:: untranslated(self)
     

@@ -976,17 +976,6 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
 FallbackQueryset = LegacyFallbackQueryset if LEGACY_FALLBACKS else SelfJoinFallbackQueryset
 
 
-class TranslationFallbackManager(models.Manager): # pragma: no cover
-    """
-    Manager class for the shared model, without specific translations. Allows
-    using `use_fallbacks()` to enable per object language fallback.
-    """
-    def __init__(self, *args, **kwargs):
-        # remove in 1.3
-        raise RuntimeError('TranslationFallbackManager is no longer used. Please use '
-                           'TranslationManager\'s untranslated() method.')
-
-
 #===============================================================================
 # TranslationManager
 #===============================================================================
@@ -1010,10 +999,6 @@ class TranslationManager(models.Manager):
         self.fallback_class = kwargs.pop('fallback_class', self.fallback_class)
         self.default_class = kwargs.pop('default_class', self.default_class)
         super(TranslationManager, self).__init__(*args, **kwargs)
-
-    def using_translations(self): #pragma: no cover
-        # remove in 1.3
-        raise RuntimeError('using_translations() has been removed, use language() instead')
 
     def _make_queryset(self, klass, core_filters):
         ''' Builds a queryset of given class.

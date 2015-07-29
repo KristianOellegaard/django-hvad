@@ -20,8 +20,11 @@ regular Django, with the following additional features:
   :term:`translations <Translations Model>` of your model directly. Behind the
   scenes, it will be a reversed ForeignKey from the
   :term:`Translations Model` to your :term:`Shared Model`.
-- Custom settings can be set on the :term:`Translations Model` by passing them
-  as a ``meta`` dictionnary to :class:`~hvad.models.TranslatedFields`.
+- Translatable fields can be used in the model options. For options that take
+  groupings of fields (``unique_together`` and ``index_together``), each grouping
+  may have either translatable or non-translatable fields, but not both.
+- Special field ``language_code`` may be used for defining ``unique_together``
+  constraints that are only unique per language.
 
 A full example of a model with translations::
 
@@ -35,8 +38,9 @@ A full example of a model with translations::
             title = models.CharField(max_length=100),
             subtitle = models.CharField(max_length=255),
             released = models.DateTimeField(),
-            meta={'unique_together': [('title', 'subtitle')]},
         )
+        class Meta:
+            unique_together = [('title', 'subtitle')]
 
 .. note:: The :djterm:`Meta <meta-options>` class of the model may not use the
           translatable fields in :attr:`~django.db.models.Options.order_with_respect_to`.

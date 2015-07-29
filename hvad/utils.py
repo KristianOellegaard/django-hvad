@@ -162,11 +162,12 @@ def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs
             not thing in exclude:
             context.update(getattr(instance, thing, lambda x:x)(**extra_kwargs))
 
-    if context:
-        # raise in 1.3, remove whole function in 1.5
-        warnings.warn('Context modifiers are deprecated and will be removed '
-                      'in hvad version 1.3. Triggering class: %r' % instance.__class__,
-                      DeprecationWarning)
+    # remove whole function in 1.5
+    assert not context, ('Context modifiers have been removed. Please update '
+                         'view %s to use \'get_context_data()\' instead.' % instance.__class__.__name__)
+    warnings.warn('Context modifiers have been removed. Please remove the call to '
+                  '\'collect_context_modifiers()\' from view : %s.' % instance.__class__.__name__,
+                    DeprecationWarning, stacklevel=2)
     return context
 
 #=============================================================================

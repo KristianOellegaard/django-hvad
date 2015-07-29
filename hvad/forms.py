@@ -176,17 +176,9 @@ class BaseTranslatableModelForm(BaseModelForm):
             If no language is specified in self.cleaned_data, assume the instance
             is preloaded with correct language.
         '''
-        if not self.is_valid():
-            # raise in 1.3, remove in 1.5
-            warnings.warn('Calling save() on an invalid form is deprecated and '
-                          'will fail in the future. Check the result of .is_valid() '
-                          'before calling save().', DeprecationWarning, stacklevel=2)
-            raise ValueError((
-                _("The %s could not be created because the data didn't validate.")
-                if self.instance.pk is None else
-                _("The %s could not be changed because the data didn't validate.")
-                ) % self.instance._meta.object_name
-            )
+        assert self.is_valid(), ('Method save() must not be called on an invalid '
+                                 'form. Check the result of .is_valid() before '
+                                 'calling save().')
 
         # Get the right translation for object and language
         # It should have been done in _post_clean, but instance may have been

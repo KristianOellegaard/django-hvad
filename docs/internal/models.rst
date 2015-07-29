@@ -57,20 +57,6 @@ BaseTranslationModel
     class is abstract.
 
 
-**********************
-TranslatableModelBase        
-**********************
-
-.. class:: TranslatableModelBase
-
-    .. deprecated:: 0.5
-
-    Metaclass of :class:`TranslatableModel`. It is no longer used and should be
-    removed from metaclass inheritance tree in projects.
-
-    .. method:: __new__(cls, name, bases, attrs)
-
-
 ******************
 TranslatableModel        
 ******************

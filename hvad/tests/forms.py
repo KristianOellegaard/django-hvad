@@ -154,8 +154,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         form = NormalForm()
         self.assertCountEqual(form.fields, ['shared_field', 'translated_field'])
         self.assertFalse(form.is_valid())
-        with self.assertThrowsWarning(DeprecationWarning):
-            self.assertRaises(ValueError, form.save)
+        self.assertRaises(AssertionError, form.save)
 
         form = NormalMediaForm()
         self.assertCountEqual(form.fields, ['shared_field', 'translated_field'])

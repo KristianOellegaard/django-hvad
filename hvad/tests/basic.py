@@ -8,7 +8,7 @@ from django.db.models.query_utils import Q
 from django.utils import translation
 from hvad.compat import with_metaclass
 from hvad.manager import TranslationQueryset, TranslationManager
-from hvad.models import TranslatableModel, TranslatableModelBase, TranslatedFields
+from hvad.models import TranslatableModel, TranslatedFields
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
@@ -173,15 +173,6 @@ class DefinitionTests(HvadTestCase):
         }
         model = type('MyBaseModel', (TranslatableModel,), attrs)
         self.assertTrue(model._meta.abstract)
-
-    def test_metaclass_override(self):
-        class CustomMetaclass(TranslatableModelBase):
-            def __new__(*args, **kwargs):
-                return TranslatableModelBase.__new__(*args, **kwargs)
-
-        with self.assertRaises(RuntimeError):
-            class CustomMetaclassModel(with_metaclass(CustomMetaclass, TranslatableModel)):
-                translations = TranslatedFields()
 
     def test_internal_properties(self):
         self.assertCountEqual(Normal()._translated_field_names,
@@ -585,12 +576,6 @@ class TableNameTest(HvadTestCase):
                     hello = models.CharField(max_length=128)
                 )
             self.assertTrue(MyOtherTableNameTestModel._meta.translations_model._meta.db_table.endswith('_myothertablenametestmodelO_Otranslation'))
-
-    def test_table_name_override_rename(self):
-        override = self.settings(NANI_TABLE_NAME_SEPARATOR='O_O')
-        with self.assertRaises(ImproperlyConfigured):
-            override.enable()
-        override.disable()
 
     def test_table_name_from_meta(self):
         from hvad.models import TranslatedFields

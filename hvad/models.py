@@ -27,19 +27,12 @@ def update_settings(*args, **kwargs):
     FALLBACK_LANGUAGES = tuple( code for code, name in settings.LANGUAGES )
     TABLE_NAME_SEPARATOR = getattr(settings, 'HVAD_TABLE_NAME_SEPARATOR', '_')
 
-    if hasattr(settings, 'NANI_TABLE_NAME_SEPARATOR'):
-        # remove in 1.3
-        raise ImproperlyConfigured(
-            'NANI_TABLE_NAME_SEPARATOR setting is obsolete and has been '
-            'removed. Please rename it to HVAD_TABLE_NAME_SEPARATOR.')
-
-
 #===============================================================================
 
 def _split_together(constraints, fields, meta, name):
     sconst, tconst = [], []
     if name in meta:
-        # raise in 1.3, remove in 1.5
+        # raise in 1.4, remove in 1.6
         warnings.warn('Passing \'%s\' to TranslatedFields is deprecated. Please use '
                       'Please Meta.%s instead.' % (name, name), DeprecationWarning)
         tconst.extend(meta[name])
@@ -203,16 +196,6 @@ class BaseTranslationModel(models.Model):
 
     class Meta:
         abstract = True
-
-
-class TranslatableModelBase(ModelBase):
-    def __new__(cls, *args, **kwargs):
-        # remove in 1.3
-        raise RuntimeError(
-            'TranslatableModelBase metaclass is no longer used and has been '
-            'removed. Hvad no longer uses a custom metaclass so conflict '
-            'resolution is no longer required, TranslatableModelBase can be '
-            'dropped.')
 
 
 class NoTranslation(object):

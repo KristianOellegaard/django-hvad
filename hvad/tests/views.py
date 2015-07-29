@@ -339,69 +339,37 @@ class TransitionTests(HvadTestCase, NormalFixture):
         with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
-
-            with self.assertThrowsWarning(DeprecationWarning):
+            with self.assertRaises(AssertionError):
                 response = DeprecatedObjectUpdateView.as_view()(request, pk=self.normal_id[1])
-
-            self.assertEqual(response.status_code, 200)
-            data = response.context_data['form'].initial
-            self.assertEqual(data['id'], self.normal_id[1])
-            self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
-            self.assertEqual(data['translated_field'], NORMAL[1].translated_field['en'])
 
     def test_filter_kwargs_deprecation(self):
         with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
-
-            with self.assertThrowsWarning(DeprecationWarning):
+            with self.assertRaises(AssertionError):
                 response = DeprecatedFilterUpdateView.as_view()(request, custom=NORMAL[1].shared_field)
-
-            self.assertEqual(response.status_code, 200)
-            data = response.context_data['form'].initial
-            self.assertEqual(data['id'], self.normal_id[1])
-            self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
-            self.assertEqual(data['translated_field'], NORMAL[1].translated_field['en'])
 
     def test_object_id_deprecation(self):
         with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
-
-            with self.assertThrowsWarning(DeprecationWarning):
+            with self.assertRaises(AssertionError):
                 response = TestUpdateView.as_view()(request, object_id=self.normal_id[1])
-
-            self.assertEqual(response.status_code, 200)
-            data = response.context_data['form'].initial
-            self.assertEqual(data['id'], self.normal_id[1])
-            self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
-            self.assertEqual(data['translated_field'], NORMAL[1].translated_field['en'])
 
     def test__language_deprecation(self):
         request = self.request_factory.get('/url/?lang=ja')
         request.user = self.user
-
-        with self.assertThrowsWarning(DeprecationWarning):
+        with self.assertRaises(AssertionError):
             response = DeprecatedLanguageUpdateView.as_view()(request, pk=self.normal_id[1])
-
-        self.assertEqual(response.status_code, 200)
-        data = response.context_data['form'].initial
-        self.assertEqual(data['id'], self.normal_id[1])
-        self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
-        self.assertEqual(data['translated_field'], NORMAL[1].translated_field['ja'])
 
     def test_context_modifiers_deprecation(self):
         with translation.override('en'):
             request = self.request_factory.get('/url/')
             request.user = self.user
-
-            with self.assertThrowsWarning(DeprecationWarning):
+            with self.assertRaises(AssertionError):
                 response = DeprecatedContextUpdateView.as_view()(request, pk=self.normal_id[1])
-
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.context_data['modifier'], 'foo')
 
     def test_translatable_base_deprecation(self):
         from hvad.views import TranslatableBaseView
-        with self.assertThrowsWarning(DeprecationWarning):
+        with self.assertRaises(AssertionError):
             TranslatableBaseView()

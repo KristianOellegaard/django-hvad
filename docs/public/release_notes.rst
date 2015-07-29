@@ -2,6 +2,51 @@
 Release Notes
 #############
 
+.. release 1.3.0
+
+*****************************
+1.3.0 - upcoming release
+*****************************
+
+This release is a collection of fixes and improvements, some of which may
+introduce minor compatibility issues. Please make sure you fix any deprecation
+warnings before upgrading to avoid those issues.
+
+Python and Django versions supported:
+
+- Django 1.5 is no longer officially supported.
+- Django 1.6 has reached its end of life, and support will be dropped in hvad 1.4.
+- As a reminder, Django 1.4 is still supported, so supported versions for this
+  release are: 1.4, 1.6, 1.7, 1.8.
+
+New Features:
+
+- Russian and Latvian translations are now included, thanks to Juris Malinens — :issue:`248`.
+
+Compatibility Warnings: deprecated features pending removal in 1.3 have been
+removed. Most notably:
+
+- Calling ``save()`` on an invalid form now raises an assertion exception.
+- Classes ``TranslatableModelBase``, ``TranslationFallbackManager``,
+  ``TranslatableBaseView`` and method ``TranslationManager.using_translations()``
+  no longer exist.
+- Deprecated view methods and context modifiers now raise an assertion exception.
+
+Fixes:
+
+- Lift Django restrictions on translated fields in ``Meta.unique_together`` and
+  ``Meta.index_together`` — :issue:`252`.
+- Properly forward model validation methods to translation validation methods, so
+  that model validation detects constraint violations on the translation as well.
+  Fixes duplicate detection in admin for unique constraints on translations — :issue:`251`.
+- Detect name clash between translated and non-translated fields — :issue:`240`.
+- Validate that at least one translation is provided when deserializing objects in
+  :class:`~hvad.contrib.restframework.TranslationsMixin` — :issue:`256`.
+- Fix handling of model edition from an admin popup in Django 1.7 and newer — :issue:`253`.
+- Generate proper ORM structures for fallbacks. Avoids table relabeling breaking
+  queries, for instance when using ``update()`` or feeding a queryset to another
+  queryset — :issue:`250`.
+
 .. release 1.2.2
 
 *****************************
