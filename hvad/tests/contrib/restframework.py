@@ -288,6 +288,14 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
 
     def test_invalid(self):
         'Submit invalid data'
+        # No translations
+        data = {
+            'shared_field': 'shared',
+            'translations': {},
+        }
+        serializer = TranslationsSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertTrue(serializer.errors['translations'])
 
         # Invalid translations type
         data = {

@@ -11,6 +11,7 @@ class TranslationListSerializer(serializers.ListSerializer):
     many = True
     default_error_messages = {
         'not_a_dict': _l('Expected a dictionary of items, but got a {input_type}.'),
+        'no_translation': _l('At least one translation must be provided.'),
     }
 
     def to_internal_value(self, data):
@@ -18,6 +19,11 @@ class TranslationListSerializer(serializers.ListSerializer):
             message = self.error_messages['not_a_dict'].format(
                 input_type=type(data).__name__
             )
+            raise ValidationError({
+                api_settings.NON_FIELD_ERRORS_KEY: [message]
+            })
+        if not data:
+            message = self.error_messages['no_translation']
             raise ValidationError({
                 api_settings.NON_FIELD_ERRORS_KEY: [message]
             })
