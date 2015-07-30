@@ -34,6 +34,8 @@ StandardData = namedtuple('StandardData', 'normal_field normal')
 STANDARD = {
     1: StandardData(normal_field=u'normal1', normal=1),
     2: StandardData(normal_field=u'normal2', normal=2),
+    3: StandardData(normal_field=u'normal3', normal=1),
+    4: StandardData(normal_field=u'normal4', normal=2),
 }
 
 #===============================================================================

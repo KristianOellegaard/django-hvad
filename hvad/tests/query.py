@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import django
 from django.db import connection
+from django.db.models import Count
 from django.db.models.query_utils import Q
 from django.utils import translation
 from hvad.test_utils.data import NORMAL, STANDARD
@@ -526,6 +527,23 @@ class AggregateTests(HvadTestCase):
         self.assertEqual(AggregateModel.objects.language("en").aggregate(num=Avg("number")), {'num': 5})
         self.assertEqual(AggregateModel.objects.language("en").aggregate(tnum=Avg("translated_number")), {'tnum': 10})
 
+class AnnotateTests(HvadTestCase, StandardFixture, NormalFixture):
+    normal_count = 2
+    standard_count = 4
+
+    def test_annotate(self):
+        qs = Normal.objects.language('en').annotate(Count('standards'))
+        self.assertEqual(len(qs), self.normal_count)
+        self.assertEqual(qs[0].standards__count, 2)
+        self.assertEqual(qs[1].standards__count, 2)
+
+        qs = Normal.objects.language('en').annotate(foo=Count('standards'))
+        self.assertEqual(len(qs), self.normal_count)
+        self.assertEqual(qs[0].foo, 2)
+        self.assertEqual(qs[1].foo, 2)
+
+        with self.assertRaises(ValueError):
+            qs = Normal.objects.language('en').annotate(Count('standards'), standards__count=Count('standards'))
 
 class NotImplementedTests(HvadTestCase):
     def test_notimplemented(self):

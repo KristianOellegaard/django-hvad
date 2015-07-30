@@ -8,6 +8,13 @@ Release Notes
 1.4.0 - upcoming release
 *****************************
 
+Compatibility Warnings:
+
+- As a result of the annotations fix (see below), applications that worked around
+  :meth:`~django.db.models.query.QuerySet.annotate`'s shortcomings on translation
+  querysets are likely to break, as ``annotate()`` has been fixes. The
+  workarounds should be simply removed.
+
 Deprecation List:
 
 - Method :meth:`FallbackQueryset.use_fallbacks() <hvad.manager.FallbackQueryset.use_fallbacks>`
@@ -27,6 +34,12 @@ Deprecation List:
   rewritten as ``MyModel.objects.language('en').fallbacks('ja', 'fr')``, or even
   ``MyModel.objects.language().fallbacks()`` to have the query use your application's
   language settings automatically.
+
+Fixes:
+
+- Annotations added to a :class:`~hvad.manager.TranslationQueryset` using the
+  :meth:`~django.db.models.query.QuerySet.annotate` method no longer end up on
+  the translation cache with a ``master__`` prefix.
 
 .. release 1.3.0
 

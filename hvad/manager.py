@@ -764,11 +764,26 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self)._filter_or_exclude(None, *newargs, **newkwargs)
 
     def annotate(self, *args, **kwargs):
-        newargs = tuple(self._translate_expression(item) for item in args)
-        newkwargs = dict(
-            (k, self._translate_expression(v)) for k, v in kwargs.items()
-        )
-        return super(TranslationQueryset, self).annotate(*newargs, **newkwargs)
+        newkwargs = dict((k, self._translate_expression(v)) for k, v in kwargs.items())
+        for arg in args:
+            arg = self._translate_expression(arg)
+            try:
+                alias = arg.default_alias
+            except (AttributeError, TypeError):
+                raise TypeError("Complex annotations require an alias")
+            if alias.startswith('master__'):
+               alias = alias[8:]
+            if alias in kwargs:
+                raise ValueError("The named annotation '%s' conflicts with the "
+                                 "default name for another annotation." % alias)
+            newkwargs[alias] = arg
+
+        qs = super(TranslationQueryset, self).annotate(**newkwargs)
+
+        switch_fields = set(qs._hvad_switch_fields)
+        switch_fields.update(newkwargs)
+        qs._hvad_switch_fields = tuple(switch_fields)
+        return qs
 
     def order_by(self, *field_names):
         """
