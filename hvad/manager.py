@@ -21,6 +21,7 @@ from hvad.utils import combine, minimumDjangoVersion, settings_updater
 from copy import deepcopy
 import logging
 import sys
+import warnings
 
 #===============================================================================
 
@@ -793,6 +794,10 @@ class _SharedFallbackQueryset(QuerySet):
     translation_fallbacks = None
 
     def use_fallbacks(self, *fallbacks):
+        if django.VERSION >= (1, 6):
+            warnings.warn('TranslationManager.untranslated().use_fallbacks() is deprecated. '
+                        'Please use the fallbacks() method on queryset instead, eg: '
+                        'MyModel.objects.language().fallbacks()', DeprecationWarning, stacklevel=2)
         self.translation_fallbacks = fallbacks or (None,)+FALLBACK_LANGUAGES
         return self
 

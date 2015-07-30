@@ -2,6 +2,32 @@
 Release Notes
 #############
 
+.. release 1.4.0
+
+*****************************
+1.4.0 - upcoming release
+*****************************
+
+Deprecation List:
+
+- Method :meth:`FallbackQueryset.use_fallbacks() <hvad.manager.FallbackQueryset.use_fallbacks>`
+  is now deprecated on Django 1.6 and newer. The plan is to completely drop
+  :class:`~hvad.manager.FallbackQueryset` in the near future, and let
+  :meth:`TranslationManager.untranslated() <hvad.manager.TranslationManager.untranslated>`
+  default to returning a plain Django queryset, thus enabling
+  ``MyModel.objects.untranslated()`` to give access to all features a plain
+  Django queryset supports.
+
+  For queries that need fallbacks, the ``use_fallbacks()`` method has long been
+  superseded by :ref:`TranslationQueryset.fallbacks() <fallbacks-public>`, which is
+  better tested, uses simpler code yet supports more features.
+  Please update your queries accordingly.
+
+  ``MyModel.objects.untranslated().use_fallbacks('en', 'ja', 'fr')`` should be
+  rewritten as ``MyModel.objects.language('en').fallbacks('ja', 'fr')``, or even
+  ``MyModel.objects.language().fallbacks()`` to have the query use your application's
+  language settings automatically.
+
 .. release 1.3.0
 
 *****************************

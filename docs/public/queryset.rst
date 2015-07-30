@@ -14,7 +14,7 @@ They come in two flavors:
   instances translated in a specific language. It is the one used when calling
   :meth:`TranslationManager.language() <hvad.manager.TranslationManager.language>`.
 - The :ref:`FallbackQueryset <FallbackQueryset-public>`, for working with
-  all instances regardless of their language, and envetually loading translations
+  all instances regardless of their language, and eventually loading translations
   using a fallback algorithm. It is the one used when calling
   :meth:`TranslationManager.untranslated() <hvad.manager.TranslationManager.untranslated>`.
 
@@ -140,6 +140,8 @@ was created.
 FallbackQueryset
 ****************
 
+.. deprecated:: 1.4
+
 This is a queryset returned by :meth:`~hvad.manager.TranslationManager.untranslated`,
 which can be used both to get the untranslated parts of models only or to use
 fallbacks for loading a translation based on a priority list of languages.
@@ -165,6 +167,8 @@ use_fallbacks
 
 .. method:: use_fallbacks(*fallbacks)
 
+    .. deprecated:: 1.4
+
     Returns a queryset which will use fallbacks to get the translated part of
     the instances returned by this queryset. If ``fallbacks`` is given as a
     tuple of language codes, it will try to get the translations in the order
@@ -172,6 +176,10 @@ use_fallbacks
     query evaluation, as returned by :func:`~django.utils.translation.get_language`.
     Otherwise the order of your LANGUAGES setting will be used, prepended with
     current language.
+
+    This method is now deprecated, and one should use
+    :ref:`TranslationQueryset.fallbacks() <fallbacks-public>` for an equivalent
+    feature.
     
     .. warning:: Using fallbacks with a version of Django older than 1.6 will
                  cause **a lot** of queries! In the worst

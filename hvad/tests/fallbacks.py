@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 from django.utils import translation
 from hvad.test_utils.data import NORMAL
-from hvad.test_utils.testcase import HvadTestCase
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.exceptions import WrongManager
 from hvad.manager import LEGACY_FALLBACKS
+
+class FallbackDeprecationTests(HvadTestCase):
+    @minimumDjangoVersion(1, 6)
+    def test_untranslated_fallbacks_deprecation(self):
+        with self.assertThrowsWarning(DeprecationWarning):
+            Normal.objects.untranslated().use_fallbacks('en')
 
 class FallbackTests(HvadTestCase, NormalFixture):
     normal_count = 2

@@ -534,6 +534,8 @@ FallbackQueryset
 
 .. class:: FallbackQueryset
 
+    .. deprecated:: 1.4
+
     A queryset that can optionally use fallbacks and by default only fetches the
     :term:`Shared Model`.
 
@@ -569,11 +571,16 @@ FallbackQueryset
     
     .. method:: use_fallbacks(self, *fallbacks)
     
+        .. deprecated:: 1.4
+
         If this method gets called, :meth:`iterator` will use the fallbacks
         defined here. `None` value will be replaced with current language at
         query evaluation, as returned by :func:`~django.utils.translation.get_language`.
         If not fallbacks are given, :data:`FALLBACK_LANGUAGES` will be used,
         with current language prepended.
+
+        This method has been superseded by :meth:`~hvad.manager.TranslationQueryset.fallbacks`
+        and will be removed when support for Django 1.4 is dropped.
 
     .. method:: _clone(self, klass=None, setup=False, **kwargs)
     

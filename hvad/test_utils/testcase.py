@@ -21,10 +21,10 @@ class _AssertThrowsWarningContext(object):
 
     def __enter__(self):
         self.warnings = self.ctx.__enter__()
+        warnings.resetwarnings()
         warnings.simplefilter('always')
 
     def __exit__(self, type, value, traceback):
-        self.ctx.__exit__(type, value, traceback)
         self.test_case.assertEqual(
             len(self.warnings), self.number, "%d warnings thrown, %d expected" % (
                 len(self.warnings), self.number
@@ -34,6 +34,7 @@ class _AssertThrowsWarningContext(object):
             self.test_case.assertTrue(issubclass(warning.category, self.klass),
                                       '%s warning thrown, %s expected' %
                                       (warning.category.__name__, self.klass.__name__))
+        self.ctx.__exit__(type, value, traceback)
 
 
 class HvadTestCase(TestCase):
