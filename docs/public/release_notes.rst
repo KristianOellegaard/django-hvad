@@ -44,7 +44,7 @@ Fixes:
 .. release 1.3.0
 
 *****************************
-1.3.0 - upcoming release
+1.3.0 - current release
 *****************************
 
 This release is a collection of fixes and improvements, some of which may
@@ -89,7 +89,7 @@ Fixes:
 .. release 1.2.2
 
 *****************************
-1.2.2 - current release
+1.2.2
 *****************************
 
 Released on June 3, 2015
