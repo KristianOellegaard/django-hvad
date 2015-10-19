@@ -108,6 +108,8 @@ def create_translations_model(model, related_name, meta, **fields):
         'unique_together'
     )
     model._meta.unique_together = tuple(sconst)
+    if django.VERSION >= (1, 7):
+        model._meta.original_attrs['unique_together'] = tuple(sconst)
     meta['unique_together'] = tuple(tconst)
     if django.VERSION >= (1, 5):
         sconst, tconst = _split_together(
@@ -117,6 +119,8 @@ def create_translations_model(model, related_name, meta, **fields):
             'index_together'
         )
         model._meta.index_together = tuple(sconst)
+        if django.VERSION >= (1, 7):
+            model._meta.original_attrs['index_together'] = tuple(sconst)
         meta['index_together'] = tuple(tconst)
 
     if not abstract:

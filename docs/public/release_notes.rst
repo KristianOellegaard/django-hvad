@@ -40,6 +40,8 @@ Fixes:
 - Annotations added to a :class:`~hvad.manager.TranslationQueryset` using the
   :meth:`~django.db.models.query.QuerySet.annotate` method no longer end up on
   the translation cache with a ``master__`` prefix.
+- Specifying translation fields in ``unique_together`` on translatable models
+  no longer causes Django to generate incorrect migrations. — :issue:`260`.
 
 .. release 1.3.0
 

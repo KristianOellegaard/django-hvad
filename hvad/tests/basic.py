@@ -120,6 +120,26 @@ class DefinitionTests(HvadTestCase):
         self.assertIn(('tfield_a', 'tfield_b', 'language_code'),
                       UniqueTogetherModel2._meta.translations_model._meta.unique_together)
 
+    @minimumDjangoVersion(1, 7)
+    def test_unique_together_migration(self):
+        class UniqueTogetherModel3(TranslatableModel):
+            sfield_a = models.CharField(max_length=250)
+            sfield_b = models.CharField(max_length=250)
+            translations = TranslatedFields(
+                tfield_a = models.CharField(max_length=250),
+                tfield_b = models.CharField(max_length=250),
+            )
+            class Meta:
+                unique_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
+
+        from django.db.migrations.state import ModelState
+        state = ModelState.from_model(UniqueTogetherModel3)
+        self.assertEqual(state.options['unique_together'], {('sfield_a', 'sfield_b')})
+
+        state = ModelState.from_model(UniqueTogetherModel3._meta.translations_model)
+        self.assertEqual(state.options['unique_together'], {('language_code', 'master'),
+                                                            ('tfield_a', 'tfield_b')})
+
     @minimumDjangoVersion(1, 5)
     def test_index_together(self):
         class IndexTogetherModel(TranslatableModel):
@@ -163,6 +183,25 @@ class DefinitionTests(HvadTestCase):
                 )
                 class Meta:
                     index_together = [('sfield', 'tfield')]
+
+    @minimumDjangoVersion(1, 7)
+    def test_index_together_migration(self):
+        class IndexTogetherModel2(TranslatableModel):
+            sfield_a = models.CharField(max_length=250)
+            sfield_b = models.CharField(max_length=250)
+            translations = TranslatedFields(
+                tfield_a = models.CharField(max_length=250),
+                tfield_b = models.CharField(max_length=250),
+            )
+            class Meta:
+                index_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
+
+        from django.db.migrations.state import ModelState
+        state = ModelState.from_model(IndexTogetherModel2)
+        self.assertEqual(state.options['index_together'], {('sfield_a', 'sfield_b')})
+
+        state = ModelState.from_model(IndexTogetherModel2._meta.translations_model)
+        self.assertEqual(state.options['index_together'], {('tfield_a', 'tfield_b')})
 
     def test_abstract_base_model(self):
         class Meta:
