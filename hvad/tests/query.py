@@ -317,6 +317,17 @@ class ValuesListTests(HvadTestCase, NormalFixture):
         ]
         self.assertCountEqual(values_list, check)
 
+    def test_values_list_language_all(self):
+        values = (Normal.objects.language('all').filter(shared_field=NORMAL[1].shared_field)
+                                                .values_list('shared_field', 'translated_field'))
+        values_list = list(values)
+        check = [
+            (NORMAL[1].shared_field, NORMAL[1].translated_field['ja']),
+            (NORMAL[1].shared_field, NORMAL[1].translated_field['en']),
+        ]
+        self.assertCountEqual(values_list, check)
+
+
 class ValuesTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -376,6 +387,18 @@ class ValuesTests(HvadTestCase, NormalFixture):
         check = [
             {'translated_field': NORMAL[1].translated_field['en']},
             {'translated_field': NORMAL[2].translated_field['en']},
+        ]
+        self.assertCountEqual(values_list, check)
+
+    def test_values_language_all(self):
+        values = (Normal.objects.language('all').filter(shared_field=NORMAL[1].shared_field)
+                                                .values('shared_field', 'translated_field'))
+        values_list = list(values)
+        check = [
+            {'shared_field': NORMAL[1].shared_field,
+             'translated_field': NORMAL[1].translated_field['ja']},
+            {'shared_field': NORMAL[1].shared_field,
+             'translated_field': NORMAL[1].translated_field['en']},
         ]
         self.assertCountEqual(values_list, check)
 

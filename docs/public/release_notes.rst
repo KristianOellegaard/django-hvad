@@ -42,6 +42,7 @@ Fixes:
   the translation cache with a ``master__`` prefix.
 - Specifying translation fields in ``unique_together`` on translatable models
   no longer causes Django to generate incorrect migrations. — :issue:`260`.
+- Using ``language('all')`` together with ``values()`` no longer breaks — :issue:`264`.
 
 .. release 1.3.0
 

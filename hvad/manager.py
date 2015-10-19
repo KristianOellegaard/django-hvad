@@ -383,7 +383,8 @@ class TranslationQueryset(QuerySet):
                 raise NotImplementedError('Using select_related along with '
                                           'language(\'all\') is not supported')
 
-            self.query.add_select_related(('master',))
+            if not self._skip_master_select:
+                self.query.add_select_related(('master',))
 
         elif self._language_fallbacks:
             if self._raw_select_related:
@@ -413,7 +414,8 @@ class TranslationQueryset(QuerySet):
 
             add_alias_constraints(self, (self.model, alias), id__isnull=True)
             self.query.add_filter(('%s__isnull' % masteratt, False))
-            self.query.add_select_related(('master',))
+            if not self._skip_master_select:
+                self.query.add_select_related(('master',))
 
         else:
             language_code = self._language_code or get_language()
