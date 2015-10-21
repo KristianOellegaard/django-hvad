@@ -12,8 +12,13 @@ Compatibility Warnings:
 
 - As a result of the annotations fix (see below), applications that worked around
   :meth:`~django.db.models.query.QuerySet.annotate`'s shortcomings on translation
-  querysets are likely to break, as ``annotate()`` has been fixes. The
+  querysets are likely to break, as ``annotate()`` has been fixed. The
   workarounds should be simply removed.
+- Method :meth:`FallbackQueryset.use_fallbacks() <hvad.manager.FallbackQueryset.use_fallbacks>`
+  is **not** supported on Django 1.9 and newer (and deprecated on other versions, see
+  below). Please use :ref:`TranslationQueryset.fallbacks() <fallbacks-public>` instead.
+- Translated admin no longer allows nor shows objects lacking a translation, starting from
+  Django 1.9. This behavior will be extended to all Django versions in the next release.
 
 Deprecation List:
 

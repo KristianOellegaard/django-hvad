@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.utils import translation
 from hvad.test_utils.data import NORMAL
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion, maximumDjangoVersion
 from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.exceptions import WrongManager
@@ -9,10 +9,17 @@ from hvad.manager import LEGACY_FALLBACKS
 
 class FallbackDeprecationTests(HvadTestCase):
     @minimumDjangoVersion(1, 6)
+    @maximumDjangoVersion(1, 9)
     def test_untranslated_fallbacks_deprecation(self):
         with self.assertThrowsWarning(DeprecationWarning):
             Normal.objects.untranslated().use_fallbacks('en')
 
+    @minimumDjangoVersion(1, 9)
+    def test_untranslated_fallbacks_removal(self):
+        with self.assertRaises(AssertionError):
+            Normal.objects.untranslated().use_fallbacks('en')
+
+@maximumDjangoVersion(1, 9)
 class FallbackTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -62,6 +69,7 @@ class FallbackTests(HvadTestCase, NormalFixture):
                 self.assertEqual(len(objs), 3)
 
 
+@maximumDjangoVersion(1, 9)
 class FallbackFilterTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -104,6 +112,7 @@ class FallbackFilterTests(HvadTestCase, NormalFixture):
             Normal.objects.untranslated().filter(translated_field__contains='English')
 
 
+@maximumDjangoVersion(1, 9)
 class FallbackCachingTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -148,6 +157,7 @@ class FallbackCachingTests(HvadTestCase, NormalFixture):
         self._try_all_cache_using_methods(qs, 1)
 
 
+@maximumDjangoVersion(1, 9)
 class FallbackIterTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -178,6 +188,7 @@ class FallbackIterTests(HvadTestCase, NormalFixture):
 
 
 
+@maximumDjangoVersion(1, 9)
 class FallbackValuesListTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -194,6 +205,7 @@ class FallbackValuesListTests(HvadTestCase, NormalFixture):
             Normal.objects.untranslated().values_list('translated_field', flat=True)
 
 
+@maximumDjangoVersion(1, 9)
 class FallbackValuesTests(HvadTestCase, NormalFixture):
     normal_count = 2
 
@@ -214,6 +226,7 @@ class FallbackValuesTests(HvadTestCase, NormalFixture):
             Normal.objects.untranslated().values('translated_field')
 
 
+@maximumDjangoVersion(1, 9)
 class FallbackInBulkTests(HvadTestCase, NormalFixture):
     normal_count = 2
 

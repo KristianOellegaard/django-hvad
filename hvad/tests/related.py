@@ -490,7 +490,11 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
     def test_select_related_cleans_cache(self):
         with translation.override('en'):
             rel_objects = SimpleRelated.objects.language().select_related('normal')
-            cache = getattr(Normal, Normal._meta.translations_accessor).related.get_cache_name()
+            cache = (
+                getattr(Normal, Normal._meta.translations_accessor).rel.get_cache_name()
+                if django.VERSION >= (1, 9) else
+                getattr(Normal, Normal._meta.translations_accessor).related.get_cache_name()
+            )
             self.assertFalse(hasattr(rel_objects[0].normal, cache))
 
     def test_select_related_using_get(self):

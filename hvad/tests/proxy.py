@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion, maximumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyProxy, RelatedProxy, SimpleRelatedProxy
 
 
@@ -69,6 +69,7 @@ class ProxyTests(HvadTestCase):
         self.assertFalse(isinstance(NormalProxy.objects.language('en').get(), NormalProxyProxy))
         self.assertTrue(isinstance(NormalProxyProxy.objects.language('en').get(), NormalProxyProxy))
 
+    @maximumDjangoVersion(1, 9)
     def test_fallback_queryset(self):
         NormalProxyProxy.objects.language('en').create(shared_field='SHARED2', translated_field='English2')
         self.assertTrue(isinstance(Normal.objects.untranslated().use_fallbacks().get(), Normal))

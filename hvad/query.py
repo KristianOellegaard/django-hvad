@@ -4,7 +4,9 @@ if django.VERSION >= (1, 8):
     from django.db.models.expressions import Expression, Col
 else:
     from django.db.models.expressions import ExpressionNode as Expression
-from django.db.models.sql.where import WhereNode, AND, Constraint
+from django.db.models.sql.where import WhereNode, AND
+if django.VERSION < (1, 9):
+    from django.db.models.sql.where import Constraint
 from collections import namedtuple
 
 #===============================================================================

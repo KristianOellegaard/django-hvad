@@ -3,7 +3,9 @@ import django
 from django.conf import settings
 from django.core.exceptions import FieldError
 from django.db import models, transaction, IntegrityError
-if django.VERSION >= (1, 8):
+if django.VERSION >= (1, 9):
+    from django.db.models.query import QuerySet
+elif django.VERSION >= (1, 8):
     from django.db.models.query import QuerySet, ValuesQuerySet
 elif django.VERSION >= (1, 6):
     from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet, DateTimeQuerySet
@@ -85,19 +87,34 @@ class FieldTranslator(object):
 
 #===============================================================================
 
-class ValuesMixin(object):
-    _skip_master_select = True
+if django.VERSION >= (1, 9):
+    from django.db.models.query import ValuesIterable, ValuesListIterable, FlatValuesListIterable
+    class TranslatedValuesIterable(ValuesIterable):
+        def __iter__(self):
+            queryset = self.queryset
+            for row in super(TranslatedValuesIterable, self).__iter__():
+                yield queryset._reverse_translate_fieldnames_dict(row)
 
-    def iterator(self):
-        qs = self._clone()._add_language_filter()
-        for row in super(ValuesMixin, qs).iterator():
-            if isinstance(row, dict):
-                yield qs._reverse_translate_fieldnames_dict(row)
-            else:
-                yield row
+    iterable_overrides = {
+        ValuesIterable: TranslatedValuesIterable,
+        ValuesListIterable: ValuesListIterable,
+        FlatValuesListIterable: FlatValuesListIterable,
+    }
 
-class SkipMasterSelectMixin(object):
-    _skip_master_select = True
+else:
+    class ValuesMixin(object):
+        _skip_master_select = True
+
+        def iterator(self):
+            qs = self._clone()._add_language_filter()
+            for row in super(ValuesMixin, qs).iterator():
+                if isinstance(row, dict):
+                    yield qs._reverse_translate_fieldnames_dict(row)
+                else:
+                    yield row
+
+    class SkipMasterSelectMixin(object):
+        _skip_master_select = True
 
 #===============================================================================
 
@@ -170,9 +187,9 @@ class TranslationQueryset(QuerySet):
     IMPORTANT: the `model` attribute on this class is the *translated* Model,
     despite this being used as the queryset for the *shared* Model!
     """
-    override_classes = {
-        ValuesQuerySet: ValuesMixin,
-    }
+    override_classes = {}
+    if django.VERSION < (1, 9):
+        override_classes[ValuesQuerySet] = ValuesMixin
     if django.VERSION < (1, 8):
         override_classes[DateQuerySet] = SkipMasterSelectMixin
     if django.VERSION >= (1, 6) and django.VERSION < (1, 8):
@@ -222,8 +239,12 @@ class TranslationQueryset(QuerySet):
             '_language_filter_tag': getattr(self, '_language_filter_tag', False),
             '_hvad_switch_fields': self._hvad_switch_fields,
         })
-        klass = self.__class__ if klass is None else self._get_class(klass)
-        return super(TranslationQueryset, self)._clone(klass, setup, **kwargs)
+        if django.VERSION < (1, 9):
+            kwargs.update({
+                'klass': None if klass is None else self._get_class(klass),
+                'setup': setup,
+            })
+        return super(TranslationQueryset, self)._clone(**kwargs)
 
     @property
     def field_translator(self):
@@ -315,9 +336,11 @@ class TranslationQueryset(QuerySet):
 
     def _add_select_related(self, language_code):
         fields = self._raw_select_related
-        related_queries = [] if self._skip_master_select else ['master']
+        related_queries = []
         language_filters = []
         force_unique_fields = []
+        if not self._skip_master_select and getattr(self, '_fields', None) is None:
+            related_queries.append('master')
 
         for query_key in fields:
             newbits = []
@@ -360,7 +383,10 @@ class TranslationQueryset(QuerySet):
 
                     # Remember to mark the field unique so JOIN is generated
                     # and row decoder gets cached items
-                    target_transfield = getattr(term.target, target_translations).related.field
+                    if django.VERSION >= (1, 9):
+                        target_transfield = getattr(term.target, target_translations).field
+                    else:
+                        target_transfield = getattr(term.target, target_translations).related.field
                     force_unique_fields.append(target_transfield)
 
             related_queries.append('__'.join(newbits))
@@ -383,7 +409,7 @@ class TranslationQueryset(QuerySet):
                 raise NotImplementedError('Using select_related along with '
                                           'language(\'all\') is not supported')
 
-            if not self._skip_master_select:
+            if not self._skip_master_select and getattr(self, '_fields', None) is None:
                 self.query.add_select_related(('master',))
 
         elif self._language_fallbacks:
@@ -414,7 +440,7 @@ class TranslationQueryset(QuerySet):
 
             add_alias_constraints(self, (self.model, alias), id__isnull=True)
             self.query.add_filter(('%s__isnull' % masteratt, False))
-            if not self._skip_master_select:
+            if not self._skip_master_select and getattr(self, '_fields', None) is None:
                 self.query.add_select_related(('master',))
 
         else:
@@ -448,7 +474,10 @@ class TranslationQueryset(QuerySet):
         # First, set translation for current object,
         accessor = getattr(obj._meta, 'translations_accessor', None)
         if accessor is not None:
-            cache = getattr(obj.__class__, accessor).related.get_cache_name()
+            if django.VERSION >= (1, 9):
+                cache = getattr(obj.__class__, accessor).rel.get_cache_name()
+            else:
+                cache = getattr(obj.__class__, accessor).related.get_cache_name()
             try:
                 translation = getattr(obj, cache)
             except AttributeError:
@@ -496,6 +525,12 @@ class TranslationQueryset(QuerySet):
         """
         qs = self._clone()._add_language_filter()
         qs._known_related_objects = {}  # super's iterator will attempt to set them
+
+        if django.VERSION >= (1, 9) and qs._iterable_class in iterable_overrides:
+            qs._iterable_class = iterable_overrides[qs._iterable_class]
+            for obj in super(TranslationQueryset, qs).iterator():
+                yield obj
+            return
 
         if qs._forced_unique_fields:
             # HACK: In order for select_related to properly load data from
@@ -811,6 +846,11 @@ class _SharedFallbackQueryset(QuerySet):
     translation_fallbacks = None
 
     def use_fallbacks(self, *fallbacks):
+        if django.VERSION >= (1, 9):
+            raise AssertionError(
+                'TranslationManager.untranslated().use_fallbacks() is not supported on Django 1.9, '
+                'and is deprecated on previous versions as well. Please use the fallbacks() method '
+                'on queryset instead, eg: MyModel.objects.language().fallbacks()')
         if django.VERSION >= (1, 6):
             warnings.warn('TranslationManager.untranslated().use_fallbacks() is deprecated. '
                         'Please use the fallbacks() method on queryset instead, eg: '
@@ -822,7 +862,9 @@ class _SharedFallbackQueryset(QuerySet):
         kwargs.update({
             'translation_fallbacks': self.translation_fallbacks,
         })
-        return super(_SharedFallbackQueryset, self)._clone(klass, setup, **kwargs)
+        if django.VERSION < (1, 9):
+            kwargs.update({'klass': klass, 'setup': setup})
+        return super(_SharedFallbackQueryset, self)._clone(**kwargs)
 
     def aggregate(self, *args, **kwargs):
         raise NotImplementedError()
@@ -932,7 +974,10 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
                          for lang in self.translation_fallbacks]
             tmodel = self.model._meta.translations_model
             taccessor = self.model._meta.translations_accessor
-            taccessorcache = getattr(self.model, taccessor).related.get_cache_name()
+            taccessorcache = (
+                getattr(self.model, taccessor).rel.get_cache_name() if django.VERSION >= (1, 9) else
+                getattr(self.model, taccessor).related.get_cache_name()
+            )
             tcache = self.model._meta.translations_cache
             masteratt = tmodel._meta.get_field('master').attname
             field = BetterTranslationsField(fallbacks, master=masteratt)
@@ -949,6 +994,7 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
                     qs.query.get_initial_alias(),
                     None,
                     LOUTER,
+                    getattr(qs.model, taccessor).field.rel if django.VERSION >= (1, 9) else
                     getattr(qs.model, taccessor).related.field.rel,
                     True
                 ))
@@ -975,21 +1021,22 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
 
             # We must force the _unique field so get_cached_row populates the cache
             # Unfortunately, this means we must load everything in one go
-            getattr(qs.model, taccessor).related.field._unique = True
-            objects = []
-            for instance in super(SelfJoinFallbackQueryset, qs).iterator():
-                try:
-                    translation = getattr(instance, taccessorcache)
-                except AttributeError: #pragma: no cover
-                    _logger.error("no translation for %s.%s (pk=%s)",
-                                  instance._meta.app_label,
-                                  instance.__class__.__name__,
-                                  str(instance.pk))
-                else:
-                    setattr(instance, tcache, translation)
-                    delattr(instance, taccessorcache)
-                objects.append(instance)
-            getattr(qs.model, taccessor).related.field._unique = False
+            related_field = (getattr(qs.model, taccessor).field if django.VERSION >= (1, 9) else
+                             getattr(qs.model, taccessor).related.field)
+            with ForcedUniqueFields([related_field]):
+                objects = []
+                for instance in super(SelfJoinFallbackQueryset, qs).iterator():
+                    try:
+                        translation = getattr(instance, taccessorcache)
+                    except AttributeError: #pragma: no cover
+                        _logger.error("no translation for %s.%s (pk=%s)",
+                                    instance._meta.app_label,
+                                    instance.__class__.__name__,
+                                    str(instance.pk))
+                    else:
+                        setattr(instance, tcache, translation)
+                        delattr(instance, taccessorcache)
+                    objects.append(instance)
             return iter(objects)
         else:
             return super(SelfJoinFallbackQueryset, self).iterator()
@@ -1211,7 +1258,9 @@ class TranslationAwareQueryset(QuerySet):
         kwargs.update({
             '_language_code': self._language_code,
         })
-        return super(TranslationAwareQueryset, self)._clone(klass, setup, **kwargs)
+        if django.VERSION < (1, 9):
+            kwargs.update({'klass': klass, 'setup': setup})
+        return super(TranslationAwareQueryset, self)._clone(**kwargs)
 
     def _filter_extra(self, extra_filters):
         if extra_filters.children:

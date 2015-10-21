@@ -343,11 +343,14 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
     def get_queryset(self, request):
         language = self._language(request)
-        languages = [language,]
-        for lang in FALLBACK_LANGUAGES:
-            if not lang in languages:
-                languages.append(lang)
-        qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
+        if django.VERSION >= (1, 9):
+            qs = self.model._default_manager.language(language).fallbacks(*FALLBACK_LANGUAGES)
+        else:
+            languages = [language,]
+            for lang in FALLBACK_LANGUAGES:
+                if not lang in languages:
+                    languages.append(lang)
+            qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
         # TODO: this should be handled by some parameter to the ChangeList.
         ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)
         if ordering:
