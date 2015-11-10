@@ -59,6 +59,9 @@ Fixes:
   the translation cache with a ``master__`` prefix.
 - Specifying translation fields in ``unique_together`` on translatable models
   no longer causes Django to generate incorrect migrations. — :issue:`260`.
+- When no ``Meta`` options are set on a :ref:`TranslatableModelForm <translatablemodelform>`,
+  the auto-created one now correctly inherits that of its first base class that
+  has one set — :issue:`262`.
 - Using ``language('all')`` together with ``values()`` no longer breaks — :issue:`264`.
 
 .. release 1.3.0

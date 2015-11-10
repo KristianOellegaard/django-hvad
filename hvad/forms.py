@@ -35,7 +35,9 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
         # Force presence of meta class, we need it
         meta = attrs.get('Meta')
         if meta is None:
-            meta = attrs['Meta'] = type('Meta', (object,), {})
+            # if a base class has a Meta, inherit it
+            base_meta = next(((base.Meta,) for base in bases if hasattr(base, 'Meta')), ())
+            meta = attrs['Meta'] = type('Meta', base_meta + (object,), {})
 
         model = getattr(meta, 'model', None)
         fields = getattr(meta, 'fields', None)

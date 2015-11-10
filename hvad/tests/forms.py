@@ -63,6 +63,16 @@ class FormDeclarationTests(HvadTestCase):
         self.assertCountEqual(engineered._meta.exclude, ['translations'])
         self.assertCountEqual(engineered.base_fields, ['shared_field', 'translated_field'])
 
+    def test_no_meta_inherits(self):
+        'Auto-created meta inherits meta of first base class'
+        class Form(TranslatableModelForm):
+            class Meta:
+                model = Normal
+        class InheritedForm(Form):
+            pass
+        self.assertIsInstance(InheritedForm._meta, Form._meta.__class__)
+        self.assertIs(InheritedForm._meta.model, Normal)
+
     def test_only_model(self):
         'Standalone form with model in Meta'
         class Form(TranslatableModelForm):
