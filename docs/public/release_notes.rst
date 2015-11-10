@@ -8,6 +8,14 @@ Release Notes
 1.4.0 - upcoming release
 *****************************
 
+Python and Django versions supported:
+
+- Support for Python 3.5 was added.
+- Support for Django 1.9 was added.
+- Django 1.6 is no longer officially supported.
+- Django 1.4 LTS has reached its end of life, and support will be dropped in hvad 1.5.
+- So, as a reminder, supported versions for this release are: 1.4 LTS, 1.7, 1.8 LTS, 1.9.
+
 Compatibility Warnings:
 
 - As a result of the annotations fix (see below), applications that worked around
@@ -17,8 +25,12 @@ Compatibility Warnings:
 - Method :meth:`FallbackQueryset.use_fallbacks() <hvad.manager.FallbackQueryset.use_fallbacks>`
   is **not** supported on Django 1.9 and newer (and deprecated on other versions, see
   below). Please use :ref:`TranslationQueryset.fallbacks() <fallbacks-public>` instead.
-- Translated admin no longer allows nor shows objects lacking a translation, starting from
+- Translated admin no longer shows objects lacking a translation, starting from
   Django 1.9. This behavior will be extended to all Django versions in the next release.
+  Such objects should not happen anyway, and throw a warning when encountered.
+- Translation model building has been refactored. It is functionally equivalent to its previous
+  implementation (it passes the exact same test suite), but code depending on the internals
+  and inner implementation details could break.
 
 Deprecation List:
 

@@ -26,7 +26,7 @@ Features
 * **Complete** - relationships, custom managers and querysets, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
 * **Reliable** - more than 300 test cases and counting. |coverage| |build|
-* **Compatible** with Django 1.4 to 1.8, running Python 2.7, 3.3 or 3.4.
+* **Compatible** with Django 1.4 to 1.9, running Python 2.7, 3.3, 3.4 or 3.5.
 
 Django-hvad also features support for `Django REST framework`_ 3.1 or newer, including
 translation-aware serializers.
@@ -125,6 +125,9 @@ Thanks to
 ---------
 
 Jonas Obrist (https://github.com/ojii) for making django-nani and for helping me with this project.
+
+Kristian Øllegaard (https://github.com/KristianOellegaard/) for django-hvad and trusting me
+to continue the development.
 
 .. |package| image:: https://badge.fury.io/py/django-hvad.svg
                      :target: https://pypi.python.org/pypi/django-hvad

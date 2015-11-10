@@ -7,7 +7,7 @@ Installation
 Requirements
 ************
 
-* `Django`_ 1.4 or higher. Django 1.6 or higher is recommended.
+* `Django`_ 1.4 or Django 1.7 or higher.
 * Python 2.7 or PyPy 1.5 or higher, Python 3.3 or higher.
 
 ************
