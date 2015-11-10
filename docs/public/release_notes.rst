@@ -5,8 +5,10 @@ Release Notes
 .. release 1.4.0
 
 *****************************
-1.4.0 - upcoming release
+1.4.0 - current release
 *****************************
+
+Released on November 10, 2015
 
 Python and Django versions supported:
 
@@ -67,8 +69,10 @@ Fixes:
 .. release 1.3.0
 
 *****************************
-1.3.0 - current release
+1.3.0
 *****************************
+
+Released on July 29, 2015
 
 This release is a collection of fixes and improvements, some of which may
 introduce minor compatibility issues. Please make sure you fix any deprecation
