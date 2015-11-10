@@ -129,9 +129,8 @@ class DefaultOrderingTest(HvadTestCase, NormalFixture):
         self.assertEqual(qs.in_bulk([pk])[pk].pk, pk)
 
         qs = qs.order_by('-shared_field')
-        if django.VERSION >= (1, 6):
-            self.assertEqual(qs.first().pk, self.normal_id[self.normal_count])
-            self.assertEqual(qs.last().pk, self.normal_id[1])
+        self.assertEqual(qs.first().pk, self.normal_id[self.normal_count])
+        self.assertEqual(qs.last().pk, self.normal_id[1])
         self.assertEqual(tuple(obj.pk for obj in qs),
                          tuple(reversed(tuple(self.normal_id.values()))))
         self.assertEqual(len(qs), self.normal_count)

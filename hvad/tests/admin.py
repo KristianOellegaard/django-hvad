@@ -433,7 +433,6 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                 self.assertEqual(obj.shared_field, SHARED)
                 self.assertEqual(obj.translated_field, TRANS)
 
-    @minimumDjangoVersion(1, 6)
     def test_admin_change_popup(self):
         from django.contrib.admin.options import IS_POPUP_VAR
         with translation.override('en'):
@@ -462,10 +461,7 @@ class AdminEditTests(HvadTestCase, BaseAdminTests, NormalFixture, UsersFixture):
         request = self.request_factory.get(url)
         normaladmin = self._get_admin(Normal)
         with translation.override('en'):
-            if django.VERSION >= (1, 6):
-                queryset = normaladmin.get_queryset(request)
-            else:
-                queryset = normaladmin.queryset(request)
+            queryset = normaladmin.get_queryset(request)
             self.assertEqual(queryset.count(), self.normal_count)
 
 

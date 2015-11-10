@@ -24,7 +24,6 @@ class LatestTests(HvadTestCase, DateFixture):
         self.assertEqual(latest.pk, self.date_id[DATE_REVERSED[D3].shared_date])
 
 
-@minimumDjangoVersion(1, 6)
 class EarliestTests(HvadTestCase, DateFixture):
     date_count = 3
 
@@ -54,7 +53,6 @@ class DatesTests(HvadTestCase, DateFixture):
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day")), 3)
         self.assertEqual(len(Date.objects.language('en').dates("shared_date", "day").filter(shared_date__gt=d2011)), 2)
 
-@minimumDjangoVersion(1, 6)
 class DatetimeTests(HvadTestCase, DateFixture):
     date_count = 3
 

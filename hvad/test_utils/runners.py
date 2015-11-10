@@ -1,17 +1,12 @@
 import django
 from django.conf import settings
+from django.test.runner import DiscoverRunner as DjangoRunner
 import operator
 import time
-
-if django.VERSION >= (1, 6):
-    from django.test.runner import DiscoverRunner as DjangoRunner
-    try:
-        from unittest2 import TestSuite
-    except ImportError:
-        from unittest import TestSuite
-else:
-    from django.test.simple import DjangoTestSuiteRunner as DjangoRunner
-    from django.utils.unittest import TestSuite
+try:
+    from unittest2 import TestSuite
+except ImportError:
+    from unittest import TestSuite
 
 TIMINGS = {}
 

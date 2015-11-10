@@ -413,7 +413,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
         with translation.override('en'):
             # translation is loaded, use it
             form = NormalForm(data, instance=Normal.objects.language('ja').get(pk=self.normal_id[1]))
-            with self.assertNumQueries(2 if django.VERSION >= (1, 6) else 4):
+            with self.assertNumQueries(2):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.pk, self.normal_id[1])
@@ -425,7 +425,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
 
             # no translation loaded, use current language
             form = NormalForm(data, instance=Normal.objects.untranslated().get(pk=self.normal_id[1]))
-            with self.assertNumQueries(3 if django.VERSION >= (1, 6) else 5):
+            with self.assertNumQueries(3):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.pk, self.normal_id[1])
@@ -438,7 +438,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
             # new translation is loaded, use it
             obj.translate('sr')
             form = NormalForm(data, instance=obj)
-            with self.assertNumQueries(2 if django.VERSION >= (1, 6) else 3):
+            with self.assertNumQueries(2):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.pk, self.normal_id[1])
@@ -458,7 +458,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
         with translation.override('en'):
             # wrong translation is loaded, override it
             form = Form(data, instance=Normal.objects.language('ja').get(pk=self.normal_id[1]))
-            with self.assertNumQueries(3 if django.VERSION >= (1, 6) else 4):
+            with self.assertNumQueries(3):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.pk, self.normal_id[1])
@@ -480,7 +480,7 @@ class FormCommitTests(HvadTestCase, NormalFixture):
             with self.assertNumQueries(1):
                 self.assertTrue(form.is_valid())
             form.instance.translated_field = u'ћирилица'
-            with self.assertNumQueries(2 if django.VERSION >= (1, 6) else 3):
+            with self.assertNumQueries(2):
                 obj = form.save()
             with self.assertNumQueries(0):
                 self.assertEqual(obj.pk, self.normal_id[1])
@@ -525,17 +525,16 @@ class FormsetTests(HvadTestCase, NormalFixture):
             'max_num': 5,
             'fields': ('translated_field',)
         }
-        if django.VERSION >= (1, 6):
-            kwargs['validate_max'] = True
-            kwargs['labels'] = {
-                'shared_field': 'Shared Field',
-                'translated_field': 'Translated Field',
-            }
-            kwargs['help_texts'] = {
-                'shared_field': 'This is a field shared amongst languages',
-                'translated_field': 'This field is specific to a language',
-            }
-            kwargs['localized_fields'] = ['translated_field']
+        kwargs['validate_max'] = True
+        kwargs['labels'] = {
+            'shared_field': 'Shared Field',
+            'translated_field': 'Translated Field',
+        }
+        kwargs['help_texts'] = {
+            'shared_field': 'This is a field shared amongst languages',
+            'translated_field': 'This field is specific to a language',
+        }
+        kwargs['localized_fields'] = ['translated_field']
         formset = translatable_modelformset_factory('en', Normal, **kwargs)
         self.assertTrue(issubclass(formset.form, NormalForm))
 

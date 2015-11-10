@@ -44,8 +44,8 @@ master_doc = 'index'
 project = u'django-hvad'
 copyright = u'2011-2015, Kristian Øllegaard, Jonas Obrist & contributors'
 
-version = '1.4'
-release = '1.4.0'
+version = '1.5'
+release = '1.5.0'
 
 
 # The name of the Pygments (syntax highlighting) style to use.

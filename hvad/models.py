@@ -61,7 +61,7 @@ class TranslatedFields(object):
             raise ValueError(
                 'Using a translated fields in %s.Meta.order_with_respect_to is ambiguous '
                 'and hvad does not support it.' %
-                model._meta.model_name if django.VERSION >= (1, 6) else model._meta.module_name
+                model._meta.model_name
             )
         if hasattr(model._meta, 'translations_model'):
             raise ImproperlyConfigured(
@@ -125,9 +125,8 @@ class TranslatedFields(object):
             if not base._meta.abstract:
                 raise TypeError(
                     'Multi-table inheritance of translatable models is not supported. '
-                    'Concrete model %s is not a valid base model for %s.' % (
-                        base._meta.model_name if django.VERSION >= (1, 6) else base._meta.module_name,
-                        model._meta.model_name if django.VERSION >= (1, 6) else model._meta.module_name)
+                    'Concrete model %s is not a valid base model for %s.' %
+                    (base._meta.model_name, model._meta.model_name)
                 )
             # The base may have translations model, then just inherit that
             if hasattr(base._meta, 'translations_model'):
@@ -169,14 +168,13 @@ class TranslatedFields(object):
             meta['unique_together'] += (('language_code', 'master'),)
 
         # Split fields in Meta.index_together
-        if django.VERSION >= (1, 5):
-            sconst, tconst = self._split_together(
-                model._meta.index_together, tfields, meta, 'index_together'
-            )
-            model._meta.index_together = tuple(sconst)
-            if django.VERSION >= (1, 7):
-                model._meta.original_attrs['index_together'] = tuple(sconst)
-            meta['index_together'] = tuple(tconst)
+        sconst, tconst = self._split_together(
+            model._meta.index_together, tfields, meta, 'index_together'
+        )
+        model._meta.index_together = tuple(sconst)
+        if django.VERSION >= (1, 7):
+            model._meta.original_attrs['index_together'] = tuple(sconst)
+        meta['index_together'] = tuple(tconst)
 
         return type('Meta', (object,), meta)
 

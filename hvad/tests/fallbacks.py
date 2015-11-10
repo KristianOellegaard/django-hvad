@@ -8,7 +8,6 @@ from hvad.exceptions import WrongManager
 from hvad.manager import LEGACY_FALLBACKS
 
 class FallbackDeprecationTests(HvadTestCase):
-    @minimumDjangoVersion(1, 6)
     @maximumDjangoVersion(1, 9)
     def test_untranslated_fallbacks_deprecation(self):
         with self.assertThrowsWarning(DeprecationWarning):

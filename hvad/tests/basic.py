@@ -140,7 +140,6 @@ class DefinitionTests(HvadTestCase):
         self.assertEqual(state.options['unique_together'], {('language_code', 'master'),
                                                             ('tfield_a', 'tfield_b')})
 
-    @minimumDjangoVersion(1, 5)
     def test_index_together(self):
         class IndexTogetherModel(TranslatableModel):
             sfield_a = models.CharField(max_length=250)
@@ -243,7 +242,6 @@ class QuerysetTest(HvadTestCase):
         with self.assertRaises(TypeError):
             TranslationQueryset(Standard)
 
-    @minimumDjangoVersion(1, 6)
     def test_fallbacks_semantics(self):
         from hvad.manager import FALLBACK_LANGUAGES
         qs = Normal.objects.language().fallbacks()
@@ -632,10 +630,10 @@ class GetOrCreateTest(HvadTestCase):
         with self.assertNumQueries(5 if connection.features.uses_savepoints else 3):
             """
             1: get
-            2a: savepoint (django >= 1.6)
+            2a: savepoint
             2b: create shared
             3a: create translation
-            3b: release savepoint (django >= 1.6)
+            3b: release savepoint
             """
             en, created = Normal.objects.language('en').get_or_create(
                 shared_field="shared",
@@ -654,10 +652,10 @@ class GetOrCreateTest(HvadTestCase):
         with self.assertNumQueries(5 if connection.features.uses_savepoints else 3):
             """
             1: get
-            2a: savepoint (django >= 1.6)
+            2a: savepoint
             2b: create shared
             3a: create translation
-            3b: release savepoint (django >= 1.6)
+            3b: release savepoint
             """
             ja, created = Normal.objects.language('ja').get_or_create(
                 shared_field="shared",

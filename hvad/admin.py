@@ -30,11 +30,6 @@ from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory
 from hvad.utils import load_translation
 from hvad.manager import FALLBACK_LANGUAGES
 
-
-atomic = (transaction.atomic if django.VERSION >= (1, 6) else
-          transaction.commit_on_success)
-
-
 def get_language_name(language_code):
     return dict(settings.LANGUAGES).get(language_code, language_code)
 
@@ -132,12 +127,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def get_urls(self):
         from django.conf.urls import patterns, url
         urlpatterns = super(TranslatableAdmin, self).get_urls()
-
-        if django.VERSION >= (1, 6):
-            info = self.model._meta.app_label, self.model._meta.model_name
-        else:
-            info = self.model._meta.app_label, self.model._meta.module_name
-
+        info = self.model._meta.app_label, self.model._meta.model_name
         return patterns('',
             url(r'^(.+)/delete-translation/(.+)/$',
                 self.admin_site.admin_view(self.delete_translation),
@@ -149,21 +139,10 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        
-        if django.VERSION >= (1, 6):
-            # From v1.6 on, using get_fieldsets is ok, as long as no 'fields'
-            # argument was given. It allows dynamic fieldsets on admin form.
-            if 'fields' in kwargs:
-                fields = kwargs.pop('fields')
-            else:
-                fields = flatten_fieldsets(self.get_fieldsets(request, obj))
+        if 'fields' in kwargs:
+            fields = kwargs.pop('fields')
         else:
-            # On previous versions, calling get_fieldsets triggers infinite recursion
-            # and we should stick to statically declared fieldsets
-            if self.declared_fieldsets:
-                fields = flatten_fieldsets(self.declared_fieldsets)
-            else:
-                fields = None
+            fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         exclude = (
             tuple(self.exclude or ()) +
             tuple(kwargs.pop("exclude", ())) +
@@ -214,10 +193,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         response = super(TranslatableAdmin, self).response_change(request, obj)
         if 'Location' in response:
             uri = iri_to_uri(request.path)
-            if django.VERSION >= (1, 6):
-                app_label, model_name = self.model._meta.app_label, self.model._meta.model_name
-            else:
-                app_label, model_name = self.model._meta.app_label, self.model._meta.module_name
+            app_label, model_name = self.model._meta.app_label, self.model._meta.model_name
             if response['Location'] in (uri, "../add/", self.reverse('admin:%s_%s_add' % (app_label, model_name))):
                 if self.query_language_key in request.GET:
                     response['Location'] = '%s?%s=%s' % (response['Location'],
@@ -225,7 +201,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         return response
     
     @csrf_protect_m
-    @atomic
+    @transaction.atomic
     def delete_translation(self, request, object_id, language_code):
         "The 'delete translation' admin view for this model."
         opts = self.model._meta
@@ -277,8 +253,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
             if not self.has_change_permission(request, None):
                 return HttpResponseRedirect(self.reverse('admin:index'))
-            model_name = opts.model_name if django.VERSION >= (1, 6) else opts.module_name
-            return HttpResponseRedirect(self.reverse('admin:%s_%s_changelist' % (opts.app_label, model_name)))
+            return HttpResponseRedirect(self.reverse('admin:%s_%s_changelist' % (opts.app_label, opts.model_name)))
 
         object_name = '%s Translation' % force_text(opts.verbose_name)
 
@@ -382,20 +357,10 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
     def get_formset(self, request, obj=None, **kwargs):
         """Returns a BaseInlineFormSet class for use in admin add/change views."""
-        if django.VERSION >= (1, 6):
-            # From v1.6 on, using get_fieldsets is ok, as long as no 'fields'
-            # argument was given. It allows dynamic fieldsets on admin form.
-            if 'fields' in kwargs:
-                fields = kwargs.pop('fields')
-            else:
-                fields = flatten_fieldsets(self.get_fieldsets(request, obj))
+        if 'fields' in kwargs:
+            fields = kwargs.pop('fields')
         else:
-            # On previous versions, calling get_fieldsets triggers infinite recursion
-            # and we should stick to statically declared fieldsets
-            if self.declared_fieldsets:
-                fields = flatten_fieldsets(self.declared_fieldsets)
-            else:
-                fields = None
+            fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         exclude = (
             tuple(self.exclude or ()) +
             tuple(kwargs.pop("exclude", ())) +
@@ -434,20 +399,10 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         Returns a Form class for use in the admin add view. This is used by
         add_view and change_view.
         """
-        if django.VERSION >= (1, 6):
-            # From v1.6 on, using get_fieldsets is ok, as long as no 'fields'
-            # argument was given. It allows dynamic fieldsets on admin form.
-            if 'fields' in kwargs:
-                fields = kwargs.pop('fields')
-            else:
-                fields = flatten_fieldsets(self.get_fieldsets(request, obj))
+        if 'fields' in kwargs:
+            fields = kwargs.pop('fields')
         else:
-            # On previous versions, calling get_fieldsets triggers infinite recursion
-            # and we should stick to statically declared fieldsets
-            if self.declared_fieldsets:
-                fields = flatten_fieldsets(self.declared_fieldsets)
-            else:
-                fields = None
+            fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         exclude = (
             tuple(self.exclude or ()) +
             tuple(kwargs.pop("exclude", ())) +
@@ -476,7 +431,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
     """
 # Should be added
     @csrf_protect_m
-    @atomic
+    @transaction.atomic
     def delete_translation(self, request, object_id, language_code):
         "The 'delete translation' admin view for this model."
         opts = self.model._meta

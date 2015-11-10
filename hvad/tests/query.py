@@ -33,7 +33,6 @@ class FilterTests(HvadTestCase, NormalFixture):
         self.assertEqual(obj2.shared_field, NORMAL[2].shared_field)
         self.assertEqual(obj2.translated_field, NORMAL[2].translated_field['en'])
 
-    @minimumDjangoVersion(1, 6)
     def test_fallbacks_filter(self):
         (Normal.objects.language('en')
                     .filter(shared_field=NORMAL[1].shared_field)
@@ -269,7 +268,6 @@ class UpdateTests(HvadTestCase, NormalFixture):
         self.assertEqual(newja1.translated_field, ja1.translated_field)
         self.assertEqual(newja2.translated_field, ja2.translated_field)
 
-    @minimumDjangoVersion(1, 6)
     def test_update_fallbacks(self):
         # Test it works - note that is it still not recommended as the query is much
         # more complicated that it need to be
@@ -432,7 +430,6 @@ class InBulkTests(HvadTestCase, NormalFixture):
                 self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['ja'])
                 self.assertEqual(result[pk1].language_code, 'ja')
 
-    @minimumDjangoVersion(1, 6)
     def test_fallbacks_in_bulk(self):
         (Normal.objects.language('en')
                        .filter(shared_field=NORMAL[2].shared_field)
@@ -504,7 +501,6 @@ class DeleteTests(HvadTestCase, NormalFixture):
         self.assertEqual(Normal.objects.language('ja').count(), 2)
         self.assertEqual(Normal.objects.language('en').count(), 0)
 
-    @minimumDjangoVersion(1, 6)
     def test_delete_fallbacks(self):
         qs = Normal.objects.language().fallbacks()
         qs.filter(shared_field=NORMAL[1].shared_field).delete()
@@ -585,9 +581,6 @@ class NotImplementedTests(HvadTestCase):
 class MinimumVersionTests(HvadTestCase):
     def test_versions(self):
         qs = SimpleRelated.objects.language('en')
-        if django.VERSION < (1, 6):
-            self.assertRaises(AttributeError, getattr, qs, 'earliest')
-            self.assertRaises(AttributeError, getattr, qs, 'datetimes')
         if django.VERSION < (1, 7):
             self.assertRaises(AttributeError, getattr, qs, 'update_or_create')
 
@@ -599,7 +592,6 @@ class ExcludeTests(HvadTestCase, NormalFixture):
         qs = Normal.objects.language('en').exclude(translated_field=NORMAL[1].translated_field['en'])
         self.assertEqual(qs.count(), 0)
 
-    @minimumDjangoVersion(1, 6)
     def test_fallbacks_exclude(self):
         (Normal.objects.language('en')
                        .filter(shared_field=NORMAL[1].shared_field)
