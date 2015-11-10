@@ -34,8 +34,16 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
     def __new__(cls, name, bases, attrs):
         # Force presence of meta class, we need it
         meta = attrs.get('Meta')
+        # If no Meta was declared directly in this class, then look
+        # for the first base class that has one.
         if meta is None:
-            meta = attrs['Meta'] = type('Meta', (object,), {})
+            for base in bases:
+                meta = getattr(base, 'Meta', None)
+                if meta:
+                    break
+        if meta is None:
+            meta = type('Meta', (object,), {})
+        attrs['Meta'] = meta
 
         model = getattr(meta, 'model', None)
         fields = getattr(meta, 'fields', None)
