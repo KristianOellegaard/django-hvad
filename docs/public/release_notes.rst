@@ -8,7 +8,11 @@ Release Notes
 1.5.0 - upcoming release
 *****************************
 
-Nothing yet.
+New features:
+
+- It is now possible to specify a :ref:`custom translation base <custom-translation-models>`
+  model, allowing advanced translation manipulation, such as controlling their loading
+  with :meth:`~django.db.models.Model.from_db`.
 
 .. release 1.4.0
 

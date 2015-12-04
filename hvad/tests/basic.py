@@ -9,6 +9,7 @@ from django.utils import translation
 from hvad.compat import with_metaclass
 from hvad.manager import TranslationQueryset, TranslationManager
 from hvad.models import TranslatableModel, TranslatedFields
+from hvad.utils import get_cached_translation
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
@@ -211,6 +212,21 @@ class DefinitionTests(HvadTestCase):
         }
         model = type('MyBaseModel', (TranslatableModel,), attrs)
         self.assertTrue(model._meta.abstract)
+
+    def test_custom_base_model(self):
+        class CustomTranslation(models.Model):
+            def test(self):
+                return 'foo'
+            class Meta:
+                abstract = True
+        class CustomBaseModel(TranslatableModel):
+            translations = TranslatedFields(
+                base_class=CustomTranslation,
+                tfield=models.CharField(max_length=250),
+            )
+        obj = CustomBaseModel(language_code='en')
+        self.assertTrue(issubclass(CustomBaseModel._meta.translations_model, CustomTranslation))
+        self.assertEqual(get_cached_translation(obj).test(), 'foo')
 
     def test_internal_properties(self):
         self.assertCountEqual(Normal()._translated_field_names,

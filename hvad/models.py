@@ -32,8 +32,9 @@ def update_settings(*args, **kwargs):
 class TranslatedFields(object):
     """ Wrapper class to define translated fields on a model. """
 
-    def __init__(self, meta=None, **fields):
+    def __init__(self, meta=None, base_class=None, **fields):
         self.meta = meta or {}
+        self.base_class = base_class
         self.fields = fields
 
     @staticmethod
@@ -100,6 +101,8 @@ class TranslatedFields(object):
             })
 
         # Create the new model
+        if self.base_class:
+            translation_bases.insert(0, self.base_class)
         translations_model = ModelBase(model_name, tuple(translation_bases), attrs)
         translations_model._meta.shared_model = model
         if not model._meta.abstract:
