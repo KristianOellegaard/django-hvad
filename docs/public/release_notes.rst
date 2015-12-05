@@ -13,6 +13,14 @@ New features:
 - It is now possible to specify a :ref:`custom translation base <custom-translation-models>`
   model, allowing advanced translation manipulation, such as controlling their loading
   with :meth:`~django.db.models.Model.from_db`.
+- Translated model's :meth:`~django.db.models.Model.save` method now accepts translated field
+  names in ``update_fields``. Also, if only translated fields, or only untranslated fields
+  are specified in ``update_fields``, the extra query will be skipped.
+
+Compatibility Warnings:
+
+- Saving of translations now happens in the model's :meth:`~django.db.models.Model.save` method.
+  It used to happen in the ``post_save`` signal.
 
 .. release 1.4.0
 

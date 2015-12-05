@@ -117,12 +117,18 @@ get_available_languages
 save
 ====
 
-.. method:: save(force_insert=False, force_update=False, using=None)
+.. method:: save(force_insert=False, force_update=False, using=None, update_fields=None)
 
     Overrides :meth:`~django.db.models.Model.save`.
 
     This method runs an extra query to save the translation cached on
     this instance, if any translation was cached.
+
+    It accepts both translated and untranslated fields in ``update_fields``.
+
+    - If only untranslated fields are specified, the extra query will be skipped.
+    - If only translated fields are specified, the shared model update will be skipped.
+      Note that this means signals will not be triggered.
 
 
 **********************

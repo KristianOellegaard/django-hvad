@@ -252,13 +252,29 @@ class TranslatableModel(models.Model):
             tkwargs['language_code'] = tkwargs.get('language_code') or get_language()
             set_cached_translation(self, self._meta.translations_model(**tkwargs))
 
-    @classmethod
-    def save_translations(cls, instance, **kwargs):
-        'Signal handler for post_save'
-        translation = get_cached_translation(instance)
-        if translation is not None:
-            translation.master = instance
-            translation.save()
+    def save(self, *args, **skwargs):
+        translation_model = self._meta.translations_model
+        translation = get_cached_translation(self)
+        tkwargs = skwargs.copy()
+
+        # split update_fields in shared/translated fields
+        update_fields = skwargs.get('update_fields')
+        if update_fields is not None:
+            supdate, tupdate = [], []
+            for name in update_fields:
+                if name in self._translated_field_names and not name in ('id', 'master_id', 'master'):
+                    tupdate.append(name)
+                else:
+                    supdate.append(name)
+            skwargs['update_fields'], tkwargs['update_fields'] = supdate, tupdate
+
+        # save share and translated model in a single transaction
+        if update_fields is None or skwargs['update_fields']:
+            super(TranslatableModel, self).save(*args, **skwargs)
+        if (update_fields is None or tkwargs['update_fields']) and translation is not None:
+            translation.master = self
+            translation.save(*args, **tkwargs)
+    save.alters_data = True
 
     def translate(self, language_code):
         ''' Create a new translation for current instance.
@@ -269,6 +285,7 @@ class TranslatableModel(models.Model):
             self._meta.translations_model(language_code=language_code)
         )
         return self
+    translate.alters_data = True
 
     def safe_translation_getter(self, name, default=None):
         cache = get_cached_translation(self)
@@ -468,8 +485,5 @@ def prepare_translatable_model(sender, **kwargs):
             SmartGetField(model._meta.get_field),
             model._meta
         )
-
-    # Attach save_translations
-    post_save.connect(model.save_translations, sender=model, weak=False)
 
 class_prepared.connect(prepare_translatable_model)

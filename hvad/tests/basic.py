@@ -397,6 +397,50 @@ class CreateTest(HvadTestCase):
             )
 
 
+class UpdateTest(HvadTestCase, NormalFixture):
+    normal_count = 2
+
+    def test_basic_update(self):
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
+        obj.shared_field = 'update_shared'
+        obj.translated_field = 'update_translated'
+        with self.assertNumQueries(2):
+            obj.save()
+        obj = Normal.objects.language().get(pk=self.normal_id[1])
+        self.assertEqual(obj.shared_field, 'update_shared')
+        self.assertEqual(obj.translated_field, 'update_translated')
+
+    def test_force_update(self):
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
+        obj.shared_field = 'update_shared'
+        obj.translated_field = 'update_translated'
+        with self.assertNumQueries(2):
+            obj.save(force_update=True)
+        obj = Normal.objects.language().get(pk=self.normal_id[1])
+        self.assertEqual(obj.shared_field, 'update_shared')
+        self.assertEqual(obj.translated_field, 'update_translated')
+
+    def test_update_fields_shared(self):
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
+        obj.shared_field = 'update_shared'
+        obj.translated_field = 'update_translated'
+        with self.assertNumQueries(1):
+            obj.save(update_fields=['shared_field'])
+        obj = Normal.objects.language().get(pk=self.normal_id[1])
+        self.assertEqual(obj.shared_field, 'update_shared')
+        self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+
+    def test_update_fields_translated(self):
+        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
+        obj.shared_field = 'update_shared'
+        obj.translated_field = 'update_translated'
+        with self.assertNumQueries(1):
+            obj.save(update_fields=['translated_field'])
+        obj = Normal.objects.language().get(pk=self.normal_id[1])
+        self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertEqual(obj.translated_field, 'update_translated')
+
+
 class DeleteTest(HvadTestCase, NormalFixture):
     normal_count = 2
 
