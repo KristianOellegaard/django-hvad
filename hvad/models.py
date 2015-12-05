@@ -272,6 +272,8 @@ class TranslatableModel(models.Model):
         if update_fields is None or skwargs['update_fields']:
             super(TranslatableModel, self).save(*args, **skwargs)
         if (update_fields is None or tkwargs['update_fields']) and translation is not None:
+            if translation.pk is None and update_fields:
+                del tkwargs['update_fields'] # allow new translations
             translation.master = self
             translation.save(*args, **tkwargs)
     save.alters_data = True

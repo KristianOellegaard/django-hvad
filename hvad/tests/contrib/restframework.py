@@ -335,7 +335,8 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         serializer = TranslationsSerializer(data=data)
         self.assertTrue(serializer.is_valid())
 
-        obj = serializer.save()
+        with self.assertNumQueries(3):  # insert shared, insert "en", insert "sr"
+            obj = serializer.save()
         self.assertIsNot(obj.pk, None)
         qs = Normal.objects.language('all').filter(pk=obj.pk)
         self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
@@ -343,7 +344,7 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
 
     def test_update(self):
         'Update an existing normal instance: 1 new, 1 updated, 1 deleted translations'
-        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        obj = Normal.objects.untranslated().prefetch_related('translations').get(pk=self.normal_id[1])
         data = {
             'shared_field': 'shared',
             'translations': {
@@ -354,7 +355,8 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         serializer = TranslationsSerializer(instance=obj, data=data)
         self.assertTrue(serializer.is_valid())
 
-        obj = serializer.save()
+        with self.assertNumQueries(4):  # update shared, update "en", insert "sr", delete others
+            obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1])
         self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
@@ -369,7 +371,8 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         serializer = TranslationsSerializer(instance=obj, data=data, partial=True)
         self.assertTrue(serializer.is_valid())
 
-        obj = serializer.save()
+        with self.assertNumQueries(1):  # update shared
+            obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1], shared_field='shared')
         self.assertCountEqual([obj.language_code for obj in qs], self.translations)

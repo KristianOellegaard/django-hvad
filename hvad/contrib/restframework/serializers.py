@@ -1,3 +1,4 @@
+import django
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language, ugettext_lazy as _l
 from rest_framework import serializers
@@ -68,42 +69,57 @@ class TranslationsMixin(object):
 
         return super(TranslationsMixin, self).to_internal_value(data)
 
-    def save(self, **kwargs):
-        creating = (self.instance is None)
-        translations = self.validated_data.pop(self.Meta.model._meta.translations_accessor, None)
+    def create(self, data):
+        accessor = self.Meta.model._meta.translations_accessor
+        translations_data = data.pop(accessor, None)
+        if translations_data:
+            arbitrary = translations_data.popitem()
+            data.update(arbitrary[1])
+            data['language_code'] = arbitrary[0]
+            instance = super(TranslationsMixin, self).create(data)
 
-        if translations is None:
-            # happens when partial=True and translations are not set
-            instance = super(TranslationsMixin, self).save(**kwargs)
+            for language, translation_data in translations_data.items():
+                instance.translate(language)
+                self.update_translation(instance, translation_data)
         else:
-            arbitrary = translations.popitem()
-            kwargs['language_code'] = arbitrary[0]
-            kwargs.update(arbitrary[1])
-            instance = super(TranslationsMixin, self).save(**kwargs)
-
-            for language, translation in translations.items():
-                translation['language_code'] = language
-                if creating: # avoid update() looking in the database
-                    instance.translate(language)
-                self.update(instance, translation)
-
-            if not creating: # get rid of additional translations
-                qs = instance._meta.translations_model.objects
-                (qs.filter(master=instance)
-                   .exclude(language_code__in=(arbitrary[0],)+tuple(translations.keys()))
-                   .delete())
+            instance = super(TranslationsMixin, self).create(data)
         return instance
 
     def update(self, instance, data):
-        'Handle switching to correct translation before actual update'
-        enforce = ('language_code' in data)
-        language = data.pop('language_code', None) or get_language()
-        translation = load_translation(instance, language, enforce=enforce)
-        stashed = set_cached_translation(instance, translation)
+        accessor = self.Meta.model._meta.translations_accessor
+        translations_data = data.pop(accessor, None)
+        if translations_data:
+            arbitrary = translations_data.popitem()
+            data.update(arbitrary[1])
+            stashed = set_cached_translation(
+                instance, load_translation(instance, arbitrary[0], enforce=True)
+            )
+            instance = super(TranslationsMixin, self).update(instance, data)
 
-        result = super(TranslationsMixin, self).update(instance, data)
-        set_cached_translation(instance, stashed)
-        return result
+            for language, translation_data in translations_data.items():
+                set_cached_translation(instance, load_translation(instance, language, enforce=True))
+                self.update_translation(instance, translation_data)
+
+            set_cached_translation(instance, stashed)
+            qs = instance._meta.translations_model.objects
+            (qs.filter(master=instance)
+                .exclude(language_code__in=(arbitrary[0],)+tuple(translations_data.keys()))
+                .delete())
+        else:
+            instance = super(TranslationsMixin, self).update(instance, data)
+        return instance
+
+    def update_translation(self, instance, data):
+        if django.VERSION >= (1, 8):
+            fields = [field.name for field in self.Meta.model._meta.translations_model._meta.get_fields()
+                      if field.name not in ('id', 'master', 'language_code')]
+        else:
+            fields = [name for name in self.Meta.model._meta.translations_model._meta.get_all_field_names()
+                      if name not in ('id', 'master', 'master_id', 'language_code')]
+        for key, value in data.items():
+            setattr(instance, key, value)
+        instance.save(update_fields=fields)
+
 
 #=============================================================================
 

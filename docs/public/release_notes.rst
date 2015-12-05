@@ -21,6 +21,14 @@ Compatibility Warnings:
 
 - Saving of translations now happens in the model's :meth:`~django.db.models.Model.save` method.
   It used to happen in the ``post_save`` signal.
+- ``TranslationsMixin`` now splits the update into ``update`` and ``update_translation`` methods.
+  The former is called once per save, and uses the latter as many times as required to update
+  all translations.
+
+Fixes:
+
+- REST framework translation support now uses ``update_fields`` to reduce the number of queries
+  when updating an object.
 
 .. release 1.4.0
 
