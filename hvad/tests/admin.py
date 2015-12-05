@@ -82,6 +82,22 @@ class ModelHelpersTests(HvadTestCase, NormalFixture):
                 self.assertEqual(obj.lazy_translation_getter('translated_field'),
                                     NORMAL[1].translated_field['ja'])
 
+    def test_translation_getters_no_match(self):
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.settings(LANGUAGE_CODE='tt',
+                           LANGUAGES=(('tt', 'Missing'),
+                                      ('sr', 'English'),
+                                      ('de', 'Japanese'))):
+            with translation.override('th'):
+                self.assertIn(obj.lazy_translation_getter('translated_field'),
+                              NORMAL[1].translated_field.values())
+
+    def test_translation_getters_no_translation(self):
+        Normal.objects.language('all').filter(pk=self.normal_id[1]).delete_translations()
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with translation.override('en'):
+            self.assertEqual(obj.lazy_translation_getter('translated_field'), None)
+
 
 class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
     normal_count = 1

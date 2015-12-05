@@ -760,7 +760,7 @@ class TranslationQueryset(QuerySet):
             self._raw_select_related = []
         elif django.VERSION >= (1, 7):  # in newer versions, calls are cumulative
             self._raw_select_related.extend(fields)
-        else:                           # in older versions, they overwrite each other
+        else:  #pragma: no cover        # in older versions, they overwrite each other
             self._raw_select_related = list(fields)
         return self
 
@@ -851,7 +851,7 @@ class _SharedFallbackQueryset(QuerySet):
         raise NotImplementedError()
 
 
-class LegacyFallbackQueryset(_SharedFallbackQueryset):
+class LegacyFallbackQueryset(_SharedFallbackQueryset): #pragma: no cover
     '''
     Queryset that tries to load a translated version using fallbacks on a per
     instance basis.
@@ -1049,7 +1049,7 @@ class TranslationManager(models.Manager):
         if django.VERSION >= (1, 7):
             qs = klass(self.model, using=self.db, hints=self._hints)
         else:
-            qs = klass(self.model, using=self.db)
+            qs = klass(self.model, using=self.db) #pragma: no cover
         core_filters = getattr(self, 'core_filters', None) if core_filters else None
         if core_filters:
             qs = qs._next_is_sticky().filter(**core_filters)

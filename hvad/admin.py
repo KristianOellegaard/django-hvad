@@ -5,7 +5,7 @@ from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModel
 if django.VERSION >= (1, 7):
     from django.contrib.admin.utils import (flatten_fieldsets, unquote,
         get_deleted_objects)
-else:
+else: #pragma: no cover
     from django.contrib.admin.util import (flatten_fieldsets, unquote,
         get_deleted_objects)
 from django.contrib.contenttypes.models import ContentType
@@ -15,7 +15,7 @@ from django.db import router, transaction
 from django.forms.models import model_to_dict
 if django.VERSION >= (1, 7):
     from django.forms.utils import ErrorList
-else:
+else: #pragma: no cover
     from django.forms.util import ErrorList
 from django.http import Http404, HttpResponseRedirect, QueryDict
 from django.shortcuts import render_to_response
@@ -344,7 +344,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         ]
         try:
             return select_template(search_templates)
-        except TemplateDoesNotExist:
+        except TemplateDoesNotExist: #pragma: no cover
             return None
 
 

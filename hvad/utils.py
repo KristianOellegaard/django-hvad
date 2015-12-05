@@ -173,7 +173,7 @@ def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs
 #=============================================================================
 # Internal sugar
 
-class _MinimumDjangoVersionDescriptor(object):
+class _MinimumDjangoVersionDescriptor(object): #pragma: no cover
     ''' Ensures methods that do not exist on current Django version raise a
         helpful message and an actual AttributeError
     '''
@@ -185,7 +185,7 @@ class _MinimumDjangoVersionDescriptor(object):
         raise AttributeError('Method %s requires Django %s or newer' %
                              (self.name, '.'.join(str(x) for x in self.version)))
 
-def minimumDjangoVersion(*args):
+def minimumDjangoVersion(*args): #pragma: no cover
     ''' Method/attribute decorator making it unavailable on older Django versions
         e.g.: @minimumDjangoVersion(1, 4, 2)
     '''
@@ -193,7 +193,7 @@ def minimumDjangoVersion(*args):
         return lambda x: x
     return lambda x: _MinimumDjangoVersionDescriptor(x.__name__, args)
 
-def settings_updater(func):
+def settings_updater(func): #pragma: no cover
     ''' Decorator for setting globals depending on django settings '''
     func()
     setting_changed.connect(func, dispatch_uid=id(func))

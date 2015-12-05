@@ -29,7 +29,7 @@ if PYTHON_MAJOR == 2:
 
     if PYTHON_MINOR >= 6:
         from io import StringIO
-    else:
+    else: #pragma: no cover
         from StringIO import StringIO
 
 else:

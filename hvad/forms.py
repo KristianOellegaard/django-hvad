@@ -8,7 +8,7 @@ from django.forms.models import (ModelForm, BaseModelForm, ModelFormMetaclass,
     modelform_factory, inlineformset_factory)
 if django.VERSION >= (1, 7):
     from django.forms.utils import ErrorList
-else:
+else: #pragma: no cover
     from django.forms.util import ErrorList
 from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
@@ -203,7 +203,7 @@ if django.VERSION >= (1, 7):
     class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
                                                BaseTranslatableModelForm)):
         pass
-else:
+else: #pragma: no cover
     # Older django version have buggy metaclass
     class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
                                                BaseTranslatableModelForm, ModelForm)):

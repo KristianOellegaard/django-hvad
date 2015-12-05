@@ -529,6 +529,31 @@ class GetTranslationFromInstanceTests(HvadTestCase, NormalFixture):
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
 
+    def test_cached(self):
+        # get the english instance
+        en = Normal.objects.untranslated().prefetch_related('translations').get()
+        with self.assertNumQueries(0):
+            ja_trans = en.translations.get_language('ja')
+
+        # get the japanese *combined*
+        ja = Normal.objects.language('ja').get(pk=en.pk)
+
+        self.assertEqual(en.shared_field, NORMAL[1].shared_field)
+        self.assertEqual(en.translated_field, NORMAL[1].translated_field['en'])
+        self.assertRaises(AttributeError, getattr, ja_trans, 'shared_field')
+        self.assertEqual(ja_trans.translated_field, NORMAL[1].translated_field['ja'])
+        self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
+        self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
+
+    def test_not_exist(self):
+        # Without prefetching
+        en = Normal.objects.untranslated().get()
+        with self.assertRaises(Normal.DoesNotExist):
+            en.translations.get_language('tt')
+        # With prefetching
+        en = Normal.objects.untranslated().prefetch_related('translations').get()
+        with self.assertRaises(Normal.DoesNotExist):
+            en.translations.get_language('tt')
 
 class AggregateTests(HvadTestCase):
     def test_aggregate(self):

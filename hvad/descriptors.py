@@ -38,7 +38,7 @@ class TranslatedAttribute(BaseDescriptor):
 
     def __get__(self, instance, instance_type=None):
         if not instance:
-            if django.VERSION >= (1, 7) and not registry.apps.ready:
+            if django.VERSION >= (1, 7) and not registry.apps.ready: #pragma: no cover
                 raise AttributeError('Attribute not available until registry is ready.')
             # Don't raise an attribute error so we can use it in admin.
             try:
@@ -46,7 +46,7 @@ class TranslatedAttribute(BaseDescriptor):
                     return self.opts.translations_model._meta.get_field(self.name).default
                 else:
                     return self.opts.translations_model._meta.get_field_by_name(self.name)[0].default
-            except FieldDoesNotExist as e:
+            except FieldDoesNotExist as e: #pragma: no cover (django 1.6 before models loaded)
                 raise AttributeError(*e.args)
         return getattr(self.translation(instance), self.name)
     
