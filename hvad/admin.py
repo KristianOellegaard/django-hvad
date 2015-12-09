@@ -125,14 +125,14 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
 
     def get_urls(self):
-        from django.conf.urls import patterns, url
+        from django.conf.urls import url
         urlpatterns = super(TranslatableAdmin, self).get_urls()
         info = self.model._meta.app_label, self.model._meta.model_name
-        return patterns('',
+        return [
             url(r'^(.+)/delete-translation/(.+)/$',
                 self.admin_site.admin_view(self.delete_translation),
                 name='%s_%s_delete_translation' % info),
-        ) + urlpatterns
+        ] + urlpatterns
     
     def get_form(self, request, obj=None, **kwargs):
         """
@@ -383,16 +383,16 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         return translatable_inlineformset_factory(language, self.parent_model, self.model, **defaults)
 
     def get_urls(self):
-        from django.conf.urls import patterns, url
+        from django.conf.urls import url
         urlpatterns = super(InlineModelAdmin, self).get_urls()
 
         info = self.model._meta.app_label, self.model._meta.module_name
 
-        return patterns('',
+        return [
             url(r'^(.+)/delete-translation/(.+)/$',
                 self.admin_site.admin_view(self.delete_translation),
                 name='%s_%s_delete_translation' % info),
-        ) + urlpatterns
+        ] + urlpatterns
 
     def get_form(self, request, obj=None, **kwargs):
         """
