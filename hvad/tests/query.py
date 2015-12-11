@@ -598,8 +598,6 @@ class NotImplementedTests(HvadTestCase):
         self.assertRaises(NotImplementedError, baseqs.bulk_create, [])
         # select_related with no field is not implemented
         self.assertRaises(NotImplementedError, baseqs.select_related)
-        # select_related with language('all') is not implemented
-        self.assertRaises(NotImplementedError, len, baseqs.language('all').select_related('normal'))
         if django.VERSION >= (1, 7):
             self.assertRaises(NotImplementedError, baseqs.update_or_create)
 

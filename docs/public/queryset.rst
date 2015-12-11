@@ -49,6 +49,15 @@ language
     This filters out all instances that are not translated in the given language,
     and makes translatable fields available on the query results.
 
+    The special value ``'all'`` disables language filtering. This means that objects
+    will be returned once per language in which they match the query, with
+    the appropriate translation loaded.
+
+    .. note:: support for :ref:`select_related() <select_related-public>` in combination
+              with ``language('all')`` is experimental. Please check the generated
+              queries and open an issue if you have any problem. Feedback
+              is appreciated as well.
+
 fallbacks
 ---------
 
@@ -96,8 +105,10 @@ select_related
     The ``select_related`` method also selects translations of translatable
     models when it encounters some.
 
-    .. note:: ``select_related`` is not supported in combination with
-              ``language('all')``.
+    .. note:: support for ``select_related`` in combination with
+              ``language('all')`` is experimental. Please check the generated
+              queries and open an issue if you have any problem. Feedback
+              is appreciated as well.
 
 
 Not implemented public queryset methods

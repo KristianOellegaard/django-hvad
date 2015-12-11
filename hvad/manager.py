@@ -402,12 +402,7 @@ class TranslationQueryset(QuerySet):
         self._language_filter_tag = True
 
         if self._language_code == 'all':
-            if self._raw_select_related:
-                raise NotImplementedError('Using select_related along with '
-                                          'language(\'all\') is not supported')
-
-            if not self._skip_master_select and getattr(self, '_fields', None) is None:
-                self.query.add_select_related(('master',))
+            self._add_select_related(F('language_code'))
 
         elif self._language_fallbacks:
             if self._raw_select_related:

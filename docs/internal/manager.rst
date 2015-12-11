@@ -247,9 +247,10 @@ TranslationQueryset
 
         Returns a queryset.
 
-        .. note:: Using ``language('all')`` and :meth:`select_related` on the
-                  same queryset is not supported and will raise a
-                  :exc:`~exceptions.NotImplementedError`.
+        .. note:: Support for using ``language('all')`` and :meth:`select_related`
+                  on the same queryset is experimental. Please check the generated
+                  queries and open an issue if you have any problem. Feedback
+                  is appreciated as well.
 
     .. method:: fallbacks(self, *languages)
 

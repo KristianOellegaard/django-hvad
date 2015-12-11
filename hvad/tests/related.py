@@ -530,6 +530,26 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
                     else:
                         self.fail("Invalid Related object; ID is %s" % r.id)
 
+    def test_select_related_language_all(self):
+        with translation.override('en'):
+            obj = SimpleRelated.objects.language().create(normal=self.normal2, translated_field="test2_en")
+            obj.translate('ja')
+            obj.translated_field = 'test2_ja'
+            obj.save()
+
+            with self.assertNumQueries(1):
+                objs = (SimpleRelated.objects.language('all')
+                                             .filter(pk=obj.pk).order_by('language_code')
+                                             .select_related('normal'))
+                check = [
+                    (NORMAL[2].shared_field, NORMAL[2].translated_field['en']),
+                    (NORMAL[2].shared_field, NORMAL[2].translated_field['ja']),
+                ]
+                self.assertEqual(list((obj.normal.shared_field, obj.normal.translated_field)
+                                      for obj in objs),
+                                 check)
+
+
 class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
     normal_count = 2
     standard_count = 1
@@ -643,3 +663,21 @@ class DeepSelectRelatedTests(HvadTestCase, StandardFixture, NormalFixture):
                         self.assertEqual(obj.trans_simple.normal.pk, self.normal_id[1])
                         self.assertEqual(obj.trans_simple.normal.translated_field,
                                          NORMAL[1].translated_field['en'])
+
+    def test_deep_select_related_language_all(self):
+        with translation.override('en'):
+            with self.assertNumQueries(1):
+                obj = (RelatedRelated.objects.language('all')
+                                             .select_related('related__normal', 'simple__normal')
+                                             .filter(pk=self.relrel1.pk).get())
+            with self.assertNumQueries(0):
+                self.assertEqual(obj.related.pk, self.related1.pk)
+                self.assertEqual(obj.related.normal.pk, self.normal_id[1])
+                self.assertEqual(obj.related.normal.translated_field,
+                                 NORMAL[1].translated_field['en'])
+                self.assertEqual(obj.simple.pk, self.simplerel.pk)
+                self.assertEqual(obj.simple.translated_field,
+                                 self.simplerel.translated_field)
+                self.assertEqual(obj.simple.normal.pk, self.normal_id[1])
+                self.assertEqual(obj.simple.normal.translated_field,
+                                 NORMAL[1].translated_field['en'])
