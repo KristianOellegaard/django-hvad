@@ -10,6 +10,7 @@ from django.db.models import F, Q
 from django.utils.functional import cached_property
 from django.utils.translation import get_language
 from hvad.compat import string_types
+from hvad.fields import BetterTranslationsField
 from hvad.query import (query_terms, q_children, expression_nodes,
                         add_alias_constraints)
 from hvad.settings import hvad_settings
@@ -75,17 +76,7 @@ if django.VERSION >= (1, 9):
             qs = self.queryset._clone()._add_language_filter()
             qs._iterable_class = ModelIterable
             qs._known_related_objects = {}
-            if qs._forced_unique_fields:
-                with ForcedUniqueFields(qs._forced_unique_fields):
-                    objects = list(qs.iterator())
-
-                if type(qs.query.select_related) == dict:
-                    for obj in objects:
-                        qs._use_related_translations(obj, qs.query.select_related)
-            else:
-                objects = qs.iterator()
-
-            for obj in objects:
+            for obj in qs.iterator():
                 for name in qs._hvad_switch_fields:
                     try:
                         setattr(obj.master, name, getattr(obj, name))
@@ -138,62 +129,6 @@ else:
                     yield row
 
 #===============================================================================
-
-class ForcedUniqueFields(object):
-    """ Context manager that forces a set of fields to be unique while active """
-    def __init__(self, fields):
-        self.fields = fields
-
-    def __enter__(self):
-        for field in self.fields:
-            field._unique = True
-
-    def __exit__(self, *args):
-        for field in self.fields:
-            field._unique = False
-
-#===============================================================================
-# Field for language joins
-#===============================================================================
-
-class RawConstraint(object):
-    def __init__(self, sql, aliases):
-        self.sql = sql
-        self.aliases = aliases
-
-    def as_sql(self, compiler, connection):
-        aliases = tuple(compiler.quote_name_unless_alias(alias) for alias in self.aliases)
-        return (self.sql % aliases, [])
-
-class BetterTranslationsField(object):
-    def __init__(self, translation_fallbacks, master):
-        # Filter out duplicates, while preserving order
-        self._fallbacks = []
-        self._master = master
-        seen = set()
-        for lang in translation_fallbacks:
-            if lang not in seen:
-                seen.add(lang)
-                self._fallbacks.append(lang)
-
-    def get_extra_restriction(self, where_class, alias, related_alias):
-        langcase = ('(CASE %s.language_code ' +
-                    ' '.join('WHEN \'%s\' THEN %d' % (lang, i)
-                             for i, lang in enumerate(self._fallbacks)) +
-                    ' ELSE %d END)' % len(self._fallbacks))
-        return RawConstraint(
-            sql=' '.join((langcase, '<', langcase, 'OR ('
-                          '%s.language_code = %s.language_code AND '
-                          '%s.id < %s.id)')),
-            aliases=(alias, related_alias,
-                     alias, related_alias,
-                     alias, related_alias)
-        )
-
-    def get_joining_columns(self):
-        return ((self._master, self._master), )
-
-#===============================================================================
 # TranslationQueryset
 #===============================================================================
 
@@ -231,7 +166,6 @@ class TranslationQueryset(QuerySet):
         self._language_code = None
         self._language_fallbacks = None
         self._raw_select_related = []
-        self._forced_unique_fields = []  # Used for select_related
         self._language_filter_tag = False
         self._hvad_switch_fields = ()
         super(TranslationQueryset, self).__init__(model, *args, **kwargs)
@@ -253,7 +187,6 @@ class TranslationQueryset(QuerySet):
             '_language_code': self._language_code,
             '_language_fallbacks': self._language_fallbacks,
             '_raw_select_related': self._raw_select_related,
-            '_forced_unique_fields': list(self._forced_unique_fields),
             '_language_filter_tag': getattr(self, '_language_filter_tag', False),
             '_hvad_switch_fields': self._hvad_switch_fields,
         })
@@ -352,11 +285,9 @@ class TranslationQueryset(QuerySet):
         # update using the real manager
         return QuerySet(self.shared_model, using=self.db).filter(**{'%s__in' % accessor: qs})
 
-    def _add_select_related(self, language_code):
+    def _add_select_related(self):
         fields = self._raw_select_related
         related_queries = []
-        language_filters = []
-        force_unique_fields = []
         if not self._skip_master_select and getattr(self, '_fields', None) is None:
             related_queries.append('master')
 
@@ -372,7 +303,7 @@ class TranslationQueryset(QuerySet):
                     # on deeper levels we must key to translations model
                     # this will work because translations will be seen as _unique
                     # at query time
-                    newbits.append('%s__%s' % (term.model._meta.translations_accessor, term.term))
+                    newbits.append('%s__%s' % (term.model._meta.translations_query, term.term))
                 else:
                     newbits.append(term.term)
 
@@ -387,43 +318,24 @@ class TranslationQueryset(QuerySet):
                                      'Use prefetch_related instead.' % query_key)
 
                 # If target is a translated model, select its translations
-                target_translations = getattr(term.target._meta, 'translations_accessor', None)
-                if target_translations is not None:
+                if hasattr(term.target._meta, 'translations_model'):
                     # Add the model
                     target_query = '__'.join(newbits)
-                    related_queries.append('%s__%s' % (target_query, target_translations))
-
-                    # Add a language filter for the translation
-                    language_filters.append('%s__%s__language_code' % (
-                        target_query,
-                        target_translations,
-                    ))
-
-                    # Remember to mark the field unique so JOIN is generated
-                    # and row decoder gets cached items
-                    if django.VERSION >= (1, 9):
-                        target_transfield = getattr(term.target, target_translations).field
-                    else:
-                        target_transfield = getattr(term.target, target_translations).related.field
-                    force_unique_fields.append(target_transfield)
+                    related_queries.append('%s__%s' % (target_query, term.target._meta.translations_query))
 
             related_queries.append('__'.join(newbits))
 
         # Apply results to query
         self.query.add_select_related(related_queries)
-        for language_filter in language_filters:
-            self.query.add_q(Q(**{language_filter: language_code}) |
-                             Q(**{language_filter: None}))
-
-        self._forced_unique_fields = force_unique_fields
 
     def _add_language_filter(self):
         if self._language_filter_tag: # pragma: no cover
             raise RuntimeError('Queryset is already tagged. This is a bug in hvad')
         self._language_filter_tag = True
+        self.query.language_code = self._language_code
 
         if self._language_code == 'all':
-            self._add_select_related(F('language_code'))
+            self._add_select_related()
 
         elif self._language_fallbacks:
             if self._raw_select_related:
@@ -449,7 +361,7 @@ class TranslationQueryset(QuerySet):
         else:
             language_code = self._language_code or get_language()
             self.query.add_filter(('language_code', language_code))
-            self._add_select_related(language_code)
+            self._add_select_related()
 
         # if queryset is about to use the model's default ordering, we
         # override that now with a translated version of the model's ordering
@@ -458,35 +370,6 @@ class TranslationQueryset(QuerySet):
             self.query.order_by = self._translate_fieldnames(ordering or [])
 
         return self
-
-    def _use_related_translations(self, obj, relations_dict, depth=0):
-        """
-        Ensure that we use cached translations brought in via select_related if
-        available. Necessary since the database select_related query caches the
-        related translation models in a different place than hvad expects it.
-        """
-
-        # First, set translation for current object,
-        accessor = getattr(obj._meta, 'translations_accessor', None)
-        if accessor is not None:
-            if django.VERSION >= (1, 9):
-                cache = getattr(obj.__class__, accessor).rel.get_cache_name()
-            else:
-                cache = getattr(obj.__class__, accessor).related.get_cache_name()
-            try:
-                translation = getattr(obj, cache)
-            except AttributeError:
-                pass
-            else:
-                delattr(obj, cache)
-                setattr(obj, obj._meta.translations_cache, translation)
-
-        # Then recurse in the relation dict
-        for field, sub_dict in relations_dict.items():
-            target = translation if field == accessor else getattr(obj, field)
-            if target is not None:
-                self._use_related_translations(target, sub_dict, depth+1)
-
 
     #===========================================================================
     # Queryset/Manager API
@@ -513,17 +396,8 @@ class TranslationQueryset(QuerySet):
         def iterator(self):
             qs = self._clone()._add_language_filter()
             qs._known_related_objects = {}  # super's iterator will attempt to set them
-            if qs._forced_unique_fields:
-                with ForcedUniqueFields(qs._forced_unique_fields):
-                    objects = list(super(TranslationQueryset, qs).iterator())
 
-                if type(qs.query.select_related) == dict:
-                    for obj in objects:
-                        qs._use_related_translations(obj, qs.query.select_related)
-            else:
-                objects = super(TranslationQueryset, qs).iterator()
-
-            for obj in objects:
+            for obj in super(TranslationQueryset, qs).iterator():
                 for name in self._hvad_switch_fields:
                     try:
                         setattr(obj.master, name, getattr(obj, name))

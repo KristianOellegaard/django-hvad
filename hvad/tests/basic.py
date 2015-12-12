@@ -302,6 +302,7 @@ class OptionsTest(HvadTestCase):
     def test_options(self):
         self.assertEqual(Normal._meta.translations_model.__name__, 'NormalTranslation')
         self.assertEqual(Normal._meta.translations_accessor, 'translations')
+        self.assertEqual(Normal._meta.translations_query, 'translations_query')
         if django.VERSION < (1, 9):
             self.assertRaises(FieldDoesNotExist, Normal._meta.get_field_by_name, 'inexistent_field')
             self.assertRaises(WrongManager, Normal._meta.get_field_by_name, 'translated_field')

@@ -5,10 +5,10 @@ from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyP
 
 class ProxyTests(HvadTestCase):
     def test_check(self):
-        self.assertEqual(len(NormalProxy.check()), 0)
-        self.assertEqual(len(NormalProxyProxy.check()), 0)
-        self.assertEqual(len(RelatedProxy.check()), 0)
-        self.assertEqual(len(SimpleRelatedProxy.check()), 0)
+        self.assertEqual(NormalProxy.check(), [])
+        self.assertEqual(NormalProxyProxy.check(), [])
+        self.assertEqual(RelatedProxy.check(), [])
+        self.assertEqual(SimpleRelatedProxy.check(), [])
 
     def test_proxy(self):
         self.assertEqual(NormalProxy.objects.count(), 0)

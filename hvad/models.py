@@ -8,6 +8,7 @@ from django.db.models.manager import Manager
 from django.db.models.signals import class_prepared
 from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
+from hvad.fields import SingleTranslationObject
 from hvad.manager import TranslationManager, TranslationsModelManager
 from hvad.settings import hvad_settings
 from hvad.utils import (get_cached_translation, set_cached_translation,
@@ -172,6 +173,7 @@ class TranslatedFields(object):
 
         model._meta.translations_accessor = related_name
         model._meta.translations_cache = '%s_cache' % related_name
+        model._meta.translations_query = '%s_query' % related_name
 
         # Set descriptors
         ignore_fields = ('pk', 'master', 'master_id', translations_model._meta.pk.name)
@@ -431,6 +433,7 @@ def prepare_translatable_model(sender, **kwargs):
         model._meta.translations_accessor = model._meta.concrete_model._meta.translations_accessor
         model._meta.translations_model = model._meta.concrete_model._meta.translations_model
         model._meta.translations_cache = model._meta.concrete_model._meta.translations_cache
+        model._meta.translations_query = model._meta.concrete_model._meta.translations_query
 
     if not hasattr(model._meta, 'translations_model'):
         raise ImproperlyConfigured("No TranslatedFields found on %r, subclasses of "
@@ -458,5 +461,8 @@ def prepare_translatable_model(sender, **kwargs):
             SmartGetField(model._meta.get_field),
             model._meta
         )
+
+    if not model._meta.proxy:
+        model.add_to_class(model._meta.translations_query, SingleTranslationObject(model))
 
 class_prepared.connect(prepare_translatable_model)
