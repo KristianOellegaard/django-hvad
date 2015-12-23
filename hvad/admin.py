@@ -9,7 +9,7 @@ else: #pragma: no cover
     from django.contrib.admin.util import (flatten_fieldsets, unquote,
         get_deleted_objects)
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
 from django.forms.models import model_to_dict
@@ -28,7 +28,7 @@ from django.utils.translation import ugettext_lazy as _, get_language
 from hvad.compat import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 from hvad.utils import load_translation
-from hvad.manager import FALLBACK_LANGUAGES
+from hvad.manager import FALLBACK_LANGUAGES, TranslationQueryset
 
 def get_language_name(language_code):
     return dict(settings.LANGUAGES).get(language_code, language_code)
@@ -298,9 +298,24 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def delete_model_translation(self, request, obj):
         obj.delete()
     
-    def get_object(self, request, object_id, *args):
-        obj = super(TranslatableAdmin, self).get_object(request, object_id, *args)
-        if obj is None: # object was not in queryset, bail out
+    def get_object(self, request, object_id, from_field=None):
+        queryset = self.get_queryset(request)
+        if isinstance(queryset, TranslationQueryset): # will always be true once Django 1.9 is required
+            model = queryset.shared_model
+            if from_field is None:
+                field = model._meta.pk
+            else:
+                try:
+                    field = model._meta.get_field(from_field)
+                except FieldDoesNotExist:
+                    field = model._meta.translations_model._meta.get_field(from_field)
+        else:
+            model = queryset.model
+            field = model._meta.pk if from_field is None else model._meta.get_field(from_field)
+        try:
+            object_id = field.to_python(object_id)
+            obj = queryset.get(**{field.name: object_id})
+        except (model.DoesNotExist, ValidationError, ValueError):
             return None
 
         # object was in queryset - need to make sure we got the right translation
@@ -327,7 +342,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                     languages.append(lang)
             qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
         # TODO: this should be handled by some parameter to the ChangeList.
-        ordering = getattr(self, 'ordering', None) or () # otherwise we might try to *None, which is bad ;)
+        ordering = getattr(self, 'ordering', None) or ()
         if ordering:
             qs = qs.order_by(*ordering)
         return qs

@@ -16,6 +16,8 @@ New features:
 - Translated model's :meth:`~django.db.models.Model.save` method now accepts translated field
   names in ``update_fields``. Also, if only translated fields, or only untranslated fields
   are specified in ``update_fields``, the extra query will be skipped.
+- Support for third parameter on ``ModelAdmin``'s
+  :meth:`~django.contrib.admin.options.ModelAdmin.get_object` method was added.
 - Experimental support for using :ref:`language('all') <language-public>` together with
   :meth:`~django.db.models.query.QuerySet.select_related` is being introduced. Please
   check the generated queries if you use it. Feedback is appreciated.
