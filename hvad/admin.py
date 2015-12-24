@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets, unquote, get_deleted_objects
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
 from django.core.urlresolvers import reverse
 from django.db import router, transaction
 from django.forms.models import model_to_dict
@@ -13,7 +13,6 @@ from django.forms.utils import ErrorList
 from django.http import Http404, HttpResponseRedirect, QueryDict
 from django.shortcuts import render
 from django.template import TemplateDoesNotExist
-from django.template.context import RequestContext
 from django.template.loader import select_template
 from django.utils.encoding import iri_to_uri, force_text
 from django.utils.functional import curry
@@ -227,12 +226,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         # will also be deleted.
         
         protected = False
-        if django.VERSION >= (1, 8):
-            deleted_objects, model_count, perms_needed, protected = get_deleted_objects(
-                [obj], translations_model._meta, request.user, self.admin_site, using)
-        else:
-            deleted_objects, perms_needed, protected = get_deleted_objects(
-                [obj], translations_model._meta, request.user, self.admin_site, using)
+        deleted_objects, model_count, perms_needed, protected = get_deleted_objects(
+            [obj], translations_model._meta, request.user, self.admin_site, using)
         
         lang = get_language_name(language_code) 
             
@@ -333,21 +328,13 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
     def get_queryset(self, request):
         language = self._language(request)
-        if django.VERSION >= (1, 9):
-            qs = self.model._default_manager.language(language).fallbacks(*FALLBACK_LANGUAGES)
-        else:
-            languages = [language,]
-            for lang in FALLBACK_LANGUAGES:
-                if not lang in languages:
-                    languages.append(lang)
-            qs = self.model._default_manager.untranslated().use_fallbacks(*languages)
+        qs = self.model._default_manager.language(language).fallbacks(*FALLBACK_LANGUAGES)
+
         # TODO: this should be handled by some parameter to the ChangeList.
         ordering = getattr(self, 'ordering', None) or ()
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
-    if django.VERSION < (1, 8):
-        queryset = get_queryset
 
     def get_change_form_base_template(self):
         opts = self.model._meta
@@ -443,106 +430,6 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
                     self.query_language_key, request.GET[self.query_language_key])
         return redirect
 
-    """
-# Should be added
-    @csrf_protect_m
-    @transaction.atomic
-    def delete_translation(self, request, object_id, language_code):
-        "The 'delete translation' admin view for this model."
-        opts = self.model._meta
-        app_label = opts.app_label
-        translations_model = opts.translations_model
-
-        try:
-            obj = translations_model.objects.select_related('maser').get(
-                                                master__pk=unquote(object_id),
-                                                language_code=language_code)
-        except translations_model.DoesNotExist:
-            raise Http404
-
-        if not self.has_delete_permission(request, obj):
-            raise PermissionDenied
-
-        if len(obj.master.get_available_languages()) <= 1:
-            return self.deletion_not_allowed(request, obj, language_code)
-
-        using = router.db_for_write(translations_model)
-
-        # Populate deleted_objects, a data structure of all related objects that
-        # will also be deleted.
-
-        protected = False
-        if NEW_GET_DELETE_OBJECTS:
-            (deleted_objects, perms_needed, protected) = get_deleted_objects(
-                [obj], translations_model._meta, request.user, self.admin_site, using)
-        else: # pragma: no cover
-            (deleted_objects, perms_needed) = get_deleted_objects(
-                [obj], translations_model._meta, request.user, self.admin_site)
-
-
-        lang = get_language_name(language_code)
-
-
-        if request.POST: # The user has already confirmed the deletion.
-            if perms_needed:
-                raise PermissionDenied
-            obj_display = '%s translation of %s' % (lang, force_text(obj.master))
-            self.log_deletion(request, obj, obj_display)
-            self.delete_model_translation(request, obj)
-
-            self.message_user(request,
-                _('The %(name)s "%(obj)s" was deleted successfully.') % {
-                    'name': force_text(opts.verbose_name),
-                    'obj': force_text(obj_display)
-                }
-            )
-
-            if not self.has_change_permission(request, None):
-                return HttpResponseRedirect(reverse('admin:index'))
-            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.model_name)))
-
-        object_name = '%s Translation' % force_text(opts.verbose_name)
-
-        if perms_needed or protected:
-            title = _("Cannot delete %(name)s") % {"name": object_name}
-        else:
-            title = _("Are you sure?")
-
-        context = {
-            "title": title,
-            "object_name": object_name,
-            "object": obj,
-            "deleted_objects": deleted_objects,
-            "perms_lacking": perms_needed,
-            "protected": protected,
-            "opts": opts,
-            "root_path": self.admin_site.root_path,
-            "app_label": app_label,
-        }
-
-        return render(request, self.delete_confirmation_template or [
-            "admin/%s/%s/delete_confirmation.html" % (app_label, opts.object_name.lower()),
-            "admin/%s/delete_confirmation.html" % app_label,
-            "admin/delete_confirmation.html"
-        ], context)
-
-    def deletion_not_allowed(self, request, obj, language_code):
-        opts = self.model._meta
-        return render(
-            request, self.deletion_not_allowed_template,
-            {
-                'object': obj.master,
-                'language_code': language_code,
-                'opts': opts,
-                'app_label': opts.app_label,
-                'language_name': get_language_name(language_code),
-                'object_name': force_text(opts.verbose_name),
-            },
-        )
-
-    def delete_model_translation(self, request, obj):
-        obj.delete()
-    """
     def get_queryset(self, request):
         qs = self.model._default_manager.all()#.language(language)
         # TODO: this should be handled by some parameter to the ChangeList.
@@ -550,8 +437,6 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
-    if django.VERSION < (1, 8):
-        queryset = get_queryset
 
 class TranslatableStackedInline(TranslatableInlineModelAdmin):
     template = 'admin/hvad/edit_inline/stacked.html'

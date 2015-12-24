@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-import django
 from django.db import connection
 from django.db.models import Count
 from django.db.models.query_utils import Q
 from django.utils import translation
 from hvad.utils import get_cached_translation
 from hvad.test_utils.data import NORMAL, STANDARD
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard, SimpleRelated
 from hvad.test_utils.fixtures import NormalFixture, StandardFixture
 

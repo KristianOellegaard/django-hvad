@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-import django
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.exceptions import WrongManager

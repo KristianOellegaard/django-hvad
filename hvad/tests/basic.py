@@ -6,13 +6,12 @@ from django.db import connection, models, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from django.utils import translation
-from hvad.compat import with_metaclass
-from hvad.manager import TranslationQueryset, TranslationManager
+from hvad.manager import TranslationQueryset
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.utils import get_cached_translation
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, Unique, Related, MultipleFields, Boolean, Standard
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 from copy import deepcopy
@@ -20,23 +19,19 @@ from copy import deepcopy
 
 class DefinitionTests(HvadTestCase):
     def test_invalid_manager(self):
-        attrs = {
-            'objects': Manager(),
-            '__module__': 'hvad.test_utils.project.app',
-        }
-        self.assertRaises(ImproperlyConfigured, type,
-                          'InvalidModel', (TranslatableModel,), attrs)
+        class InvalidModel(TranslatableModel):
+            translations = TranslatedFields(
+                translated=models.CharField(max_length=250)
+            )
+            object = Manager()
+        errors = InvalidModel.check()
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].id, 'hvad.models.E02')
     
     def test_no_translated_fields(self):
-        class InvalidModel2(object):
-            objects = TranslationManager()
-
-        attrs = dict(InvalidModel2.__dict__)
-        del attrs['__dict__']
-        del attrs['__weakref__']
-        bases = (TranslatableModel,InvalidModel2,)
-        self.assertRaises(ImproperlyConfigured, type,
-                          'InvalidModel2', bases, attrs)
+        with self.assertRaises(ImproperlyConfigured):
+            class InvalidModel2(TranslatableModel):
+                pass
 
     def test_field_name_clash_check(self):
         class ClashingFieldsModel(TranslatableModel):
@@ -56,7 +51,7 @@ class DefinitionTests(HvadTestCase):
                 )
 
     def test_order_with_respect_to_raises(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ImproperlyConfigured):
             class InvalidModel4(TranslatableModel):
                 translations = TranslatedFields(
                     translated_field = models.CharField(max_length=250)
@@ -86,14 +81,6 @@ class DefinitionTests(HvadTestCase):
                       UniqueTogetherModel._meta.translations_model._meta.unique_together)
         self.assertIn(('tfield_a', 'tfield_b'),
                       UniqueTogetherModel._meta.translations_model._meta.unique_together)
-
-        with self.assertRaises(ValueError):
-            class DeprecatedUniqueTogetherModel(TranslatableModel):
-                translations = TranslatedFields(
-                    tfield_a = models.CharField(max_length=250),
-                    tfield_b = models.CharField(max_length=250),
-                    meta = { 'unique_together': [('tfield_a', 'tfield_b')] }
-                )
 
     def test_unique_together_invalid(self):
         with self.assertRaises(ImproperlyConfigured):
@@ -159,14 +146,6 @@ class DefinitionTests(HvadTestCase):
         self.assertIn(('tfield_a', 'tfield_b'),
                       IndexTogetherModel._meta.translations_model._meta.index_together)
 
-        with self.assertRaises(ValueError):
-            class DeprecatedIndexTogetherModel(TranslatableModel):
-                translations = TranslatedFields(
-                    tfield_a = models.CharField(max_length=250),
-                    tfield_b = models.CharField(max_length=250),
-                    meta = { 'index_together': [('tfield_a', 'tfield_b')] }
-                )
-
         with self.assertRaises(ImproperlyConfigured):
             class InvalidIndexTogetherModel(TranslatableModel):
                 sfield = models.CharField(max_length=250)
@@ -219,10 +198,6 @@ class DefinitionTests(HvadTestCase):
         self.assertTrue(issubclass(CustomBaseModel._meta.translations_model, CustomTranslation))
         self.assertEqual(get_cached_translation(obj).test(), 'foo')
 
-    def test_internal_properties(self):
-        self.assertCountEqual(Normal()._translated_field_names,
-                              ['id', 'master', 'master_id', 'language_code', 'translated_field'])
-
     def test_manager_properties(self):
         manager = Normal.objects
         self.assertEqual(manager.translations_model, Normal._meta.translations_model)
@@ -232,10 +207,7 @@ class OptionsTest(HvadTestCase):
         opts = Normal._meta
         self.assertTrue(hasattr(opts, 'translations_model'))
         self.assertTrue(hasattr(opts, 'translations_accessor'))
-        if django.VERSION >= (1, 8):
-            relmodel = Normal._meta.get_field(opts.translations_accessor).field.model
-        else:
-            relmodel = Normal._meta.get_field_by_name(opts.translations_accessor)[0].model
+        relmodel = Normal._meta.get_field(opts.translations_accessor).field.model
         self.assertEqual(relmodel, opts.translations_model)
 
 

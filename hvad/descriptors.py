@@ -1,8 +1,7 @@
-import django
-from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
 from hvad.utils import get_translation, set_cached_translation, get_cached_translation
 from django.apps import registry
+
 
 class BaseDescriptor(object):
     """
@@ -39,10 +38,7 @@ class TranslatedAttribute(BaseDescriptor):
         if not instance:
             if not registry.apps.ready: #pragma: no cover
                 raise AttributeError('Attribute not available until registry is ready.')
-            if django.VERSION >= (1, 8):
-                return self.opts.translations_model._meta.get_field(self.name).default
-            else:
-                return self.opts.translations_model._meta.get_field_by_name(self.name)[0].default
+            return self.opts.translations_model._meta.get_field(self.name).default
         return getattr(self.translation(instance), self.name)
     
     def __set__(self, instance, value):
@@ -62,8 +58,7 @@ class LanguageCodeAttribute(TranslatedAttribute):
         super(LanguageCodeAttribute, self).__init__(opts, 'language_code')
     
     def __set__(self, instance, value):
-        raise AttributeError("The 'language_code' attribute cannot be "
-                             "changed directly! Use the translate() method instead.")
+        raise AttributeError("The 'language_code' attribute cannot be changed directly.")
     
     def __delete__(self, instance):
-        raise AttributeError("The 'language_code' attribute cannot be deleted!")
+        raise AttributeError("The 'language_code' attribute cannot be deleted.")

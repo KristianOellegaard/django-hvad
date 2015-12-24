@@ -1,11 +1,10 @@
-from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateResponseMixin
+from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView, BaseDeleteView
 from django.utils.translation import get_language
 from hvad.forms import translatable_modelform_factory
-import warnings
 
 
-class TranslatableModelFormMixin(ModelFormMixin, SingleObjectMixin):
+class TranslatableModelFormMixin(ModelFormMixin):
     ''' ModelFormMixin that works with an TranslatableModelForm in **enforce** mode '''
     query_language_key = 'language'
 
@@ -56,7 +55,7 @@ class TranslatableUpdateView(SingleObjectTemplateResponseMixin, TranslatableBase
 
 #-------------------------------------------------------------------------
 
-class TranslatableBaseDeleteView(BaseDeleteView, SingleObjectMixin):
+class TranslatableBaseDeleteView(BaseDeleteView):
     pass
 
 class TranslatableDeleteView(SingleObjectTemplateResponseMixin, TranslatableBaseDeleteView):

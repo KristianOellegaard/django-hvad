@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import django
-from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
@@ -12,7 +11,7 @@ from hvad.compat import urlparse
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.fixtures import NormalFixture, UsersFixture
 from hvad.test_utils.data import NORMAL
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, Unique, SimpleRelated, AutoPopulated
 
 
@@ -179,13 +178,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
         # Check what happens if there is no translations at all
         obj = Normal.objects.untranslated().create(shared_field="shared")
         with translation.override('en'):
-            if django.VERSION >= (1, 9):
-                self.assertIs(myadmin.get_object(get_request, obj.pk), None)
-            else:
-                self.assertEqual(myadmin.get_object(get_request, obj.pk).pk, obj.pk)
-                self.assertEqual(myadmin.get_object(get_request, obj.pk).shared_field, obj.shared_field)
-                self.assertEqual(myadmin.get_object(get_request, obj.pk).language_code, 'en')
-                self.assertEqual(myadmin.get_object(get_request, obj.pk).translated_field, '')
+            self.assertIs(myadmin.get_object(get_request, obj.pk), None)
 
     def test_get_object_nonexisting(self):
         # In case the object doesnt exist, it should return None

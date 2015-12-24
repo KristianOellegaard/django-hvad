@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.manager import Manager
-from django.db.models.signals import post_save, class_prepared
+from django.db.models.signals import class_prepared
 from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
@@ -15,7 +15,6 @@ from hvad.utils import (get_cached_translation, set_cached_translation,
 from hvad.compat import MethodType
 from itertools import chain
 import sys
-import warnings
 
 #===============================================================================
 
@@ -37,13 +36,8 @@ class TranslatedFields(object):
         self.fields = fields
 
     @staticmethod
-    def _split_together(constraints, fields, meta, name):
+    def _split_together(constraints, fields, name):
         sconst, tconst = [], []
-        if name in meta:
-            # remove in 1.9
-            raise ValueError('Passing \'%s\' to TranslatedFields is no longer valid. '
-                             'Please use Meta.%s instead.' % (name, name), DeprecationWarning)
-
         for constraint in constraints:
             if all(item in fields for item in constraint):
                 tconst.append(constraint)
@@ -57,7 +51,7 @@ class TranslatedFields(object):
 
     def contribute_to_class(self, model, name):
         if model._meta.order_with_respect_to in self.fields:
-            raise ValueError(
+            raise ImproperlyConfigured(
                 'Using a translated fields in %s.Meta.order_with_respect_to is ambiguous '
                 'and hvad does not support it.' %
                 model._meta.model_name
@@ -158,7 +152,7 @@ class TranslatedFields(object):
 
         # Split fields in Meta.unique_together
         sconst, tconst = self._split_together(
-            model._meta.unique_together, tfields, meta, 'unique_together'
+            model._meta.unique_together, tfields, 'unique_together'
         )
         model._meta.unique_together = tuple(sconst)
         model._meta.original_attrs['unique_together'] = tuple(sconst)
@@ -168,7 +162,7 @@ class TranslatedFields(object):
 
         # Split fields in Meta.index_together
         sconst, tconst = self._split_together(
-            model._meta.index_together, tfields, meta, 'index_together'
+            model._meta.index_together, tfields, 'index_together'
         )
         model._meta.index_together = tuple(sconst)
         model._meta.original_attrs['index_together'] = tuple(sconst)
@@ -199,10 +193,6 @@ class TranslatedFields(object):
 #===============================================================================
 
 class BaseTranslationModel(models.Model):
-    """
-    Needed for detection of translation models. Due to the way dynamic classes
-    are created, we cannot put the 'language_code' field on here.
-    """
     def _get_unique_checks(self, exclude=None):
         # Due to the way translations are handled, checking for unicity of
         # the ('language_code', 'master') constraint is useless. We filter it out
@@ -224,7 +214,6 @@ class TranslatableModel(models.Model):
     """
     Base model for all models supporting translated fields (via TranslatedFields).
     """
-    # change the default manager to the translation manager
     objects = TranslationManager()
     _plain_manager = models.Manager()
 
@@ -237,12 +226,17 @@ class TranslatableModel(models.Model):
         # Split arguments into shared/translatd
         veto_names = ('pk', 'master', 'master_id', self._meta.translations_model._meta.pk.name)
         skwargs, tkwargs = {}, {}
+        translations_opts = self._meta.translations_model._meta
         for key, value in kwargs.items():
-            if key in self._translated_field_names and not key in veto_names:
-                tkwargs[key] = value
-            else:
+            if key in veto_names:
                 skwargs[key] = value
-
+            else:
+                try:
+                    translations_opts.get_field(key)
+                except FieldDoesNotExist:
+                    skwargs[key] = value
+                else:
+                    tkwargs[key] = value
         super(TranslatableModel, self).__init__(*args, **skwargs)
 
         # Create a translation if there are translated fields
@@ -251,7 +245,8 @@ class TranslatableModel(models.Model):
             set_cached_translation(self, self._meta.translations_model(**tkwargs))
 
     def save(self, *args, **skwargs):
-        translation_model = self._meta.translations_model
+        veto_names = ('pk', 'master', 'master_id', self._meta.translations_model._meta.pk.name)
+        translations_opts = self._meta.translations_model._meta
         translation = get_cached_translation(self)
         tkwargs = skwargs.copy()
 
@@ -260,10 +255,15 @@ class TranslatableModel(models.Model):
         if update_fields is not None:
             supdate, tupdate = [], []
             for name in update_fields:
-                if name in self._translated_field_names and not name in ('id', 'master_id', 'master'):
-                    tupdate.append(name)
-                else:
+                if name in veto_names:
                     supdate.append(name)
+                else:
+                    try:
+                        translations_opts.get_field(name)
+                    except FieldDoesNotExist:
+                        supdate.append(name)
+                    else:
+                        tupdate.append(name)
             skwargs['update_fields'], tkwargs['update_fields'] = supdate, tupdate
 
         # save share and translated model in a single transaction
@@ -350,13 +350,14 @@ class TranslatableModel(models.Model):
             translation.validate_unique(exclude=exclude)
 
     #===========================================================================
-    # Checks - require Django 1.7 or newer
+    # Checks
     #===========================================================================
 
     @classmethod
     def check(cls, **kwargs):
         errors = super(TranslatableModel, cls).check(**kwargs)
         errors.extend(cls._check_shared_translated_clash())
+        errors.extend(cls._check_default_manager_translation_aware())
         return errors
 
     @classmethod
@@ -373,6 +374,18 @@ class TranslatableModel(models.Model):
         return [checks.Error("translated field '%s' clashes with untranslated field." % field,
                              hint=None, obj=cls, id='hvad.models.E01')
                 for field in tfields.intersection(fields)]
+
+    @classmethod
+    def _check_default_manager_translation_aware(cls):
+        errors = []
+        if not isinstance(cls._default_manager, TranslationManager):
+            errors.append(checks.Error(
+                "The default manager on a TranslatableModel must be a "
+                "TranslationManager instance or an instance of a subclass of "
+                "TranslationManager, the default manager of %r is not." % cls,
+                hint=None, obj=cls, id='hvad.models.E02'
+            ))
+        return errors
 
     @classmethod
     def _check_local_fields(cls, fields, option):
@@ -412,45 +425,12 @@ class TranslatableModel(models.Model):
                              hint=None, obj=cls, id='models.E015')
                 for field in fields - valid_fields - valid_tfields]
 
-    #===========================================================================
-    # Internals
-    #===========================================================================
-    
-    @property
-    def _translated_field_names(self):
-        if getattr(self, '_translated_field_names_cache', None) is None:
-            opts = self._meta.translations_model._meta
-            result = set()
-
-            if django.VERSION >= (1, 8):
-                for field in opts.get_fields():
-                    result.add(field.name)
-                    if hasattr(field, 'attname'):
-                        result.add(field.attname)
-            else:
-                result = set(opts.get_all_field_names())
-                for name in tuple(result):
-                    try:
-                        attname = opts.get_field(name).get_attname()
-                    except (FieldDoesNotExist, AttributeError):
-                        continue
-                    if attname:
-                        result.add(attname)
-
-            self._translated_field_names_cache = tuple(result)
-        return self._translated_field_names_cache
-
 #=============================================================================
 
 def prepare_translatable_model(sender, **kwargs):
     model = sender
     if not issubclass(model, TranslatableModel) or model._meta.abstract:
         return
-    if not isinstance(model._default_manager, TranslationManager):
-        raise ImproperlyConfigured(
-            "The default manager on a TranslatableModel must be a "
-            "TranslationManager instance or an instance of a subclass of "
-            "TranslationManager, the default manager of %r is not." % model)
 
     if model._meta.proxy:
         model._meta.translations_accessor = model._meta.concrete_model._meta.translations_accessor
@@ -458,10 +438,8 @@ def prepare_translatable_model(sender, **kwargs):
         model._meta.translations_cache = model._meta.concrete_model._meta.translations_cache
 
     if not hasattr(model._meta, 'translations_model'):
-        raise ImproperlyConfigured(
-            "No TranslatedFields found on %r, subclasses of "
-            "TranslatableModel must define TranslatedFields." % model
-        )
+        raise ImproperlyConfigured("No TranslatedFields found on %r, subclasses of "
+                                   "TranslatableModel must define TranslatedFields." % model)
 
     #### Now we have to work ####
 

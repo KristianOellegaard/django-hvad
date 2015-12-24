@@ -3,6 +3,34 @@ Release Notes
 #############
 
 *****************************
+1.8.0 - upcoming release
+*****************************
+
+Python and Django versions supported:
+
+- Django 1.7 is no longer supported.
+- So, as a reminder, supported Django versions for this release are:
+  1.8 LTS, 1.9, 1.10.x (for x ≥ 1).
+
+Compatibility warnings:
+
+- Deprecated class :class:`~ hvad.manager.FallbackQueryset` has been removed.
+  Using it along with
+  :meth:`FallbackQueryset.use_fallbacks() <hvad.manager.FallbackQueryset.use_fallbacks>`
+  did not work on Django 1.9 and newer and was deprecated on older versions. Using
+  it without that method made it behave like a regular queryset. So as a summary,
+
+    * Code using `.untranslated().use_fallbacks()` must be replaced
+      with :ref:`.language().fallbacks() <fallbacks-public>`.
+    * All other uses of `FallbackQueryset` can be safely replaced with a regular
+      :class:`~django.db.models.query.QuerySet`.
+
+- Translated admin no longer shows objects lacking a translation. This was
+  already the case on Django 1.9 and newer, and this behavior now extends
+  to all Django versions.
+  Such objects should not happen anyway, and throw a warning when encountered.
+
+*****************************
 1.7.0 - current release
 *****************************
 

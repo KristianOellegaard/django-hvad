@@ -73,20 +73,6 @@ def configure(**extra):
             'django.contrib.auth.hashers.MD5PasswordHasher',
         )
     )
-    if django.VERSION < (1, 8):
-        defaults.update(dict(
-            TEMPLATE_DEBUG = True,
-            TEMPLATE_CONTEXT_PROCESSORS = ( # Remove when dropping support for Django 1.7
-                'django.contrib.auth.context_processors.auth',
-            ),
-            TEMPLATE_LOADERS = (            # Remove when dropping support for Django 1.7
-                'django.template.loaders.filesystem.Loader',
-                'django.template.loaders.app_directories.Loader',
-            ),
-            TEMPLATE_DIRS = [               # Remove when dropping support for Django 1.7
-                os.path.abspath(os.path.join(os.path.dirname(__file__), 'project', 'templates'))
-            ],
-        ))
 
     defaults.update(extra)
     settings.configure(**defaults)

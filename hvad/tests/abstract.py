@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import ConcreteAB, ConcreteABProxy
 from hvad.test_utils.fixtures import ConcreteABFixture

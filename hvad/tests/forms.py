@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import django
 from django.core.exceptions import FieldError
 from django.utils import translation
 from hvad.forms import (TranslatableModelForm,

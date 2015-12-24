@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import django
 from django.core.exceptions import FieldError
 from django.db import connection, models, IntegrityError, transaction
@@ -9,7 +8,7 @@ from hvad.exceptions import WrongManager
 from hvad.models import (TranslatedFields, TranslatableModel)
 from hvad.test_utils.data import NORMAL, STANDARD
 from hvad.test_utils.fixtures import NormalFixture, StandardFixture
-from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
+from hvad.test_utils.testcase import HvadTestCase
 from hvad.utils import get_translation_aware_manager
 from hvad.test_utils.project.app.models import (Normal, Related, SimpleRelated,
                                                 RelatedRelated, Standard, StandardRelated,

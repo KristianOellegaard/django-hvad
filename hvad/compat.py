@@ -1,7 +1,7 @@
 import sys
 PYTHON_MAJOR, PYTHON_MINOR = sys.version_info[0:2]
 
-__all__ = ('with_metaclass', 'MethodType', 'StringIO', 'string_types',
+__all__ = ('with_metaclass', 'MethodType', 'string_types',
            'urlencode', 'urlparse', 'unquote')
 
 #=============================================================================
@@ -27,14 +27,7 @@ if PYTHON_MAJOR == 2:
     from urlparse import urlparse
     from urllib import unquote
 
-    if PYTHON_MINOR >= 6:
-        from io import StringIO
-    else: #pragma: no cover
-        from StringIO import StringIO
-
 else:
     from types import MethodType
     string_types = (str,)
     from urllib.parse import urlencode, urlparse, unquote
-    from io import StringIO
-

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import with_statement
 from django.utils.encoding import force_str
 from hvad.test_utils.cli import configure
 from hvad.test_utils.context_managers import TemporaryDirectory

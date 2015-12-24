@@ -3,7 +3,6 @@ from django.db.models.fields import FieldDoesNotExist
 from django.test.signals import setting_changed
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
-import warnings
 
 #=============================================================================
 # Translation manipulators

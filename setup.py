@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages
-from hvad import __version__ as version
+import hvad
 
 with open('README.rst', 'rb') as f:
     long_description = f.read().decode('utf-8')
 
 setup(
     name = 'django-hvad',
-    version = version,
+    version = hvad.__version__,
     description = 'A content translation framework for django integrated automatically in the normal ORM. Removes the pain of having to think about translations in a django project.',
     long_description = long_description,
     author = 'Kristian Ollegaard',
@@ -22,7 +22,7 @@ setup(
     zip_safe=False,
     include_package_data = True,
     install_requires=[
-        'Django>=1.7',
+        'Django>=1.8',
     ],
     classifiers = [
         "Development Status :: 5 - Production/Stable",
@@ -31,7 +31,6 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Topic :: Database",

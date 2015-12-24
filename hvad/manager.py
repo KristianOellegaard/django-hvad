@@ -1,27 +1,22 @@
-from collections import defaultdict
 import django
 from django.conf import settings
 from django.core.exceptions import FieldError
 from django.db import connections, models, transaction, IntegrityError
 if django.VERSION >= (1, 9):
     from django.db.models.query import QuerySet
-elif django.VERSION >= (1, 8):
-    from django.db.models.query import QuerySet, ValuesQuerySet
 else:
-    from django.db.models.query import QuerySet, ValuesQuerySet, DateQuerySet, DateTimeQuerySet
-if django.VERSION >= (1, 8):
-    from django.db.models.sql.datastructures import Join, LOUTER
-from django.db.models.sql.constants import GET_ITERATOR_CHUNK_SIZE as CHUNK_SIZE
+    from django.db.models.query import QuerySet, ValuesQuerySet
+from django.db.models.sql.datastructures import Join, LOUTER
 from django.db.models import F, Q
+from django.utils.functional import cached_property
 from django.utils.translation import get_language
 from hvad.compat import string_types
-from hvad.query import (query_terms, q_children, expression_nodes, where_node_children,
+from hvad.query import (query_terms, q_children, expression_nodes,
                         add_alias_constraints)
-from hvad.utils import combine, minimumDjangoVersion, settings_updater
+from hvad.utils import combine, settings_updater
 from copy import deepcopy
 import logging
 import sys
-import warnings
 
 #===============================================================================
 
@@ -31,9 +26,8 @@ _logger = logging.getLogger(__name__)
 # Global settings, wrapped so they react to SettingsOverride
 @settings_updater
 def update_settings(*args, **kwargs):
-    global FALLBACK_LANGUAGES, LEGACY_FALLBACKS
+    global FALLBACK_LANGUAGES
     FALLBACK_LANGUAGES = tuple(code for code, name in settings.LANGUAGES)
-    LEGACY_FALLBACKS = bool(getattr(settings, 'HVAD_LEGACY_FALLBACKS', False))
 
 #===============================================================================
 
@@ -44,16 +38,13 @@ class FieldTranslator(object):
     """
     def __init__(self, manager):
         self._manager = manager
-        if django.VERSION >= (1, 8):
-            fields = set()
-            for field in manager.shared_model._meta.get_fields():
-                fields.add(field.name)
-                if hasattr(field, 'attname'):
-                    fields.add(field.attname)
-            fields.add('pk')
-            self._shared_fields = tuple(fields)
-        else:
-            self._shared_fields = tuple(manager.shared_model._meta.get_all_field_names()) + ('pk',)
+        fields = set()
+        for field in manager.shared_model._meta.get_fields():
+            fields.add(field.name)
+            if hasattr(field, 'attname'):
+                fields.add(field.attname)
+        fields.add('pk')
+        self._shared_fields = tuple(fields)
         self._cache = dict()
         super(FieldTranslator, self).__init__()
 
@@ -167,7 +158,6 @@ class BetterTranslationsField(object):
                      alias, related_alias)
         )
 
-    @minimumDjangoVersion(1, 8)
     def get_joining_columns(self):
         return ((self._master, self._master), )
 
@@ -188,9 +178,6 @@ class TranslationQueryset(QuerySet):
     override_classes = {}
     if django.VERSION < (1, 9):
         override_classes[ValuesQuerySet] = ValuesMixin
-    if django.VERSION < (1, 8):
-        override_classes[DateQuerySet] = SkipMasterSelectMixin
-        override_classes[DateTimeQuerySet] = SkipMasterSelectMixin
     _skip_master_select = False
 
     def __init__(self, *args, **kwargs):
@@ -252,15 +239,12 @@ class TranslationQueryset(QuerySet):
     @property
     def shared_local_field_names(self):
         if self._local_field_names is None:
-            if django.VERSION >= (1, 8):
-                fields = set()
-                for field in self.shared_model._meta.get_fields():
-                    fields.add(field.name)
-                    if hasattr(field, 'attname'):
-                        fields.add(field.attname)
-                self._local_field_names = tuple(fields)
-            else:
-                self._local_field_names = self.shared_model._meta.get_all_field_names()
+            fields = set()
+            for field in self.shared_model._meta.get_fields():
+                fields.add(field.name)
+                if hasattr(field, 'attname'):
+                    fields.add(field.attname)
+            self._local_field_names = tuple(fields)
         return self._local_field_names
 
     def _translate_args_kwargs(self, *args, **kwargs):
@@ -287,9 +271,7 @@ class TranslationQueryset(QuerySet):
         return expr
 
     def _translate_fieldnames(self, fieldnames):
-        annotations = (self.query.annotations if django.VERSION >= (1, 8)
-                                              else self.query.aggregates)
-        return [name if name in annotations
+        return [name if name in self.query.annotations
                      else self.field_translator(name)
                 for name in fieldnames]
 
@@ -414,24 +396,15 @@ class TranslationQueryset(QuerySet):
                                           'fallbacks() is not supported')
             languages = tuple(get_language() if lang is None else lang
                               for lang in (self._language_code,) + self._language_fallbacks)
-
-            if django.VERSION >= (1, 8):
-                masteratt = self.model._meta.get_field('master').attname
-                alias = self.query.join(Join(
-                    self.model._meta.db_table,
-                    self.query.get_initial_alias(),
-                    None,
-                    LOUTER,
-                    BetterTranslationsField(languages, master=masteratt),
-                    True
-                ))
-            else:
-                masteratt = self.model._meta.get_field('master').attname
-                nullable = {'nullable': True}
-                alias = self.query.join((self.query.get_initial_alias(), self.model._meta.db_table,
-                                        ((masteratt, masteratt),)),
-                                        join_field=BetterTranslationsField(languages, master=masteratt),
-                                        **nullable)
+            masteratt = self.model._meta.get_field('master').attname
+            alias = self.query.join(Join(
+                self.model._meta.db_table,
+                self.query.get_initial_alias(),
+                None,
+                LOUTER,
+                BetterTranslationsField(languages, master=masteratt),
+                True
+            ))
 
             add_alias_constraints(self, (self.model, alias), id__isnull=True)
             self.query.add_filter(('%s__isnull' % masteratt, False))
@@ -730,16 +703,6 @@ class TranslationQueryset(QuerySet):
         fields = self._translate_fieldnames(fields)
         return super(TranslationQueryset, self).values_list(*fields, **kwargs)
 
-    def dates(self, field_name, kind=None, order='ASC'):
-        if django.VERSION < (1, 8):
-            field_name = self.field_translator(field_name)
-        return super(TranslationQueryset, self).dates(field_name, kind=kind, order=order)
-
-    def datetimes(self, field, *args, **kwargs):
-        if django.VERSION < (1, 8):
-            field = self.field_translator(field)
-        return super(TranslationQueryset, self).datetimes(field, *args, **kwargs)
-
     def select_related(self, *fields):
         if not fields:
             raise NotImplementedError('To use select_related on a translated model, '
@@ -782,9 +745,6 @@ class TranslationQueryset(QuerySet):
         return qs
 
     def order_by(self, *field_names):
-        """
-        Returns a new QuerySet instance with the ordering changed.
-        """
         fieldnames = self._translate_fieldnames(field_names)
         return super(TranslationQueryset, self).order_by(*fieldnames)
 
@@ -804,214 +764,8 @@ class TranslationQueryset(QuerySet):
         return super(TranslationQueryset, self).only(*fieldnames)
 
 #===============================================================================
-# Fallbacks
-#===============================================================================
-
-class _SharedFallbackQueryset(QuerySet):
-    translation_fallbacks = None
-
-    def use_fallbacks(self, *fallbacks):
-        if django.VERSION >= (1, 9):
-            raise AssertionError(
-                'TranslationManager.untranslated().use_fallbacks() is not supported on Django 1.9, '
-                'and is deprecated on previous versions as well. Please use the fallbacks() method '
-                'on queryset instead, eg: MyModel.objects.language().fallbacks()')
-        warnings.warn('TranslationManager.untranslated().use_fallbacks() is deprecated. '
-                      'Please use the fallbacks() method on queryset instead, eg: '
-                      'MyModel.objects.language().fallbacks()', DeprecationWarning, stacklevel=2)
-        self.translation_fallbacks = fallbacks or (None,)+FALLBACK_LANGUAGES
-        return self
-
-    def _clone(self, klass=None, setup=False, **kwargs):
-        kwargs.update({
-            'translation_fallbacks': self.translation_fallbacks,
-        })
-        if django.VERSION < (1, 9):
-            kwargs.update({'klass': klass, 'setup': setup})
-        return super(_SharedFallbackQueryset, self)._clone(**kwargs)
-
-    def aggregate(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    def annotate(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    def defer(self, *args, **kwargs):
-        raise NotImplementedError()
-
-    def only(self, *args, **kwargs):
-        raise NotImplementedError()
-
-
-class LegacyFallbackQueryset(_SharedFallbackQueryset): #pragma: no cover
-    '''
-    Queryset that tries to load a translated version using fallbacks on a per
-    instance basis.
-    BEWARE: creates a lot of queries!
-    '''
-    def _get_real_instances(self, base_results):
-        """
-        The logic for this method was taken from django-polymorphic by Bert
-        Constantin (https://github.com/bconstantin/django_polymorphic) and was
-        slightly altered to fit the needs of django-hvad.
-        """
-        # get the primary keys of the shared model results
-        base_ids = [obj.pk for obj in base_results]
-        fallbacks = [get_language() if lang is None else lang
-                     for lang in self.translation_fallbacks]
-        # get all translations for the fallbacks chosen for those shared models,
-        # note that this query is *BIG* and might return a lot of data, but it's
-        # arguably faster than running one query for each result or even worse
-        # one query per result per language until we find something
-        translations_manager = self.model._meta.translations_model.objects
-        baseqs = translations_manager.select_related('master')
-        translations = baseqs.filter(language_code__in=fallbacks,
-                                     master__pk__in=base_ids)
-        fallback_objects = defaultdict(dict)
-        # turn the results into a dict of dicts with shared model primary key as
-        # keys for the first dict and language codes for the second dict
-        for obj in translations:
-            fallback_objects[obj.master.pk][obj.language_code] = obj
-        # iterate over the share dmodel results
-        for instance in base_results:
-            translation = None
-            # find the translation
-            for fallback in fallbacks:
-                translation = fallback_objects[instance.pk].get(fallback, None)
-                if translation is not None:
-                    break
-            # if we found a translation, yield the combined result
-            if translation:
-                yield combine(translation, self.model)
-            else:
-                # otherwise yield the shared instance only
-                _logger.error("no translation for %s.%s (pk=%s)" %
-                              (instance._meta.app_label,
-                               instance.__class__.__name__,
-                               str(instance.pk)))
-                yield instance
-
-    def iterator(self):
-        """
-        The logic for this method was taken from django-polymorphic by Bert
-        Constantin (https://github.com/bconstantin/django_polymorphic) and was
-        slightly altered to fit the needs of django-hvad.
-        """
-        base_iter = super(LegacyFallbackQueryset, self).iterator()
-
-        # only do special stuff when we actually want fallbacks
-        if self.translation_fallbacks:
-            while True:
-                base_result_objects = []
-                reached_end = False
-
-                # get the next "chunk" of results
-                for i in range(CHUNK_SIZE):
-                    try:
-                        instance = next(base_iter)
-                        base_result_objects.append(instance)
-                    except StopIteration:
-                        reached_end = True
-                        break
-
-                # "combine" the results with their fallbacks
-                real_results = self._get_real_instances(base_result_objects)
-
-                # yield em!
-                for instance in real_results:
-                    yield instance
-
-                # get out of the while loop if we're at the end, since this is
-                # an iterator, we need to raise StopIteration, not "return".
-                if reached_end:
-                    raise StopIteration
-        else:
-            # just iterate over it
-            for instance in base_iter:
-                yield instance
-
-class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
-    def iterator(self):
-        # only do special stuff when we actually want fallbacks
-        if self.translation_fallbacks:
-            fallbacks = [get_language() if lang is None else lang
-                         for lang in self.translation_fallbacks]
-            tmodel = self.model._meta.translations_model
-            taccessor = self.model._meta.translations_accessor
-            taccessorcache = (
-                getattr(self.model, taccessor).rel.get_cache_name() if django.VERSION >= (1, 9) else
-                getattr(self.model, taccessor).related.get_cache_name()
-            )
-            tcache = self.model._meta.translations_cache
-            masteratt = tmodel._meta.get_field('master').attname
-            field = BetterTranslationsField(fallbacks, master=masteratt)
-
-            qs = self._clone()
-
-            qs.query.add_select_related((taccessor,))
-            # This join will be reused by the select_related. We must provide it
-            # anyway because the order matters and add_select_related does not
-            # populate joins right away.
-            if django.VERSION >= (1, 8):
-                alias1 = qs.query.join(Join(
-                    tmodel._meta.db_table,
-                    qs.query.get_initial_alias(),
-                    None,
-                    LOUTER,
-                    getattr(qs.model, taccessor).field.rel if django.VERSION >= (1, 9) else
-                    getattr(qs.model, taccessor).related.field.rel,
-                    True
-                ))
-                alias2 = qs.query.join(Join(
-                    tmodel._meta.db_table,
-                    alias1,
-                    None,
-                    LOUTER,
-                    field,
-                    True
-                ))
-            else:
-                nullable = {'nullable': True}
-                alias1 = qs.query.join((qs.query.get_initial_alias(), tmodel._meta.db_table,
-                                        ((qs.model._meta.pk.attname, masteratt),)),
-                                    join_field=getattr(qs.model, taccessor).related.field.rel,
-                                    **nullable)
-                alias2 = qs.query.join((tmodel._meta.db_table, tmodel._meta.db_table,
-                                        ((masteratt, masteratt),)),
-                                    join_field=field, **nullable)
-
-            add_alias_constraints(qs, (tmodel, alias2), id__isnull=True)
-
-            # We must force the _unique field so get_cached_row populates the cache
-            # Unfortunately, this means we must load everything in one go
-            related_field = (getattr(qs.model, taccessor).field if django.VERSION >= (1, 9) else
-                             getattr(qs.model, taccessor).related.field)
-            with ForcedUniqueFields([related_field]):
-                objects = []
-                for instance in super(SelfJoinFallbackQueryset, qs).iterator():
-                    try:
-                        translation = getattr(instance, taccessorcache)
-                    except AttributeError: #pragma: no cover
-                        _logger.error("no translation for %s.%s (pk=%s)",
-                                    instance._meta.app_label,
-                                    instance.__class__.__name__,
-                                    str(instance.pk))
-                    else:
-                        setattr(instance, tcache, translation)
-                        delattr(instance, taccessorcache)
-                    objects.append(instance)
-            return iter(objects)
-        else:
-            return super(SelfJoinFallbackQueryset, self).iterator()
-
-
-FallbackQueryset = LegacyFallbackQueryset if LEGACY_FALLBACKS else SelfJoinFallbackQueryset
-
-
-#===============================================================================
 # TranslationManager
 #===============================================================================
-
 
 class TranslationManager(models.Manager):
     """
@@ -1024,7 +778,7 @@ class TranslationManager(models.Manager):
     silence_use_for_related_fields_deprecation = True   # Django 1.10
 
     queryset_class = TranslationQueryset
-    fallback_class = FallbackQueryset
+    fallback_class = QuerySet
     default_class = QuerySet
 
     def __init__(self, *args, **kwargs):
@@ -1057,7 +811,7 @@ class TranslationManager(models.Manager):
     # Internals
     #===========================================================================
 
-    @property
+    @cached_property
     def translations_model(self):
         return self.model._meta.translations_model
 
@@ -1065,7 +819,6 @@ class TranslationManager(models.Manager):
 #===============================================================================
 # TranslationAware
 #===============================================================================
-
 
 class TranslationAwareQueryset(QuerySet):
     def __init__(self, *args, **kwargs):

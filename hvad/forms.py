@@ -1,9 +1,8 @@
-import django
 from django.conf import settings
 from django.core.exceptions import FieldError, ValidationError
 from django.forms.fields import CharField
 from django.forms.formsets import formset_factory
-from django.forms.models import (ModelForm, BaseModelForm, ModelFormMetaclass,
+from django.forms.models import (BaseModelForm, ModelFormMetaclass,
     fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet,
     modelform_factory, inlineformset_factory, ALL_FIELDS)
 from django.forms.utils import ErrorList
@@ -12,11 +11,7 @@ from django.utils.translation import get_language, ugettext as _
 from hvad.compat import with_metaclass
 from hvad.models import TranslatableModel, BaseTranslationModel
 from hvad.utils import (set_cached_translation, get_cached_translation, load_translation)
-try:
-    from collections import OrderedDict
-except ImportError: #pragma: no cover (python < 2.7)
-    from django.utils.datastructures import SortedDict as OrderedDict
-import warnings
+from collections import OrderedDict
 
 veto_fields = {'id', 'master', 'master_id', 'language_code'}
 
@@ -201,7 +196,7 @@ class BaseTranslatableModelForm(BaseModelForm):
 
 
 class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
-                                            BaseTranslatableModelForm)):
+                                           BaseTranslatableModelForm)):
     pass
 
 #=============================================================================

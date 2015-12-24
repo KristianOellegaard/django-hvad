@@ -1,4 +1,3 @@
-import django
 from django.conf import settings
 from django.test.runner import DiscoverRunner as DjangoRunner
 import operator

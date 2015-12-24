@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import django
 from django import forms
 from django.http import Http404
 from django.utils import translation
@@ -16,21 +15,16 @@ from hvad.views import (TranslatableCreateView, TranslatableUpdateView,
 
 class TestCreateView(TranslatableCreateView):
     model = Normal
-    success_url = '{id}' if django.VERSION >= (1, 8) else '%(id)s'
+    success_url = '{id}'
 
 class TestUpdateView(TranslatableUpdateView):
     model = Normal
     slug_field = 'shared_field'
-    success_url = '{id}' if django.VERSION >= (1, 8) else '%(id)s'
+    success_url = '{id}'
 
 class TestDeleteView(TranslatableDeleteView):
     model = Normal
     slug_field = 'shared_field'
-
-class DeprecatedFilterUpdateView(TranslatableUpdateView):
-    model = Normal
-    def filter_kwargs(self):
-        return {'shared_field': self.kwargs['custom']}
 
 #=============================================================================
 
