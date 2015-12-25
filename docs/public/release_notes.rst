@@ -12,7 +12,26 @@ Python and Django versions supported:
 - So, as a reminder, supported Django versions for this release are:
   1.8 LTS, 1.9, 1.10.x (for x ≥ 1).
 
+New features:
+
+- Automatic loading of translations on attribute access can now be disabled,
+  by setting ``HVAD["AUTOLOAD_TRANSLATIONS"]`` to ``False``. This will prevent
+  hvad from initiating database queries. Accessing translatable attributes with
+  no translation loaded will then raise an :exc:`~exceptions.AttributeError`.
+- It is possible to automatically install :class:`~hvad.manager.TranslationQueryset`
+  as the default queryset for all translatable models, by setting
+  ``HVAD["USE_DEFAULT_QUERYSET"]`` to ``True``. Specifically, it changes
+  :attr:`~hvad.manager.TranslationManager.default_class` to be a
+  :class:`~hvad.manager.TranslationQueryset` instead of a
+  :class:`~django.db.models.query.QuerySet`.
+  See the section about
+  :ref:`overriding the default queryset <override-default-queryset>`
+  for advantages and caveats of doing so.
+
 Compatibility warnings:
+
+- All settings have been moved to a unique ``HVAD`` dictionary. Please update
+  your django settings accordingly.
 
 - Deprecated class :class:`~ hvad.manager.FallbackQueryset` has been removed.
   Using it along with

@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core.exceptions import FieldError, ValidationError
 from django.forms.fields import CharField
 from django.forms.formsets import formset_factory
@@ -10,6 +9,7 @@ from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
 from hvad.compat import with_metaclass
 from hvad.models import TranslatableModel, BaseTranslationModel
+from hvad.settings import hvad_settings
 from hvad.utils import (set_cached_translation, get_cached_translation, load_translation)
 from collections import OrderedDict
 
@@ -326,7 +326,7 @@ class BaseTranslationFormSet(BaseInlineFormSet):
         if not 'language_code' in form.fields:
             form.fields['language_code'] = CharField(
                 required=True, initial=form.instance.language_code,
-                widget=Select(choices=(('', '--'),)+settings.LANGUAGES)
+                widget=Select(choices=(('', '--'),)+hvad_settings.LANGUAGES)
             )
             # Add language_code to self._meta.fields so it is included in validation stage
             try:

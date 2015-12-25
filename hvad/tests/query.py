@@ -412,6 +412,7 @@ class InBulkTests(HvadTestCase, NormalFixture):
         with self.assertNumQueries(1):
             result = Normal.objects.language('en').in_bulk([pk1, pk2])
             self.assertCountEqual((pk1, pk2), result)
+        with self.assertNumQueries(0):
             self.assertEqual(result[pk1].shared_field, NORMAL[1].shared_field)
             self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['en'])
             self.assertEqual(result[pk1].language_code, 'en')
@@ -422,11 +423,14 @@ class InBulkTests(HvadTestCase, NormalFixture):
     def test_untranslated_in_bulk(self):
         pk1 = self.normal_id[1]
         with translation.override('ja'):
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(1):
                 result = Normal.objects.untranslated().in_bulk([pk1])
                 self.assertCountEqual((pk1,), result)
+            with self.assertNumQueries(0):
                 self.assertEqual(result[pk1].shared_field, NORMAL[1].shared_field)
+            with self.assertNumQueries(1):
                 self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['ja'])
+            with self.assertNumQueries(0):
                 self.assertEqual(result[pk1].language_code, 'ja')
 
     def test_fallbacks_in_bulk(self):
@@ -437,6 +441,7 @@ class InBulkTests(HvadTestCase, NormalFixture):
             pk1, pk2 = self.normal_id[1], self.normal_id[2]
             result = Normal.objects.language('en').fallbacks('de', 'ja').in_bulk([pk1, pk2])
             self.assertCountEqual((pk1, pk2), result)
+        with self.assertNumQueries(0):
             self.assertEqual(result[pk1].shared_field, NORMAL[1].shared_field)
             self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['en'])
             self.assertEqual(result[pk1].language_code, 'en')
@@ -528,7 +533,7 @@ class GetTranslationFromInstanceTests(HvadTestCase, NormalFixture):
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
 
-    def test_cached(self):
+    def test_cached_autoload(self):
         # get the english instance
         en = Normal.objects.untranslated().prefetch_related('translations').get()
         with self.assertNumQueries(0):
@@ -543,6 +548,21 @@ class GetTranslationFromInstanceTests(HvadTestCase, NormalFixture):
         self.assertEqual(ja_trans.translated_field, NORMAL[1].translated_field['ja'])
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
+
+    def test_cached_no_autoload(self):
+        with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': False}):
+            # get the english instance
+            en = Normal.objects.untranslated().prefetch_related('translations').get()
+            with self.assertNumQueries(0):
+                ja_trans = en.translations.get_language('ja')
+
+            # get the japanese *combined*
+            ja = Normal.objects.language('ja').get(pk=en.pk)
+
+            self.assertEqual(en.shared_field, NORMAL[1].shared_field)
+            self.assertRaises(AttributeError, getattr, en, 'translated_field') # no autoload => error
+            self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
+            self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
 
     def test_not_exist(self):
         # Without prefetching

@@ -1,7 +1,5 @@
 import functools
-import django
 import warnings
-from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets, unquote, get_deleted_objects
 from django.contrib.contenttypes.models import ContentType
@@ -16,14 +14,13 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import select_template
 from django.utils.encoding import iri_to_uri, force_text
 from django.utils.functional import curry
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import ugettext_lazy as _, get_language, get_language_info
 from hvad.compat import urlencode, urlparse
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
+from hvad.settings import hvad_settings
 from hvad.utils import load_translation
-from hvad.manager import FALLBACK_LANGUAGES, TranslationQueryset
+from hvad.manager import TranslationQueryset
 
-def get_language_name(language_code):
-    return dict(settings.LANGUAGES).get(language_code, language_code)
 
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
@@ -84,7 +81,7 @@ class TranslatableModelAdminMixin(object):
         tabs = []
         get = request.GET.copy()
         language = self._language(request)
-        for key, name in settings.LANGUAGES:
+        for key, name in hvad_settings.LANGUAGES:
             get['language'] = key
             url = '%s?%s' % (request.path, get.urlencode())
             if language == key:
@@ -163,7 +160,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     def render_change_form(self, request, context, add=False, change=False,
                            form_url='', obj=None):
         lang_code = self._language(request)
-        lang = get_language_name(lang_code)
+        lang = get_language_info(lang_code)['name_local']
         available_languages = self.get_available_languages(obj)
 
         context.update({
@@ -229,8 +226,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         deleted_objects, model_count, perms_needed, protected = get_deleted_objects(
             [obj], translations_model._meta, request.user, self.admin_site, using)
         
-        lang = get_language_name(language_code) 
-            
+        lang = get_language_info(language_code)['name_local']
 
         if request.POST: # The user has already confirmed the deletion.
             if perms_needed:
@@ -285,7 +281,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 'language_code': language_code,
                 'opts': opts,
                 'app_label': opts.app_label,
-                'language_name': get_language_name(language_code),
+                'language_name': get_language_info(language_code)['name_local'],
                 'object_name': force_text(opts.verbose_name),
             },
         )
@@ -328,7 +324,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
 
     def get_queryset(self, request):
         language = self._language(request)
-        qs = self.model._default_manager.language(language).fallbacks(*FALLBACK_LANGUAGES)
+        qs = self.model._default_manager.language(language).fallbacks(*hvad_settings.FALLBACK_LANGUAGES)
 
         # TODO: this should be handled by some parameter to the ChangeList.
         ordering = getattr(self, 'ordering', None) or ()

@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 import django
+from django.apps import apps
+from django.core import checks
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection, models, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from django.utils import translation
+from hvad import settings
 from hvad.manager import TranslationQueryset
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.utils import get_cached_translation
@@ -15,6 +18,45 @@ from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, Unique, Related, MultipleFields, Boolean, Standard
 from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 from copy import deepcopy
+
+
+class SettingsTests(HvadTestCase):
+    def test_hvad_setting_namespace_error(self):
+        with self.settings(HVAD_SOMETHING='foo', HVAD_OTHERTHING='bar'):
+            errors = settings.check(apps)
+        for key in 'HVAD_SOMETHING', 'HVAD_OTHERTHING':
+            self.assertIn(checks.Critical(
+                'HVAD setting in global namespace',
+                hint='HVAD settings are now namespaced in the HVAD dict.',
+                obj=key,
+                id='hvad.settings.C01'
+            ), errors)
+
+    def test_table_name_separator(self):
+        with self.settings(HVAD={'TABLE_NAME_SEPARATOR': 'foo'}):
+            errors = settings.check(apps)
+        self.assertIn(checks.Error('Obsolete setting HVAD["TABLE_NAME_SEPARATOR"]',
+            hint='TABLE_NAME_SEPARATOR has been superceded by TABLE_NAME_FORMAT. '
+                 'Set it to "%sfootranslation" to keep the old behavior',
+            obj='TABLE_NAME_SEPARATOR',
+            id='hvad.settings.E01',
+        ), errors)
+
+    def test_languages(self):
+        error = checks.Error('HVAD["LANGUAGES"] must be a sequence of language codes',
+                             obj='LANGUAGES', id='hvad.settings.E02')
+        with self.settings(HVAD={'LANGUAGES': 'fr'}):
+            self.assertIn(error, settings.check(apps))
+        with self.settings(HVAD={'LANGUAGES': [('fr', 'French'), ('en', 'English')]}):
+            self.assertIn(error, settings.check(apps))
+
+    def test_table_name_format(self):
+        error = checks.Error('HVAD["TABLE_NAME_FORMAT"] must contain exactly one string '
+                             'specifier ("%s")', obj='TABLE_NAME_FORMAT', id='hvad.settings.E03')
+        with self.settings(HVAD={'TABLE_NAME_FORMAT': 'foo'}):
+            self.assertIn(error, settings.check(apps))
+        with self.settings(HVAD={'TABLE_NAME_FORMAT': 'foo%strans%slation'}):
+            self.assertIn(error, settings.check(apps))
 
 
 class DefinitionTests(HvadTestCase):
@@ -222,9 +264,9 @@ class QuerysetTest(HvadTestCase):
             TranslationQueryset(Standard)
 
     def test_fallbacks_semantics(self):
-        from hvad.manager import FALLBACK_LANGUAGES
+        from hvad.settings import hvad_settings
         qs = Normal.objects.language().fallbacks()
-        self.assertEquals(qs._language_fallbacks, FALLBACK_LANGUAGES)
+        self.assertEquals(qs._language_fallbacks, hvad_settings.FALLBACK_LANGUAGES)
         qs = qs.fallbacks(None)
         self.assertEquals(qs._language_fallbacks, None)
         qs = qs.fallbacks('en', 'fr')
@@ -622,18 +664,19 @@ class TableNameTest(HvadTestCase):
     def test_table_name_separator(self):
         from hvad.models import TranslatedFields
         from django.db import models
-        from django.conf import settings
-        sep = getattr(settings, 'HVAD_TABLE_NAME_SEPARATOR', '_')
+        from hvad.settings import hvad_settings
+        name_format = hvad_settings.TABLE_NAME_FORMAT
         class MyTableNameTestModel(TranslatableModel):
             translations = TranslatedFields(
                 hello = models.CharField(max_length=128)
             )
-        self.assertTrue(MyTableNameTestModel._meta.translations_model._meta.db_table.endswith('_mytablenametestmodel%stranslation' % sep))
+        tmodel = MyTableNameTestModel._meta.translations_model
+        self.assertTrue(tmodel._meta.db_table.endswith(name_format % ('_mytablenametestmodel', )))
 
     def test_table_name_override(self):
         from hvad.models import TranslatedFields
         from django.db import models
-        with self.settings(HVAD_TABLE_NAME_SEPARATOR='O_O'):
+        with self.settings(HVAD={'TABLE_NAME_FORMAT': '%sO_Otranslation'}):
             class MyOtherTableNameTestModel(TranslatableModel):
                 translations = TranslatedFields(
                     hello = models.CharField(max_length=128)

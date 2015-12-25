@@ -1,5 +1,4 @@
 import django
-from django.conf import settings
 from django.core.exceptions import FieldError
 from django.db import connections, models, transaction, IntegrityError
 if django.VERSION >= (1, 9):
@@ -13,7 +12,8 @@ from django.utils.translation import get_language
 from hvad.compat import string_types
 from hvad.query import (query_terms, q_children, expression_nodes,
                         add_alias_constraints)
-from hvad.utils import combine, settings_updater
+from hvad.settings import hvad_settings
+from hvad.utils import combine
 from copy import deepcopy
 import logging
 import sys
@@ -22,12 +22,6 @@ import sys
 
 # Logging-related globals
 _logger = logging.getLogger(__name__)
-
-# Global settings, wrapped so they react to SettingsOverride
-@settings_updater
-def update_settings(*args, **kwargs):
-    global FALLBACK_LANGUAGES
-    FALLBACK_LANGUAGES = tuple(code for code, name in settings.LANGUAGES)
 
 #===============================================================================
 
@@ -463,7 +457,7 @@ class TranslationQueryset(QuerySet):
 
     def fallbacks(self, *fallbacks):
         if not fallbacks:
-            self._language_fallbacks = FALLBACK_LANGUAGES
+            self._language_fallbacks = hvad_settings.FALLBACK_LANGUAGES
         elif fallbacks == (None,):
             self._language_fallbacks = None
         else:
@@ -779,7 +773,7 @@ class TranslationManager(models.Manager):
 
     queryset_class = TranslationQueryset
     fallback_class = QuerySet
-    default_class = QuerySet
+    default_class = TranslationQueryset if hvad_settings.USE_DEFAULT_QUERYSET else QuerySet
 
     def __init__(self, *args, **kwargs):
         self.queryset_class = kwargs.pop('queryset_class', self.queryset_class)

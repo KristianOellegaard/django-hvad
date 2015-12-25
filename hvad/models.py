@@ -1,7 +1,6 @@
 import django
 from django.core import checks
 from django.core.exceptions import ImproperlyConfigured
-from django.conf import settings
 from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.fields import FieldDoesNotExist
@@ -10,20 +9,12 @@ from django.db.models.signals import class_prepared
 from django.utils.translation import get_language
 from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.manager import TranslationManager, TranslationsModelManager
+from hvad.settings import hvad_settings
 from hvad.utils import (get_cached_translation, set_cached_translation,
-                        SmartGetFieldByName, SmartGetField, settings_updater)
+                        SmartGetFieldByName, SmartGetField)
 from hvad.compat import MethodType
 from itertools import chain
 import sys
-
-#===============================================================================
-
-# Global settings, wrapped so they react to SettingsOverride
-@settings_updater
-def update_settings(*args, **kwargs):
-    global FALLBACK_LANGUAGES, TABLE_NAME_SEPARATOR
-    FALLBACK_LANGUAGES = tuple( code for code, name in settings.LANGUAGES )
-    TABLE_NAME_SEPARATOR = getattr(settings, 'HVAD_TABLE_NAME_SEPARATOR', '_')
 
 #===============================================================================
 
@@ -146,7 +137,7 @@ class TranslatedFields(object):
             'managed': model._meta.managed,
             'app_label': model._meta.app_label,
             'db_table': meta.get('db_table',
-                                 '%s%stranslation' % (model._meta.db_table, TABLE_NAME_SEPARATOR)),
+                                 hvad_settings.TABLE_NAME_FORMAT % (model._meta.db_table,)),
             'default_permissions': (),
         })
 
@@ -182,12 +173,12 @@ class TranslatedFields(object):
             if field.name in ignore_fields:
                 continue
             if field.name == 'language_code':
-                attr = LanguageCodeAttribute(model._meta)
+                attr = LanguageCodeAttribute(model)
             else:
-                attr = TranslatedAttribute(model._meta, field.name)
+                attr = TranslatedAttribute(model, field.name)
                 attname = field.get_attname()
                 if attname and attname != field.name:
-                    setattr(model, attname, TranslatedAttribute(model._meta, attname))
+                    setattr(model, attname, TranslatedAttribute(model, attname))
             setattr(model, field.name, attr)
 
 #===============================================================================
@@ -238,8 +229,6 @@ class TranslatableModel(models.Model):
                 else:
                     tkwargs[key] = value
         super(TranslatableModel, self).__init__(*args, **skwargs)
-
-        # Create a translation if there are translated fields
         if tkwargs:
             tkwargs['language_code'] = tkwargs.get('language_code') or get_language()
             set_cached_translation(self, self._meta.translations_model(**tkwargs))
@@ -313,7 +302,7 @@ class TranslatableModel(models.Model):
         translation_dict = dict((t.language_code, t) for t in translations)
 
         # see if we have the right language, or any language in fallbacks
-        for code in (get_language(), settings.LANGUAGE_CODE) + FALLBACK_LANGUAGES:
+        for code in (get_language(),) + hvad_settings.FALLBACK_LANGUAGES:
             try:
                 translation = translation_dict[code]
             except KeyError:

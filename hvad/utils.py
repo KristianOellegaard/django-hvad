@@ -1,6 +1,5 @@
 import django
 from django.db.models.fields import FieldDoesNotExist
-from django.test.signals import setting_changed
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
 
@@ -159,9 +158,3 @@ def minimumDjangoVersion(*args): #pragma: no cover
     if django.VERSION >= args:
         return lambda x: x
     return lambda x: _MinimumDjangoVersionDescriptor(x.__name__, args)
-
-def settings_updater(func): #pragma: no cover
-    ''' Decorator for setting globals depending on django settings '''
-    func()
-    setting_changed.connect(func, dispatch_uid=id(func))
-    return func
