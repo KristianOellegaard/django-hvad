@@ -237,9 +237,26 @@ class TranslatableModel(models.Model):
                 else:
                     tkwargs[key] = value
         super(TranslatableModel, self).__init__(*args, **skwargs)
-        if tkwargs:
-            tkwargs['language_code'] = tkwargs.get('language_code') or get_language()
+        language_code = tkwargs.get('language_code') or get_language()
+        if language_code is not NoTranslation:
+            tkwargs['language_code'] = language_code
             set_cached_translation(self, self._meta.translations_model(**tkwargs))
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        if django.VERSION >= (1, 10):
+            if len(values) != len(cls._meta.concrete_fields):
+                # Missing values are deferred and must be marked as such
+                values = list(values)
+                values.reverse()
+                values = [values.pop() if f.attname in field_names else models.DEFERRED
+                        for f in cls._meta.concrete_fields]
+            new = cls(*values, language_code=NoTranslation)
+        else:
+            new = cls(language_code=NoTranslation, **dict(zip(field_names, values)))
+        new._state.adding = False
+        new._state.db = db
+        return new
 
     def save(self, *args, **skwargs):
         veto_names = ('pk', 'master', 'master_id', self._meta.translations_model._meta.pk.name)

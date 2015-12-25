@@ -428,18 +428,15 @@ class CreateTest(HvadTestCase):
             self.assertEqual(en.language_code, "en")
 
     def test_create_instance_untranslated(self):
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(2):
             with translation.override('en'):
                 ut = Normal.objects.create(
                     shared_field="shared",
                 )
         self.assertEqual(ut.shared_field, "shared")
-        with self.assertNumQueries(1):
-            with self.assertRaises(AttributeError):
-                ut.translated_field
-        with self.assertNumQueries(1):
-            with self.assertRaises(AttributeError):
-                ut.language_code
+        with self.assertNumQueries(0):
+            self.assertEqual(ut.translated_field, '')
+            self.assertEqual(ut.language_code, 'en')
 
     def test_create_lang_override(self):
         with self.assertRaises(ValueError):

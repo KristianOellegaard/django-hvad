@@ -108,9 +108,6 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
         # Create an unstranslated model and get the translations
         myadmin = self._get_admin(Normal)
 
-        obj = Normal.objects.untranslated().create(shared_field="shared")
-        self.assertEqual(myadmin.all_translations(obj), "")
-
         # Create a english translated model and make sure the active language
         # is highlighted in admin with <strong></strong>
         obj = Normal.objects.language("en").get(pk=self.normal_id[1])
@@ -178,6 +175,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
 
         # Check what happens if there is no translations at all
         obj = Normal.objects.untranslated().create(shared_field="shared")
+        Normal.objects.language('all').filter(pk=obj.pk).delete_translations()
         with translation.override('en'):
             self.assertIs(myadmin.get_object(get_request, obj.pk), None)
 
