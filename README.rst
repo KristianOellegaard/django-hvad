@@ -103,6 +103,12 @@ Other random examples::
 
     # books that have "Django" in their title, regardless of the language
     Book.objects.language('all').filter(title__icontains='Django')
+    
+    # Delete a single translation
+    MyModel.objects.language('de').filter(pk=42).delete_translations()
+    
+    # Delete several translations at once
+    MyModel.objects.language('all').filter(pk=42, language_code__in=['de', 'fr', 'en']).delete_translations()
 
 
 More examples in the `quickstart guide`_.
