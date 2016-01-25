@@ -2,7 +2,7 @@
 from rest_framework.serializers import ModelSerializer, CharField
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
-from hvad.test_utils.project.app.models import Normal
+from hvad.test_utils.project.app.models import Normal, Related
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.contrib.restframework import (TranslationsMixin,
@@ -48,11 +48,19 @@ class CustomSerializer(TranslationsMixin, ModelSerializer):
         model = Normal
         translations_serializer = CustomTranslationSerializer
 
+class RelatedSerializer(TranslatableModelSerializer):
+    class Meta:
+        model = Related
+
+class RelatedTranslationsSerializer(TranslationsMixin, ModelSerializer):
+    class Meta:
+        model = Related
+
 #=============================================================================
 
 class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
     'Checking the serializer representation of objects'
-    normal_count = 1
+    normal_count = 2
 
     #---------------------------------------------------------------------
 
@@ -107,6 +115,22 @@ class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
         self.assertEqual(data['shared_field'], NORMAL[1].shared_field)
         self.assertEqual(data['translated_field'], '')
         self.assertEqual(data['language_code'], 'xx')
+
+    def test_serialize_related(self):
+        'Serialize relation fields'
+        obj = Related(pk=42, language_code='ja',
+                      normal_id=self.normal_id[1], translated_id=self.normal_id[2])
+
+        serializer = RelatedSerializer(instance=obj)
+        data = serializer.data
+
+        self.assertCountEqual(data, ['id', 'normal', 'language_code',
+                                     'translated', 'translated_to_translated'])
+        self.assertEqual(data['id'], 42)
+        self.assertEqual(data['normal'], self.normal_id[1])
+        self.assertEqual(data['language_code'], 'ja')
+        self.assertEqual(data['translated'], self.normal_id[2])
+        self.assertEqual(data['translated_to_translated'], None)
 
     #---------------------------------------------------------------------
 
@@ -231,7 +255,7 @@ class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
 #=============================================================================
 
 class TranslationsMixinTests(HvadTestCase, NormalFixture):
-    normal_count = 1
+    normal_count = 2
 
     def test_translations_mixin_fields(self):
         'Check serializers fields are properly set'
@@ -283,6 +307,25 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
             self.assertCountEqual(translation, ['cheat', 'custom'])
             self.assertEqual(translation['cheat'], NORMAL[1].shared_field)
             self.assertEqual(translation['custom'], NORMAL[1].translated_field[language])
+
+    def test_serialize_related(self):
+        'Serialize relation fields'
+        obj = Related.objects.language('ja').create(
+            normal_id=self.normal_id[1], translated_id=self.normal_id[2]
+        )
+
+        serializer = RelatedTranslationsSerializer(instance=obj)
+        data = serializer.data
+
+        self.assertCountEqual(data, ['id', 'normal', 'translated_fields'])
+        self.assertEqual(data['id'], obj.pk)
+        self.assertEqual(data['normal'], self.normal_id[1])
+        self.assertIsInstance(data['translated_fields'], dict)
+        for language in ['ja']:
+            translation = data['translated_fields'][language]
+            self.assertCountEqual(translation, ['translated', 'translated_to_translated'])
+            self.assertEqual(translation['translated'], self.normal_id[2])
+            self.assertEqual(translation['translated_to_translated'], None)
 
     #---------------------------------------------------------------------
 

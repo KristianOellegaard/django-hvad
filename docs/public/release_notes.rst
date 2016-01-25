@@ -34,6 +34,8 @@ Fixes:
 
 - REST framework translation support now uses ``update_fields`` to reduce the number of queries
   when updating an object.
+- REST framework translation support no longer breaks when using ``PrimaryKeyRelatedField`` and
+  ``TranslationsMixin`` together — :issue:`278`.
 - Admin no longer uses deprecated ``patterns`` function — :issue:`268`.
 
 .. release 1.4.0

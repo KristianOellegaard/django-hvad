@@ -210,6 +210,11 @@ In case advanced customisation of translations is required, be aware that your
 custom translation serializer is handed the full object. This allows building
 computed fields using both translated and untranslated data.
 
+However, it can interfer with some field types, most notable related fields,
+which expect the actual translation model. Hvad handles this automatically in its
+default translation serializer. You can inherit this handling by making your own
+translation serializer a subclass of ``hvad.contrib.restframework.NestedTranslationSerializer``.
+
 .. _Django REST framework: http://www.django-rest-framework.org/
 .. _ModelSerializer: http://www.django-rest-framework.org/api-guide/serializers/#modelserializer
 .. _HyperlinkedModelSerializer: http://www.django-rest-framework.org/api-guide/serializers/#hyperlinkedmodelserializer

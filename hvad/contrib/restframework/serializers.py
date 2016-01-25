@@ -3,13 +3,36 @@ from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language, ugettext_lazy as _l
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from hvad.utils import set_cached_translation, load_translation
+from hvad.exceptions import WrongManager
+from hvad.utils import get_cached_translation, set_cached_translation, load_translation
 from hvad.contrib.restframework.utils import TranslationListSerializer
+from collections import OrderedDict
 
 veto_fields = ('id', 'master')
 
 
 #=============================================================================
+
+class NestedTranslationSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        """ Nested serializer gets the full object, but some field serializers need the
+            actual model their data lives in, that is, the translation. We detect it here. """
+        translation = get_cached_translation(instance)
+        ret = OrderedDict()
+        for field in self._readable_fields:
+            try:
+                try:
+                    attribute = field.get_attribute(instance)
+                except (WrongManager, FieldDoesNotExist):
+                    attribute = field.get_attribute(translation)
+            except SkipField:
+                continue
+            if attribute is None:
+                ret[field.field_name] = None
+            else:
+                ret[field.field_name] = field.to_representation(attribute)
+        return ret
+
 
 class TranslationsMixin(object):
     ''' Adds support for nested translations in a serializer
@@ -27,7 +50,7 @@ class TranslationsMixin(object):
         # Special handling for translations field so it is nested and not relational
         if field_name == model_class._meta.translations_accessor:
             # Create a nested serializer as a subclass of configured translations_serializer
-            BaseSerializer = getattr(self.Meta, 'translations_serializer', serializers.ModelSerializer)
+            BaseSerializer = getattr(self.Meta, 'translations_serializer', NestedTranslationSerializer)
             BaseMeta = getattr(BaseSerializer, 'Meta', None)
             exclude = veto_fields + ('language_code',)
             if BaseMeta is not None:
