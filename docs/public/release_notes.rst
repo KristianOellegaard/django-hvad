@@ -32,6 +32,7 @@ Compatibility Warnings:
 
 Fixes:
 
+- Translation deletion URIs are no longer broken on Django 1.9 — :issue:`279`.
 - REST framework translation support now uses ``update_fields`` to reduce the number of queries
   when updating an object.
 - REST framework translation support no longer breaks when using ``PrimaryKeyRelatedField`` and
