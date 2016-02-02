@@ -22,7 +22,7 @@ setup(
     zip_safe=False,
     include_package_data = True,
     install_requires=[
-        'Django>=1.4',
+        'Django>=1.7',
     ],
     classifiers = [
         "Development Status :: 5 - Production/Stable",
@@ -33,6 +33,7 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         "Topic :: Database",
         "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
         "Topic :: Text Processing :: Linguistic",
