@@ -90,8 +90,25 @@ delete_translations
 
 .. method:: delete_translations()
 
-    Deletes all :term:`Translations Model` instances in a queryset, without
+    Deletes all :term:`Translations Model` instances matched by a queryset, without
     deleting the :term:`Shared Model` instances.
+
+    This can be used to target specific translations of specific objects for deletion.
+    For instance::
+
+        # Delete English translation of all objects that have field == "foo"
+        MyModel.objects.language('en').filter(field='foo').delete_translations()
+
+        # Delete all translations but English for object with id 42
+        MyModel.objects.language('all').exclude(language_code='en').filter(pk=42).delete_translations()
+
+    .. warning:: It is an error to delete all translations of an instance. This will
+                 cause the object to be unreachable through translation-aware queries
+                 and invisible in the admin panel.
+
+                 If you delete all translations and re-create one immediately after,
+                 remember to enclose the whole process in a transaction to avoid
+                 the possibility of leaving the object unreachable.
 
 .. _select_related-public:
 
