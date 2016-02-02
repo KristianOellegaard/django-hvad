@@ -5,8 +5,15 @@ Release Notes
 .. release 1.5.0
 
 *****************************
-1.5.0 - upcoming release
+1.5.0 - current release
 *****************************
+
+Released on February 2, 2016
+
+Python and Django versions supported:
+
+- Django 1.4 LTS is no longer supported.
+- So, as a reminder, supported Django versions for this release are: 1.7, 1.8 LTS, 1.9.
 
 New features:
 
@@ -42,7 +49,7 @@ Fixes:
 .. release 1.4.0
 
 *****************************
-1.4.0 - current release
+1.4.0
 *****************************
 
 Released on November 10, 2015
