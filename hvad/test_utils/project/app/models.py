@@ -2,6 +2,7 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.manager import TranslationManager, TranslationQueryset
+from hvad.utils import get_cached_translation
 from django.utils.encoding import python_2_unicode_compatible
 
 #===============================================================================
@@ -99,6 +100,23 @@ class Many(models.Model):
 
     def __str__(self):
         return self.name
+
+
+@python_2_unicode_compatible
+class TranslatedMany(TranslatableModel):
+    """ WARNING: this is not officially supported. This test model is more
+        of a monitor so we know what we break, than a promise not to break it.
+    """
+    name = models.CharField(max_length=128)
+    translations = TranslatedFields(
+        translated_field = models.CharField(max_length=128),
+        many = models.ManyToManyField(Normal, related_name='translated_many'),
+    )
+
+    def __str__(self):
+        return ('%s, %s <%s>' % (self.name, self.translated_field, self.language_code)
+                if get_cached_translation(self) is not None
+                else '%s <none>' % self.name)
 
 
 class Standard(models.Model):

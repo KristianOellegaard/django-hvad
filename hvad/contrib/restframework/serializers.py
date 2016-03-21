@@ -134,15 +134,22 @@ class TranslationsMixin(object):
 
     def update_translation(self, instance, data):
         if django.VERSION >= (1, 8):
-            fields = [field.name for field in self.Meta.model._meta.translations_model._meta.get_fields()
-                      if field.name not in ('id', 'master', 'language_code')]
+            fields = set(field.name
+                         for field in self.Meta.model._meta.translations_model._meta.get_fields()
+                         if not field.is_relation or                    # regular fields are ok
+                            field.one_to_one or                         # one to one is ok
+                            field.many_to_one and field.related_model)  # many_to_one only if not generic
         else:
-            fields = [name for name in self.Meta.model._meta.translations_model._meta.get_all_field_names()
-                      if name not in ('id', 'master', 'master_id', 'language_code')]
+            fields = set(name
+                         for name in self.Meta.model._meta.translations_model._meta.get_all_field_names())
+        fields.intersection_update(data)
+        vetoed = fields.intersection('id', 'master', 'master_id', 'language_code')
+        if vetoed:
+            raise KeyError('These fields are not allowed in data: ' % ', '.join(vetoed))
+
         for key, value in data.items():
             setattr(instance, key, value)
         instance.save(update_fields=fields)
-
 
 #=============================================================================
 

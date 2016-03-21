@@ -2,10 +2,23 @@
 Release Notes
 #############
 
+.. release 1.5.1
+
+*****************************
+1.5.1 - current release
+*****************************
+
+Fixes:
+
+- Filter out m2m and generic fields in
+  :meth:`~hvad.contrib.restframework.serializers.TranslationsMixin.update_translation`
+  so it does not bite when using (unsupported) m2m fields or generic relations in a
+  translation — :issue:`285`.
+
 .. release 1.5.0
 
 *****************************
-1.5.0 - current release
+1.5.0
 *****************************
 
 Released on February 2, 2016
