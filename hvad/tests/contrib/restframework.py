@@ -2,7 +2,7 @@
 from rest_framework.serializers import ModelSerializer, CharField
 from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
-from hvad.test_utils.project.app.models import Normal, Related
+from hvad.test_utils.project.app.models import Normal, Related, TranslatedMany
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.contrib.restframework import (TranslationsMixin,
@@ -419,6 +419,35 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1], shared_field='shared')
         self.assertCountEqual([obj.language_code for obj in qs], self.translations)
+
+    def test_update_translated_many(self):
+        'Update an existing instance, with an excluded translated M2M field'
+        """ WARNING - this is unsupported, this test case is here so we know
+            what we break rather than to enforce that behavior
+        """
+        obj = TranslatedMany.objects.language('en').create(name='shared', translated_field='English')
+        # reload with normal caching conditions so query counting works
+        obj = TranslatedMany.objects.untranslated().prefetch_related('translations').get(pk=obj.pk)
+        data = {
+            'name': 'shared-updated',
+            'translations': {
+                'en': {'translated_field': u'English-updated'},
+                'fr': {'translated_field': u'French-added'},
+            },
+        }
+        class TranslationSerializerClass(ModelSerializer):
+            class Meta:
+                exclude = ['many']
+        class SerializerClass(TranslationsMixin, ModelSerializer):
+            class Meta:
+                model = TranslatedMany
+                translations_serializer = TranslationSerializerClass
+
+        serializer = SerializerClass(instance=obj, data=data)
+        self.assertTrue(serializer.is_valid())
+        with self.assertNumQueries(4):  # update shared, update en, insert fr
+                                        # select to delete (none so no actual delete after)
+            serializer.save()
 
 #=============================================================================
 
