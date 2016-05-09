@@ -70,13 +70,13 @@ class TranslatableModelAdminMixin(object):
         languages = []
         current_language = get_language()
         for language in obj.get_available_languages():
-            entry = '<a href="%s">%s</a>' % (self.get_url(obj, lang=language), language)
+            entry = u'<a href="%s">%s</a>' % (self.get_url(obj, lang=language), language)
             if language == current_language:
                 entry = u'<strong>%s</strong>' % entry
             languages.append(entry)
         return u', '.join(languages)
     all_translations.allow_tags = True
-    all_translations.short_description = _('all translations')
+    all_translations.short_description = _(u'all translations')
 
     def get_available_languages(self, obj):
         if obj is None:
@@ -240,12 +240,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         if request.POST: # The user has already confirmed the deletion.
             if perms_needed:
                 raise PermissionDenied
-            obj_display = '%s translation of %s' % (lang, force_text(obj.master))
+            obj_display = u'%s translation of %s' % (force_text(lang), force_text(obj.master))
             self.log_deletion(request, obj, obj_display)
             self.delete_model_translation(request, obj)
 
             self.message_user(request,
-                _('The %(name)s "%(obj)s" was deleted successfully.') % {
+                _(u'The %(name)s "%(obj)s" was deleted successfully.') % {
                     'name': force_text(opts.verbose_name),
                     'obj': force_text(obj_display)
                 }
@@ -255,12 +255,12 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                 return HttpResponseRedirect(self.reverse('admin:index'))
             return HttpResponseRedirect(self.reverse('admin:%s_%s_changelist' % (opts.app_label, opts.model_name)))
 
-        object_name = '%s Translation' % force_text(opts.verbose_name)
+        object_name = _(u'%s Translation') % force_text(opts.verbose_name)
 
         if perms_needed or protected:
-            title = _("Cannot delete %(name)s") % {"name": object_name}
+            title = _(u"Cannot delete %(name)s") % {"name": object_name}
         else:
-            title = _("Are you sure?")
+            title = _(u"Are you sure?")
 
         context = {
             "title": title,
