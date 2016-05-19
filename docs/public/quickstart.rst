@@ -24,8 +24,8 @@ descriptions and information about who wrote the description::
         author = models.CharField(max_length=255)
         
         translations = TranslatedFields(
-            description = models.TextField(),
-            description_author = models.CharField(max_length=255),
+            description=models.TextField(),
+            description_author=models.CharField(max_length=255),
         )
         
         def __unicode__(self):
