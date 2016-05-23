@@ -14,6 +14,7 @@ Fixes:
   :meth:`~hvad.contrib.restframework.serializers.TranslationsMixin.update_translation`
   so it does not bite when using (unsupported) m2m fields or generic relations in a
   translation — :issue:`285`.
+- Add missing unicode markers for python2 — :issue:`291`.
 
 .. release 1.5.0
 
