@@ -146,7 +146,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         exclude = (
             tuple(self.exclude or ()) +
             tuple(kwargs.pop("exclude", ())) +
-            self.get_readonly_fields(request, obj)
+            tuple(self.get_readonly_fields(request, obj) or ())
         )
         old_formfield_callback = curry(self.formfield_for_dbfield, request=request)
         defaults = {
