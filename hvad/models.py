@@ -97,7 +97,7 @@ class TranslatedFields(object):
                 'language_code': models.CharField(max_length=15, db_index=True),
                 # Nullable so we can prevent cascade deletion
                 'master': models.ForeignKey(model, related_name=related_name, editable=False,
-                                            null=True, on_delete=models.CASCADE),
+                                            on_delete=models.CASCADE),
             })
 
         # Create the new model

@@ -2,7 +2,7 @@ from collections import defaultdict
 import django
 from django.conf import settings
 from django.core.exceptions import FieldError
-from django.db import models, transaction, IntegrityError
+from django.db import connections, models, transaction, IntegrityError
 if django.VERSION >= (1, 9):
     from django.db.models.query import QuerySet
 elif django.VERSION >= (1, 8):
@@ -545,31 +545,27 @@ class TranslationQueryset(QuerySet):
             objects = super(TranslationQueryset, qs).iterator()
 
         for obj in objects:
-            # non-cascade-deletion hack:
-            if not obj.master:
-                yield obj
-            else:
-                for name in self._hvad_switch_fields:
-                    try:
-                        setattr(obj.master, name, getattr(obj, name))
-                    except AttributeError: # pragma: no cover
-                        pass
-                    else:
-                        delattr(obj, name)
-                obj = combine(obj, qs.shared_model)
-                # use known objects from self, not qs as we cleared it earlier
-                for field, rel_objs in self._known_related_objects.items():
-                    if hasattr(obj, field.get_cache_name()):
-                        # should not happen, but we conform to Django behavior
-                        continue #pragma: no cover
-                    pk = getattr(obj, field.get_attname())
-                    try:
-                        rel_obj = rel_objs[pk]
-                    except KeyError: #pragma: no cover
-                        pass
-                    else:
-                        setattr(obj, field.name, rel_obj)
-                yield obj
+            for name in self._hvad_switch_fields:
+                try:
+                    setattr(obj.master, name, getattr(obj, name))
+                except AttributeError: # pragma: no cover
+                    pass
+                else:
+                    delattr(obj, name)
+            obj = combine(obj, qs.shared_model)
+            # use known objects from self, not qs as we cleared it earlier
+            for field, rel_objs in self._known_related_objects.items():
+                if hasattr(obj, field.get_cache_name()):
+                    # should not happen, but we conform to Django behavior
+                    continue #pragma: no cover
+                pk = getattr(obj, field.get_attname())
+                try:
+                    rel_obj = rel_objs[pk]
+                except KeyError: #pragma: no cover
+                    pass
+                else:
+                    setattr(obj, field.name, rel_obj)
+            yield obj
 
     def create(self, **kwargs):
         if 'language_code' in kwargs:
@@ -687,8 +683,13 @@ class TranslationQueryset(QuerySet):
     delete.queryset_only = True
 
     def delete_translations(self):
-        self.update(master=None)
-        self.model.objects.filter(master__isnull=True).delete()
+        if connections[self._db].features.update_can_self_select:
+            qs = self._clone()._add_language_filter()
+            super(TranslationQueryset, qs).delete()
+        else:
+            with transaction.atomic(using=self._db, savepoint=False):
+                pks = list(super(TranslationQueryset, self).values_list('pk', flat=True))
+                self.model._base_manager.filter(pk__in=pks).delete()
     delete_translations.alters_data = True
 
     def update(self, **kwargs):

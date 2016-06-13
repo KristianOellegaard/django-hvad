@@ -2,6 +2,18 @@
 Release Notes
 #############
 
+
+*****************************
+1.6.0 - upcoming release
+*****************************
+
+Fixes:
+
+- No longer set ``master`` to ``NULL`` before clearing translations when using
+  :meth:`~hvad.manager.TranslationManager.delete_translations`. This only
+  triggers one query instead of two, and allows enforcing non-null foreign key
+  at the database level.
+
 .. release 1.5.1
 
 *****************************
