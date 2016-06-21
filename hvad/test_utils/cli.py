@@ -30,13 +30,21 @@ def configure(**extra):
         ADMIN_MEDIA_PREFIX = '/static/admin/',
         EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend',
         SECRET_KEY = 'key',
-        TEMPLATE_LOADERS = (
+        TEMPLATE_LOADERS = (    # Remove when dropping support for Django 1.7
             'django.template.loaders.filesystem.Loader',
             'django.template.loaders.app_directories.Loader',
-            'django.template.loaders.eggs.Loader',
         ),
-        TEMPLATE_DIRS = [
+        TEMPLATE_DIRS = [       # Remove when dropping support for Django 1.7
             os.path.abspath(os.path.join(os.path.dirname(__file__), 'project', 'templates'))
+        ],
+        TEMPLATES = [
+            {
+                'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                'DIRS': [
+                    os.path.abspath(os.path.join(os.path.dirname(__file__), 'project', 'templates'))
+                ],
+                'APP_DIRS': True,
+            },
         ],
         MIDDLEWARE_CLASSES = [
             'django.contrib.sessions.middleware.SessionMiddleware',

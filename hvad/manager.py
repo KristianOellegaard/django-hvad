@@ -138,8 +138,8 @@ class RawConstraint(object):
         self.sql = sql
         self.aliases = aliases
 
-    def as_sql(self, qn, connection):
-        aliases = tuple(qn(alias) for alias in self.aliases)
+    def as_sql(self, compiler, connection):
+        aliases = tuple(compiler.quote_name_unless_alias(alias) for alias in self.aliases)
         return (self.sql % aliases, [])
 
 class BetterTranslationsField(object):
@@ -1026,6 +1026,7 @@ class TranslationManager(models.Manager):
     # API
     #===========================================================================
     use_for_related_fields = True
+    silence_use_for_related_fields_deprecation = True   # Django 1.10
 
     queryset_class = TranslationQueryset
     fallback_class = FallbackQueryset

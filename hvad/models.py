@@ -231,9 +231,12 @@ class TranslatableModel(models.Model):
     """
     # change the default manager to the translation manager
     objects = TranslationManager()
+    _plain_manager = models.Manager()
 
     class Meta:
         abstract = True
+        if django.VERSION >= (1, 10):
+            base_manager_name = '_plain_manager'
 
     def __init__(self, *args, **kwargs):
         # Split arguments into shared/translatd
@@ -474,6 +477,7 @@ def prepare_translatable_model(sender, **kwargs):
     #    translation aware.
     base_mgr = getattr(model, '_base_manager', None)
     if base_mgr is None or isinstance(base_mgr, TranslationManager):
+        assert django.VERSION < (1, 10)
         model.add_to_class('_base_manager', Manager())
 
     # Replace get_field_by_name with one that warns for common mistakes

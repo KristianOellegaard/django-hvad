@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import django
 from django import forms
 from django.http import Http404
 from django.utils import translation
@@ -15,12 +16,12 @@ from hvad.views import (TranslatableCreateView, TranslatableUpdateView,
 
 class TestCreateView(TranslatableCreateView):
     model = Normal
-    success_url = '%(id)s'
+    success_url = '{id}' if django.VERSION >= (1, 8) else '%(id)s'
 
 class TestUpdateView(TranslatableUpdateView):
     model = Normal
     slug_field = 'shared_field'
-    success_url = '%(id)s'
+    success_url = '{id}' if django.VERSION >= (1, 8) else '%(id)s'
 
 class TestDeleteView(TranslatableDeleteView):
     model = Normal

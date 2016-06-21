@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import django
 from django.core.exceptions import FieldError
-from django.db import connection, models, IntegrityError
+from django.db import connection, models, IntegrityError, transaction
 from django.db.models.query_utils import Q
+from django.test.testcases import TransactionTestCase
 from django.utils import translation
 from hvad.exceptions import WrongManager
 from hvad.models import (TranslatedFields, TranslatableModel)
@@ -32,20 +33,31 @@ class NormalToNormalFKTest(HvadTestCase, NormalFixture):
         self.assertEqual(related.normal.translated_field, normal.translated_field)
         self.assertTrue(related in normal.rel1.all())
     
-    def test_failed_relation(self):
-        related = Related.objects.create()
-        related.normal_id = 999
-        if connection.features.supports_forward_references:
-            related.save()
-            self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
-        else:
-            self.assertRaises(IntegrityError, related.save)
-
     def test_reverse_relation(self):
         normal = Normal.objects.language('en').get(pk=self.normal_id[1])
         related = Related.objects.language('en').create(normal=normal)
 
         self.assertEqual(normal.rel1.language('en').get().pk, related.pk)
+
+
+class NormalToNormalFKTest2(TransactionTestCase, NormalFixture):
+    normal_count = 1
+
+    def test_failed_relation(self):
+        related = Related.objects.create()
+        related.normal_id = 999
+        if connection.features.supports_foreign_keys:
+            if connection.features.supports_forward_references:
+                try:
+                    transaction.set_autocommit(False)
+                    related.save()
+                    self.assertRaises(Normal.DoesNotExist, getattr, related, 'normal')
+                    self.assertRaises(IntegrityError, transaction.commit)
+                finally:
+                    transaction.rollback()
+                    transaction.set_autocommit(True)
+            else:
+                self.assertRaises(IntegrityError, related.save)
 
 
 class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):

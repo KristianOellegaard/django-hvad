@@ -104,7 +104,7 @@ class BaseTranslatableModelForm(BaseModelForm):
     '''
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
-                 empty_permitted=False, instance=None):
+                 empty_permitted=False, instance=None, **kwargs):
 
         # Insert values of instance's translated fields into 'initial' dict
         object_data = {}
@@ -123,7 +123,7 @@ class BaseTranslatableModelForm(BaseModelForm):
 
         super(BaseTranslatableModelForm, self).__init__(
             data, files, auto_id, prefix, object_data,
-            error_class, label_suffix, empty_permitted, instance
+            error_class, label_suffix, empty_permitted, instance, **kwargs
         )
 
     def clean(self):

@@ -639,12 +639,15 @@ class DescriptorTests(HvadTestCase):
         self.assertEqual(getattr(related, cache).__dict__['translated_id'], 4242)
 
     def test_translated_attribute_delete(self):    
-        # Its not possible to delete the charfield, which should result in an AttributeError
+        # Accessing a deleted translated attribute reloads the translation
         obj = Normal.objects.language("en").create(shared_field="test", translated_field="en")
         obj.save()
         self.assertEqual(obj.translated_field, "en")
         delattr(obj, 'translated_field')
-        self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+        if django.VERSION >= (1, 10):   # on version 1.10 and newer, this refreshes from db
+            self.assertEqual(obj.translated_field, "en")
+        else:
+            self.assertRaises(AttributeError, getattr, obj, 'translated_field')
 
     def test_languagecodeattribute(self):
         # Its not possible to set/delete a language code

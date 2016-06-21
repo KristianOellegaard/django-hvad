@@ -36,7 +36,7 @@ def get_language_name(language_code):
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
                  initial=None, error_class=ErrorList, label_suffix=':',
-                 empty_permitted=False, instance=None):
+                 empty_permitted=False, instance=None, **kwargs):
         """
 
         """
@@ -56,7 +56,7 @@ class InlineModelForm(TranslatableModelForm):
         super(TranslatableModelForm, self).__init__(data, files, auto_id,
                                                      prefix, object_data,
                                                      error_class, label_suffix,
-                                                     empty_permitted, instance)
+                                                     empty_permitted, instance, **kwargs)
 
 
 class TranslatableModelAdminMixin(object):
