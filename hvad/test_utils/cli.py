@@ -16,7 +16,6 @@ def configure(**extra):
     defaults = dict(
         CACHE_BACKEND = 'locmem:///',
         DEBUG = True,
-        TEMPLATE_DEBUG = True,
         DATABASE_SUPPORTS_TRANSACTIONS = True,
         DATABASES = {'default': config(default='sqlite://localhost/hvad.db')},
         TEST_DATABASE_CHARSET = "utf8",
@@ -30,13 +29,6 @@ def configure(**extra):
         ADMIN_MEDIA_PREFIX = '/static/admin/',
         EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend',
         SECRET_KEY = 'key',
-        TEMPLATE_LOADERS = (    # Remove when dropping support for Django 1.7
-            'django.template.loaders.filesystem.Loader',
-            'django.template.loaders.app_directories.Loader',
-        ),
-        TEMPLATE_DIRS = [       # Remove when dropping support for Django 1.7
-            os.path.abspath(os.path.join(os.path.dirname(__file__), 'project', 'templates'))
-        ],
         TEMPLATES = [
             {
                 'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -44,6 +36,11 @@ def configure(**extra):
                     os.path.abspath(os.path.join(os.path.dirname(__file__), 'project', 'templates'))
                 ],
                 'APP_DIRS': True,
+                'OPTIONS': {
+                    'context_processors': [
+                        'django.contrib.auth.context_processors.auth',
+                    ],
+                }
             },
         ],
         MIDDLEWARE_CLASSES = [
@@ -77,6 +74,21 @@ def configure(**extra):
             'django.contrib.auth.hashers.MD5PasswordHasher',
         )
     )
+    if django.VERSION < (1, 8):
+        defaults.update(dict(
+            TEMPLATE_DEBUG = True,
+            TEMPLATE_CONTEXT_PROCESSORS = ( # Remove when dropping support for Django 1.7
+                'django.contrib.auth.context_processors.auth',
+            ),
+            TEMPLATE_LOADERS = (            # Remove when dropping support for Django 1.7
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
+            ),
+            TEMPLATE_DIRS = [               # Remove when dropping support for Django 1.7
+                os.path.abspath(os.path.join(os.path.dirname(__file__), 'project', 'templates'))
+            ],
+        ))
+
     defaults.update(extra)
     settings.configure(**defaults)
     from django.contrib import admin

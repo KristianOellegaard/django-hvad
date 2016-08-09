@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import with_statement
+from django.utils.encoding import force_str
 from hvad.test_utils.cli import configure
 from hvad.test_utils.tmpdir import temp_dir
 import argparse
@@ -14,6 +15,13 @@ def main(test_runner='hvad.test_utils.runners.NormalTestRunner', junit_output_di
         with temp_dir() as MEDIA_ROOT:
             configure(LANGUAGE_CODE='en', TEST_RUNNER=test_runner, JUNIT_OUTPUT_DIR=junit_output_dir,
                 TIME_TESTS=time_tests, STATIC_ROOT=STATIC_ROOT, MEDIA_ROOT=MEDIA_ROOT)
+            from django.core import checks
+            errors = checks.run_checks()
+            if errors:
+                for error in errors:
+                    print(force_str(error))
+                sys.exit(len(errors))
+
             from django.conf import settings
             from django.test.utils import get_runner
             TestRunner = get_runner(settings)
