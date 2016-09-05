@@ -4,8 +4,15 @@ Release Notes
 
 
 *****************************
-1.6.0 - upcoming release
+1.6.0 - current release
 *****************************
+
+Released on September 6, 2016
+
+Python and Django versions supported:
+
+- Support for Django 1.10 was added. It requires version 1.10.1 or better.
+- So, as a reminder, supported Django versions for this release are: 1.7, 1.8 LTS, 1.9, 1.10.x (for x ≥ 1).
 
 Fixes:
 
@@ -13,12 +20,15 @@ Fixes:
   :meth:`~hvad.manager.TranslationManager.delete_translations`. This only
   triggers one query instead of two, and allows enforcing non-null foreign key
   at the database level.
+- Django system checks are now run in the test suite in addition to hvad's tests.
 
 .. release 1.5.1
 
 *****************************
-1.5.1 - current release
+1.5.1
 *****************************
+
+Released on May 23, 2016
 
 Fixes:
 

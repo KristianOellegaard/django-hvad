@@ -26,7 +26,7 @@ Features
 * **Complete** - relationships, custom managers and querysets, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
 * **Reliable** - more than 300 test cases and counting. |coverage| |build|
-* **Compatible** with Django 1.4 to 1.9, running Python 2.7, 3.3, 3.4 or 3.5.
+* **Compatible** with Django 1.7 to 1.10, running Python 2.7, 3.3, 3.4 or 3.5.
 
 Django-hvad also features support for `Django REST framework`_ 3.1 or newer, including
 translation-aware serializers.
@@ -113,9 +113,9 @@ Releases
 Django-hvad uses the same release pattern as Django. The following versions
 are thus available:
 
-* Stable branch 1.4, available through `PyPI`_ and git branch ``releases/1.4.x``.
 * Stable branch 1.5, available through `PyPI`_ and git branch ``releases/1.5.x``.
-* Development branch 1.6, available through git branch ``master``.
+* Stable branch 1.6, available through `PyPI`_ and git branch ``releases/1.6.x``.
+* Development branch 1.7, available through git branch ``master``.
 
 Stable branches have minor bugfix releases as needed, with guaranteed compatibility.
 See the `installation guide`_ for details, or have a look at the `release notes`_.
