@@ -130,8 +130,8 @@ to continue the development.
 
 .. |package| image:: https://badge.fury.io/py/django-hvad.svg
                      :target: https://pypi.python.org/pypi/django-hvad
-.. |build| image:: https://secure.travis-ci.org/KristianOellegaard/django-hvad.png?branch=master
-.. |coverage| image:: https://coveralls.io/repos/KristianOellegaard/django-hvad/badge.png
+.. |build| image:: https://secure.travis-ci.org/KristianOellegaard/django-hvad.svg?branch=master
+.. |coverage| image:: https://coveralls.io/repos/KristianOellegaard/django-hvad/badge.svg
                       :target: https://coveralls.io/r/KristianOellegaard/django-hvad
 
 .. _documentation: http://django-hvad.readthedocs.org/
