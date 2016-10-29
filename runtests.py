@@ -2,7 +2,7 @@
 from __future__ import with_statement
 from django.utils.encoding import force_str
 from hvad.test_utils.cli import configure
-from hvad.test_utils.tmpdir import temp_dir
+from hvad.test_utils.context_managers import TemporaryDirectory
 import argparse
 import sys
 
@@ -11,23 +11,22 @@ def main(test_runner='hvad.test_utils.runners.NormalTestRunner', junit_output_di
          time_tests=False, verbosity=1, failfast=False, test_labels=None):
     if not test_labels:
         test_labels = ['hvad']
-    with temp_dir() as STATIC_ROOT:
-        with temp_dir() as MEDIA_ROOT:
-            configure(LANGUAGE_CODE='en', TEST_RUNNER=test_runner, JUNIT_OUTPUT_DIR=junit_output_dir,
-                TIME_TESTS=time_tests, STATIC_ROOT=STATIC_ROOT, MEDIA_ROOT=MEDIA_ROOT)
-            from django.core import checks
-            errors = checks.run_checks()
-            if errors:
-                for error in errors:
-                    print(force_str(error))
-                sys.exit(len(errors))
+    with TemporaryDirectory() as STATIC_ROOT, TemporaryDirectory() as MEDIA_ROOT:
+        configure(LANGUAGE_CODE='en', TEST_RUNNER=test_runner, JUNIT_OUTPUT_DIR=junit_output_dir,
+            TIME_TESTS=time_tests, STATIC_ROOT=STATIC_ROOT, MEDIA_ROOT=MEDIA_ROOT)
+        from django.core import checks
+        errors = checks.run_checks()
+        if errors:
+            for error in errors:
+                print(force_str(error))
+            sys.exit(len(errors))
 
-            from django.conf import settings
-            from django.test.utils import get_runner
-            TestRunner = get_runner(settings)
-        
-            test_runner = TestRunner(pattern='*.py', verbosity=verbosity, interactive=False, failfast=failfast)
-            failures = test_runner.run_tests(test_labels)
+        from django.conf import settings
+        from django.test.utils import get_runner
+        TestRunner = get_runner(settings)
+
+        test_runner = TestRunner(pattern='*.py', verbosity=verbosity, interactive=False, failfast=failfast)
+        failures = test_runner.run_tests(test_labels)
     sys.exit(failures)
 
 

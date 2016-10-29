@@ -3,50 +3,25 @@
 This code was mostly taken from the django-cms
 (https://github.com/divio/django-cms) with permission by it's lead developer.
 """
-from django.utils.translation import get_language, activate
-from shutil import rmtree as _rmtree
-from tempfile import template, mkdtemp, _exists
-import warnings
+import shutil
+import tempfile
 
-class LanguageOverride(object):
-    def __init__(self, language):
-        self.newlang = language
-        warnings.warn('LanguageOverride is deprecated and will be removed in '
-                      'hvad v1.2.0. Please use django.utils.translation.override '
-                      'instead', DeprecationWarning, stacklevel=2)
+try:
+    from tempfile import TemporaryDirectory
+except ImportError:
+    class TemporaryDirectory(object):
+        def __init__(self, suffix='', prefix='tmp', dir=None):
+            self.name = tempfile.mkdtemp(suffix, prefix, dir)
 
-    def __enter__(self):
-        self.oldlang = get_language()
-        activate(self.newlang)
+        def __enter__(self):
+            return self.name
 
-    def __exit__(self, type, value, traceback):
-        activate(self.oldlang)
-
-
-class TemporaryDirectory:
-    """Create and return a temporary directory.  This has the same
-    behavior as mkdtemp but can be used as a context manager.  For
-    example:
-
-        with TemporaryDirectory() as tmpdir:
-            ...
-
-    Upon exiting the context, the directory and everthing contained
-    in it are removed.
-    """
-
-    def __init__(self, suffix="", prefix=template, dir=None):
-        self.name = mkdtemp(suffix, prefix, dir)
-
-    def __enter__(self):
-        return self.name
-
-    def cleanup(self):
-        if _exists(self.name):
-            _rmtree(self.name)
-
-    def __exit__(self, exc, value, tb):
-        self.cleanup()
+        def __exit__(self, exc, value, tb):
+            try:
+                shutil.rmtree(self.name)
+            except OSError as err:
+                if err.errno != 2:
+                    raise
 
 
 class UserLoginContext(object):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+from django.utils import translation
 from rest_framework.serializers import ModelSerializer, CharField
-from hvad.test_utils.context_managers import LanguageOverride
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, Related, TranslatedMany
 from hvad.test_utils.data import NORMAL
@@ -190,7 +190,7 @@ class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
         obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
         serializer = AutoSerializer(instance=obj, data=data)
         self.assertTrue(serializer.is_valid())
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         self.assertSavedObject(obj, 'en', **data)
@@ -214,7 +214,7 @@ class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
         data['translated_field'] = 'translated_bis'
         serializer = AutoSerializer(instance=obj, data=data)
         self.assertTrue(serializer.is_valid())
-        with LanguageOverride('en'):
+        with translation.override('en'):
             obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         self.assertSavedObject(obj, 'sr', **data)
