@@ -4,6 +4,7 @@ from django.db import connection
 from django.db.models import Count
 from django.db.models.query_utils import Q
 from django.utils import translation
+from hvad.utils import get_cached_translation
 from hvad.test_utils.data import NORMAL, STANDARD
 from hvad.test_utils.testcase import HvadTestCase, minimumDjangoVersion
 from hvad.test_utils.project.app.models import Normal, AggregateModel, Standard, SimpleRelated
@@ -597,13 +598,108 @@ class AnnotateTests(HvadTestCase, StandardFixture, NormalFixture):
         self.assertEqual(qs[0].annotation, 2)
         self.assertEqual(qs[1].annotation, 2)
 
+class DeferOnlyTests(HvadTestCase, NormalFixture):
+    normal_count = 1
+
+    def test_only_shared(self):
+        with self.assertNumQueries(1):
+            qs = list(Normal.objects.language('en').only('id'))
+        obj = qs[0]
+        self.assertNotIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
+    def test_only_translated(self):
+        with self.assertNumQueries(1):
+            qs = list(Normal.objects.language('en').only('language_code'))
+        obj = qs[0]
+        self.assertNotIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
+    def test_only_split(self):
+        with self.assertNumQueries(1):
+            qs = list(Normal.objects.language('en').only('shared_field', 'language_code'))
+        obj = qs[0]
+        self.assertIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
+    def test_defer_shared(self):
+        with self.assertNumQueries(1):
+            qs = list(Normal.objects.language('en').defer('shared_field'))
+        obj = qs[0]
+        self.assertNotIn('shared_field', obj.__dict__)
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertIn('shared_field', obj.__dict__)
+
+    def test_defer_translated(self):
+        with self.assertNumQueries(1):
+            qs = list(Normal.objects.language('en').defer('translated_field'))
+        obj = qs[0]
+        self.assertIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
+    def test_defer_split(self):
+        with self.assertNumQueries(1):
+            qs = list(Normal.objects.language('en').defer('shared_field', 'translated_field'))
+        obj = qs[0]
+        self.assertNotIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
+        self.assertIn('shared_field', obj.__dict__)
+
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
+    def test_defer_chained(self):
+        """ Mutiple defer calls are cumulative, defer(None) resets everything """
+        qs = Normal.objects.language('en').defer('shared_field').defer('translated_field')
+        with self.assertNumQueries(1):
+            obj = list(qs)[0]
+        self.assertNotIn('shared_field', obj.__dict__)
+        self.assertNotIn('translated_field', get_cached_translation(obj).__dict__)
+
+        qs = qs.defer(None)
+        with self.assertNumQueries(1):
+            obj = list(qs)[0]
+        self.assertIn('shared_field', obj.__dict__)
+        self.assertIn('translated_field', get_cached_translation(obj).__dict__)
+
 
 class NotImplementedTests(HvadTestCase):
     def test_notimplemented(self):
         baseqs = SimpleRelated.objects.language('en')
         
-        self.assertRaises(NotImplementedError, baseqs.defer, 'shared_field')
-        self.assertRaises(NotImplementedError, baseqs.only)
         self.assertRaises(NotImplementedError, baseqs.bulk_create, [])
         # select_related with no field is not implemented
         self.assertRaises(NotImplementedError, baseqs.select_related)

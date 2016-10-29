@@ -6,6 +6,16 @@ Release Notes
 1.7.0 - upcoming release
 *****************************
 
+New features:
+
+- Support for :meth:`~django.db.models.query.QuerySet.defer` and
+  :meth:`~django.db.models.query.QuerySet.only` was added. Note that deferring
+  all translated fields will **not** result in translation being skipped,
+  because 1) it needs to be inspected for language resolution and 2) loaded
+  translation language must be fixed at query time.
+  Support is limited to immediate fields at the moment, ie it is not possible
+  to defer fields of additionals models loaded through ``select_related()``.
+
 Fixes:
 
 - Do not consider annotations when looking up translatable query fields.

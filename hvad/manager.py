@@ -805,11 +805,17 @@ class TranslationQueryset(QuerySet):
     def reverse(self):
         return super(TranslationQueryset, self).reverse()
 
-    def defer(self, *fields):
-        raise NotImplementedError()
+    def defer(self, *field_names):
+        if field_names == (None,):
+            fieldnames = field_names
+        else:
+            fieldnames = self._translate_fieldnames(field_names)
+        return super(TranslationQueryset, self).defer(*fieldnames)
 
-    def only(self, *fields):
-        raise NotImplementedError()
+    def only(self, *field_names):
+        fieldnames = self._translate_fieldnames(field_names)
+        fieldnames += ('master__%s' % self.shared_model._meta.pk.name, 'master_id', 'language_code')
+        return super(TranslationQueryset, self).only(*fieldnames)
 
 #===============================================================================
 # Fallbacks
