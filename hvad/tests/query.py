@@ -589,6 +589,15 @@ class AnnotateTests(HvadTestCase, StandardFixture, NormalFixture):
         with self.assertRaises(ValueError):
             qs = Normal.objects.language('en').annotate(Count('standards'), standards__count=Count('standards'))
 
+    def test_annotate_filter(self):
+        "Field translation ignores annotations"
+        qs = (Normal.objects.language('en').annotate(annotation=Count('standards'))
+                                           .filter(annotation=2))
+        self.assertEqual(len(qs), self.normal_count)
+        self.assertEqual(qs[0].annotation, 2)
+        self.assertEqual(qs[1].annotation, 2)
+
+
 class NotImplementedTests(HvadTestCase):
     def test_notimplemented(self):
         baseqs = SimpleRelated.objects.language('en')

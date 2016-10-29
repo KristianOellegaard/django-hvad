@@ -287,7 +287,11 @@ class TranslationQueryset(QuerySet):
         return expr
 
     def _translate_fieldnames(self, fieldnames):
-        return [self.field_translator(name) for name in fieldnames]
+        annotations = (self.query.annotations if django.VERSION >= (1, 8)
+                                              else self.query.aggregates)
+        return [name if name in annotations
+                     else self.field_translator(name)
+                for name in fieldnames]
 
     def _reverse_translate_fieldnames_dict(self, fieldname_dict):
         """

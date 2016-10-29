@@ -2,6 +2,15 @@
 Release Notes
 #############
 
+*****************************
+1.7.0 - upcoming release
+*****************************
+
+Fixes:
+
+- Do not consider annotations when looking up translatable query fields.
+  Fixes errors that could arise when using some annotation names.
+  — :issue:`303`.
 
 *****************************
 1.6.0 - current release
