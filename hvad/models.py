@@ -278,7 +278,10 @@ class TranslatableModel(models.Model):
             if translation.pk is None and update_fields:
                 del tkwargs['update_fields'] # allow new translations
             translation.master = self
-            translation.save(*args, **tkwargs)
+            try:
+                translation.save(*args, **tkwargs)
+            except Exception:
+                pass
     save.alters_data = True
 
     def translate(self, language_code):
@@ -421,7 +424,7 @@ class TranslatableModel(models.Model):
     #===========================================================================
     # Internals
     #===========================================================================
-    
+
     @property
     def _translated_field_names(self):
         if getattr(self, '_translated_field_names_cache', None) is None:
