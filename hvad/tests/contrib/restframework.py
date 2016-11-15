@@ -14,6 +14,7 @@ from hvad.contrib.restframework.serializers import TranslationListSerializer
 class AutoSerializer(TranslatableModelSerializer):
     class Meta:
         model = Normal
+        exclude = []
 
 class ManualSerializer(TranslatableModelSerializer):
     class Meta:
@@ -28,10 +29,12 @@ class ExcludeSerializer(TranslatableModelSerializer):
 class TranslationsSerializer(TranslationsMixin, ModelSerializer):
     class Meta:
         model = Normal
+        exclude = []
 
 class CombinedSerializer(TranslationsMixin, TranslatableModelSerializer):
     class Meta:
         model = Normal
+        exclude = []
 
 class CustomTranslationSerializer(ModelSerializer):
     # 'cheat' tests that shared fields are accessible to the translation serializer
@@ -46,15 +49,18 @@ class CustomTranslationSerializer(ModelSerializer):
 class CustomSerializer(TranslationsMixin, ModelSerializer):
     class Meta:
         model = Normal
+        exclude = []
         translations_serializer = CustomTranslationSerializer
 
 class RelatedSerializer(TranslatableModelSerializer):
     class Meta:
         model = Related
+        exclude = []
 
 class RelatedTranslationsSerializer(TranslationsMixin, ModelSerializer):
     class Meta:
         model = Related
+        exclude = []
 
 #=============================================================================
 
@@ -441,6 +447,7 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
         class SerializerClass(TranslationsMixin, ModelSerializer):
             class Meta:
                 model = TranslatedMany
+                exclude = []
                 translations_serializer = TranslationSerializerClass
 
         serializer = SerializerClass(instance=obj, data=data)

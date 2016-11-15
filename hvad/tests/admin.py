@@ -563,12 +563,12 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
         
     def test_translatable_modelform_factory(self):
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
-        self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id', 'translations'])
+        self.assertCountEqual(t.Meta.fields, ['shared_field'])
+        self.assertCountEqual(t.Meta.exclude, ['id', 'translations'])
         
         t = translatable_modelform_factory('en', Normal, fields=['shared_field'], exclude=['id'])
-        self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id', 'translations'])
+        self.assertCountEqual(t.Meta.fields, ['shared_field'])
+        self.assertCountEqual(t.Meta.exclude, ['id', 'translations'])
         
         class TestForm(TranslatableModelForm):
             class Meta:
@@ -576,8 +576,8 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
                 exclude = ['id']
                
         t = translatable_modelform_factory('en', Normal, form=TestForm)
-        self.assertEqual(t.Meta.fields, ['shared_field'])
-        self.assertEqual(t.Meta.exclude, ['id', 'translations'])
+        self.assertCountEqual(t.Meta.fields, ['shared_field'])
+        self.assertCountEqual(t.Meta.exclude, ['id', 'translations'])
         
 
 class AdminRelationTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture):

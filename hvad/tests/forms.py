@@ -96,6 +96,22 @@ class FormDeclarationTests(HvadTestCase):
         self.assertCountEqual(engineered._meta.exclude, ['translations'])
         self.assertCountEqual(engineered.base_fields, ['shared_field', 'translated_field'])
 
+    def test_fields_all(self):
+        'Empty form and filled in variant from factory - using __all__ special value'
+        class Form(TranslatableModelForm):
+            class Meta:
+                model = Normal
+                fields = '__all__'
+        self.assertIs(Form._meta.fields, None)
+        self.assertCountEqual(Form._meta.exclude, ['translations'])
+        self.assertCountEqual(Form.base_fields, ['shared_field', 'translated_field'])
+
+        engineered = translatable_modelform_factory('en', Normal, form=Form)
+        self.assertIs(engineered._meta.fields, None)
+        self.assertCountEqual(engineered._meta.exclude, ['translations'])
+        self.assertCountEqual(engineered.base_fields, ['shared_field', 'translated_field'])
+
+
     def test_model_and_fields(self):
         'Standalone form with model in Meta and field restrictions'
         class Form1(TranslatableModelForm):     # merged fields

@@ -21,6 +21,8 @@ Fixes:
 - Do not consider annotations when looking up translatable query fields.
   Fixes errors that could arise when using some annotation names.
   — :issue:`303`.
+- Accept special value ``__all__`` for form field list, as a synonym for ``None``,
+  meaning include all known fields. — :issue:`313`.
 
 *****************************
 1.6.0 - current release

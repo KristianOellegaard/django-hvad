@@ -5,7 +5,7 @@ from django.forms.fields import CharField
 from django.forms.formsets import formset_factory
 from django.forms.models import (ModelForm, BaseModelForm, ModelFormMetaclass,
     fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet,
-    modelform_factory, inlineformset_factory)
+    modelform_factory, inlineformset_factory, ALL_FIELDS)
 if django.VERSION >= (1, 7):
     from django.forms.utils import ErrorList
 else: #pragma: no cover
@@ -21,7 +21,7 @@ except ImportError: #pragma: no cover (python < 2.7)
     from django.utils.datastructures import SortedDict as OrderedDict
 import warnings
 
-veto_fields = ('id', 'master', 'master_id', 'language_code')
+veto_fields = {'id', 'master', 'master_id', 'language_code'}
 
 #=============================================================================
 
@@ -41,9 +41,11 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
 
         model = getattr(meta, 'model', None)
         fields = getattr(meta, 'fields', None)
+        if fields == ALL_FIELDS:
+            fields = None
 
         # Force exclusion of language_code as we use cleaned_data['language_code']
-        exclude = meta.exclude = list(getattr(meta, 'exclude', ()))
+        exclude = set(getattr(meta, 'exclude', ()))
         if fields is not None and 'language_code' in fields:
             raise FieldError('Field \'language_code\' is invalid.')
 
@@ -54,7 +56,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
                                 ' subclasses, which %s is not.' % model.__name__)
 
             # Additional exclusions
-            exclude.append(model._meta.translations_accessor)
+            exclude.add(model._meta.translations_accessor)
             if fields is not None and model._meta.translations_accessor in fields:
                 raise FieldError('Field \'%s\' is invalid', model._meta.translations_accessor)
 
@@ -62,7 +64,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             tfields = fields_for_model(
                 model._meta.translations_model,
                 fields=fields,
-                exclude=exclude + list(veto_fields),
+                exclude=exclude | set(veto_fields),
                 widgets=getattr(meta, 'widgets', None),
                 formfield_callback=attrs.get('formfield_callback')
             )
@@ -70,6 +72,8 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             # Drop translatable fields from Meta.fields
             if fields is not None:
                 meta.fields = [field for field in fields if tfields.get(field) is None]
+
+        meta.exclude = list(exclude)
 
         # Create the form class
         new_class = super(TranslatableModelFormMetaclass, cls).__new__(cls, name, bases, attrs)
@@ -114,7 +118,7 @@ class BaseTranslatableModelForm(BaseModelForm):
         if instance is not None:
             translation = load_translation(instance, language, enforce)
             if translation.pk:
-                exclude = (tuple(self._meta.exclude or ()) + veto_fields)
+                exclude = tuple(set(self._meta.exclude or ()) | veto_fields)
                 object_data.update(
                     model_to_dict(translation, self._meta.fields, exclude)
                 )
