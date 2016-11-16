@@ -11,43 +11,51 @@ class TranslatedAttribute(object):
     def __init__(self, model, name):
         self.translations_model = model._meta.translations_model
         self.name = name
+        self.tcache_name = model._meta.translations_cache
         self._NoTranslationError = type('NoTranslationError',
                                         (AttributeError, model._meta.translations_model.DoesNotExist),
                                         {})
         super(TranslatedAttribute, self).__init__()
 
-    def translation(self, instance):
+    def load_translation(self, instance):
+        if not hvad_settings.AUTOLOAD_TRANSLATIONS:
+            raise AttributeError('Field %r is a translatable field, but no translation is loaded '
+                                 'and auto-loading is disabled because '
+                                 'settings.HVAD[\'AUTOLOAD_TRANSLATIONS\'] is False' % self.name)
         try:
-            return getattr(instance, instance._meta.translations_cache)
-        except AttributeError:
-            pass
-
-        if hvad_settings.AUTOLOAD_TRANSLATIONS:
-            try:
-                translation = get_translation(instance)
-            except instance._meta.translations_model.DoesNotExist:
-                raise self._NoTranslationError('Accessing a translated field requires that '
-                                               'the instance has a translation loaded, or a '
-                                               'valid translation in current language (%s) '
-                                               'loadable from the database' % get_language())
-            set_cached_translation(instance, translation)
-            return translation
-        else:
-            raise AttributeError('No translation loaded and auto-loading is disabled because '
-                                 'settings.HVAD[\'AUTOLOAD_TRANSLATIONS\'] is False')
+            translation = get_translation(instance)
+        except instance._meta.translations_model.DoesNotExist:
+            raise self._NoTranslationError('Accessing a translated field requires that '
+                                           'the instance has a translation loaded, or a '
+                                           'valid translation in current language (%s) '
+                                           'loadable from the database' % get_language())
+        set_cached_translation(instance, translation)
+        return translation
 
     def __get__(self, instance, instance_type=None):
         if not instance:
             if not registry.apps.ready: #pragma: no cover
                 raise AttributeError('Attribute not available until registry is ready.')
             return self.translations_model._meta.get_field(self.name).default
-        return getattr(self.translation(instance), self.name)
+        try:
+            translation = getattr(instance, self.tcache_name)
+        except AttributeError:
+            translation = self.load_translation(instance)
+        return getattr(translation, self.name)
     
     def __set__(self, instance, value):
-        setattr(self.translation(instance), self.name, value)
+        try:
+            translation = getattr(instance, self.tcache_name)
+        except AttributeError:
+            translation = self.load_translation(instance)
+        setattr(translation, self.name, value)
     
     def __delete__(self, instance):
-        delattr(self.translation(instance), self.name)
+        try:
+            translation = getattr(instance, self.tcache_name)
+        except AttributeError:
+            translation = self.load_translation(instance)
+        delattr(translation, self.name)
 
 
 class LanguageCodeAttribute(TranslatedAttribute):

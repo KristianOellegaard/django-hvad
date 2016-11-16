@@ -49,6 +49,11 @@ Compatibility warnings:
   to all Django versions.
   Such objects should not happen anyway, and throw a warning when encountered.
 
+Fixes:
+
+- Increase speed of translated attribute access by ~30%, by avoiding a method call
+  when a translation is loaded.
+
 *****************************
 1.7.0 - current release
 *****************************
