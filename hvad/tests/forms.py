@@ -3,7 +3,6 @@ from django.core.exceptions import FieldError
 from django.utils import translation
 from hvad.forms import (TranslatableModelForm,
                         translatable_modelform_factory, translatable_modelformset_factory)
-from hvad.utils import get_cached_translation
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, SimpleRelated, Standard
 from hvad.test_utils.data import NORMAL
@@ -209,7 +208,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertEqual(form.initial['translated_field'], NORMAL[1].translated_field['ja'])
         self.assertIn('value="%s"' % NORMAL[1].shared_field, form.as_p())
         self.assertIn('value="%s"' % NORMAL[1].translated_field['ja'], form.as_p())
-        self.assertEqual(get_cached_translation(form.instance).language_code, 'ja')
+        self.assertEqual(form.instance.language_code, 'ja')
 
         # enforce japanese language
         with self.assertNumQueries(1):
@@ -221,7 +220,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertEqual(form.initial['translated_field'], NORMAL[1].translated_field['ja'])
         self.assertIn('value="%s"' % NORMAL[1].shared_field, form.as_p())
         self.assertIn('value="%s"' % NORMAL[1].translated_field['ja'], form.as_p())
-        self.assertEqual(get_cached_translation(form.instance).language_code, 'ja')
+        self.assertEqual(form.instance.language_code, 'ja')
 
     def test_instance_untranslated(self):
         # no language enforced, should load anyway
@@ -233,7 +232,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertEqual(form.initial['translated_field'], NORMAL[1].translated_field['en'])
         self.assertIn('value="%s"' % NORMAL[1].shared_field, form.as_p())
         self.assertIn('value="%s"' % NORMAL[1].translated_field['en'], form.as_p())
-        self.assertIs(get_cached_translation(form.instance), None)
+        self.assertIs(form.instance.language_code, None)
 
         # enforce japanese language
         with translation.override('en'):
@@ -245,7 +244,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertEqual(form.initial['translated_field'], NORMAL[1].translated_field['ja'])
         self.assertIn('value="%s"' % NORMAL[1].shared_field, form.as_p())
         self.assertIn('value="%s"' % NORMAL[1].translated_field['ja'], form.as_p())
-        self.assertIs(get_cached_translation(form.instance), None)
+        self.assertIs(form.instance.language_code, None)
 
     def test_instance_wrong_translation(self):
         # no language enforced
@@ -256,7 +255,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertEqual(form.initial['translated_field'], NORMAL[1].translated_field['en'])
         self.assertIn('value="%s"' % NORMAL[1].shared_field, form.as_p())
         self.assertIn('value="%s"' % NORMAL[1].translated_field['en'], form.as_p())
-        self.assertEqual(get_cached_translation(form.instance).language_code, 'en')
+        self.assertEqual(form.instance.language_code, 'en')
 
         # enforce japanese language
         Form = translatable_modelform_factory('ja', Normal, form=NormalForm)
@@ -267,7 +266,7 @@ class FormInstantiationTests(HvadTestCase, NormalFixture):
         self.assertEqual(form.initial['translated_field'], NORMAL[1].translated_field['ja'])
         self.assertIn('value="%s"' % NORMAL[1].shared_field, form.as_p())
         self.assertIn('value="%s"' % NORMAL[1].translated_field['ja'], form.as_p())
-        self.assertEqual(get_cached_translation(form.instance).language_code, 'en')
+        self.assertEqual(form.instance.language_code, 'en')
 
     def test_instance_initial(self):
         Form = translatable_modelform_factory('ja', Normal, form=NormalForm)

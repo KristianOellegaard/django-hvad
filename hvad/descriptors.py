@@ -61,15 +61,27 @@ class TranslatedAttribute(object):
         delattr(translation, self.name)
 
 
-class LanguageCodeAttribute(TranslatedAttribute):
+class LanguageCodeAttribute(object):
     """
-    The language_code attribute is different from other attribtues as it cannot
-    be deleted. Trying to do so will always cause an attribute error.
-    
+    The language_code attribute is different from other attribtues as:
+        - it cannot be set nor deleted. Trying to do so raises an attribute error.
+        - it never auto-loads a translation, but returns None if no translation is cached
     """
     def __init__(self, model):
-        super(LanguageCodeAttribute, self).__init__(model, 'language_code')
-    
+        self.translations_model = model._meta.translations_model
+        self.tcache_name = model._meta.translations_cache
+        super(LanguageCodeAttribute, self).__init__()
+
+    def __get__(self, instance, instance_type=None):
+        if not instance:
+            if not registry.apps.ready: #pragma: no cover
+                raise AttributeError('Attribute not available until registry is ready.')
+            return self.translations_model._meta.get_field('language_code').default
+        try:
+            return getattr(instance, self.tcache_name).language_code
+        except AttributeError:
+            return None
+
     def __set__(self, instance, value):
         raise AttributeError("The 'language_code' attribute cannot be changed directly.")
     
