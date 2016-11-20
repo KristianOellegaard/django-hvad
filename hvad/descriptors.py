@@ -3,6 +3,9 @@ from django.utils.translation import get_language
 from hvad.settings import hvad_settings
 from hvad.utils import get_translation, set_cached_translation
 
+__all__ = ()
+
+
 class TranslatedAttribute(object):
     """ Proxy descriptor, forwarding attribute access to loaded translation.
         If no translation is loaded, it will attempt to load one depending on settings

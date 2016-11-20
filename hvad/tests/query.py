@@ -551,12 +551,7 @@ class GetTranslationFromInstanceTests(HvadTestCase, NormalFixture):
 
     def test_cached_no_autoload(self):
         with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': False}):
-            # get the english instance
             en = Normal.objects.untranslated().prefetch_related('translations').get()
-            with self.assertNumQueries(0):
-                ja_trans = en.translations.get_language('ja')
-
-            # get the japanese *combined*
             ja = Normal.objects.language('ja').get(pk=en.pk)
 
             self.assertEqual(en.shared_field, NORMAL[1].shared_field)

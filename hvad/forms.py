@@ -13,6 +13,15 @@ from hvad.settings import hvad_settings
 from hvad.utils import (set_cached_translation, get_cached_translation, load_translation)
 from collections import OrderedDict
 
+__all__ = (
+    'TranslatableModelForm',
+    'BaseTranslationFormSet',
+    'translatable_modelform_factory',
+    'translatable_modelformset_factory',
+    'translatable_inlineformset_factory',
+    'translationformset_factory',
+)
+
 veto_fields = {'id', 'master', 'master_id', 'language_code'}
 
 #=============================================================================
@@ -56,7 +65,7 @@ class TranslatableModelFormMetaclass(ModelFormMetaclass):
             tfields = fields_for_model(
                 model._meta.translations_model,
                 fields=fields,
-                exclude=exclude | set(veto_fields),
+                exclude=exclude | veto_fields,
                 widgets=getattr(meta, 'widgets', None),
                 formfield_callback=attrs.get('formfield_callback')
             )

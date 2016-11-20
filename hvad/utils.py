@@ -3,6 +3,10 @@ from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
 
+__all__ = (
+    'get_translation_aware_manager',
+)
+
 #=============================================================================
 # Translation manipulators
 
@@ -103,14 +107,7 @@ class SmartGetFieldByName(object):
             except FieldDoesNotExist:
                 raise e
             else:
-                raise WrongManager("To access translated fields like %r from "
-                                   "an untranslated model, you must use a "
-                                   "translation aware manager. For non-translatable "
-                                   "models, you can get one using "
-                                   "hvad.utils.get_translation_aware_manager.\n"
-                                   "For translatable models, use the language() "
-                                   "method."%
-                                   name)
+                raise WrongManager(meta, name)
 
 
 class SmartGetField(object):
@@ -128,13 +125,7 @@ class SmartGetField(object):
             except FieldDoesNotExist:
                 raise e
             else:
-                raise WrongManager("To access translated fields like %r from "
-                                   "an untranslated model, you must use a "
-                                   "translation aware manager. For non-translatable "
-                                   "models, you can get one using "
-                                   "hvad.utils.get_translation_aware_manager.\n"
-                                   "For translatable models, use the language() "
-                                   "method." % name)
+                raise WrongManager(meta, name)
 
 #=============================================================================
 # Internal sugar

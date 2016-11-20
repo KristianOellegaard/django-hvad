@@ -16,6 +16,8 @@ from hvad.compat import MethodType
 from itertools import chain
 import sys
 
+__all__ = ('TranslatableModel', 'TranslatedFields', 'NoTranslation')
+
 #===============================================================================
 
 class TranslatedFields(object):

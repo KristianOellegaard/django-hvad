@@ -21,6 +21,14 @@ from hvad.settings import hvad_settings
 from hvad.utils import load_translation
 from hvad.manager import TranslationQueryset
 
+__all__ = (
+    'TranslatableAdmin',
+    'TranslatableInlineModelAdmin',
+    'TranslatableStackedInline',
+    'TranslatableTabularInline',
+    'InlineModelForm',
+)
+
 
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,

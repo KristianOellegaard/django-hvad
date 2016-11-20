@@ -4,6 +4,8 @@ from django.test.signals import setting_changed
 from django.utils.functional import SimpleLazyObject, empty
 from collections import namedtuple
 
+__all__ = ('hvad_settings', )
+
 #===============================================================================
 
 _default_settings = {

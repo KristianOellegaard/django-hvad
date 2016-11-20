@@ -466,7 +466,6 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                     IS_POPUP_VAR: '1',
                 }
                 response = self.client.post(url, data)
-                expected_url = reverse('admin:app_normal_changelist')
                 self.assertIn(response.status_code, [200, 302], response.content)
                 obj = Normal.objects.language('en').get(pk=self.normal_id[1])
                 self.assertEqual(obj.translated_field, "English NEW")

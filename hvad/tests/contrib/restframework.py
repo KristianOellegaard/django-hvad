@@ -388,7 +388,7 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
             obj = serializer.save()
         self.assertIsNot(obj.pk, None)
         qs = Normal.objects.language('all').filter(pk=obj.pk)
-        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+        self.assertCountEqual([(item.language_code, item.translated_field) for item in qs],
                               [('en', 'English'), ('sr', u'српски')])
 
     def test_update(self):
@@ -408,7 +408,7 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
             obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1])
-        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+        self.assertCountEqual([(item.language_code, item.translated_field) for item in qs],
                               [('en', 'English'), ('sr', u'српски')])
 
     def test_update_partial(self):
@@ -424,7 +424,7 @@ class TranslationsMixinTests(HvadTestCase, NormalFixture):
             obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1], shared_field='shared')
-        self.assertCountEqual([obj.language_code for obj in qs], self.translations)
+        self.assertCountEqual([item.language_code for item in qs], self.translations)
 
     def test_update_translated_many(self):
         'Update an existing instance, with an excluded translated M2M field'
@@ -509,7 +509,7 @@ class CombinedTests(HvadTestCase, NormalFixture):
         obj = serializer.save()
         self.assertIsNot(obj.pk, None)
         qs = Normal.objects.language('all').filter(pk=obj.pk)
-        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+        self.assertCountEqual([(item.language_code, item.translated_field) for item in qs],
                               [('en', 'English'), ('sr', u'српски')])
 
     def test_create_translatable(self):
@@ -525,7 +525,7 @@ class CombinedTests(HvadTestCase, NormalFixture):
         obj = serializer.save()
         self.assertIsNot(obj.pk, None)
         qs = Normal.objects.language('all').filter(pk=obj.pk)
-        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+        self.assertCountEqual([(item.language_code, item.translated_field) for item in qs],
                               [('sr', u'српски')])
 
     def test_update_translations(self):
@@ -545,7 +545,7 @@ class CombinedTests(HvadTestCase, NormalFixture):
         obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1])
-        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+        self.assertCountEqual([(item.language_code, item.translated_field) for item in qs],
                               [('en', 'English'), ('sr', u'српски')])
 
     def test_update_translatable(self):
@@ -562,7 +562,7 @@ class CombinedTests(HvadTestCase, NormalFixture):
         obj = serializer.save()
         self.assertEqual(obj.pk, self.normal_id[1])
         qs = Normal.objects.language('all').filter(pk=self.normal_id[1])
-        self.assertCountEqual([(obj.language_code, obj.translated_field) for obj in qs],
+        self.assertCountEqual([(item.language_code, item.translated_field) for item in qs],
                               [('en', NORMAL[1].translated_field['en']),
                                ('ja', NORMAL[1].translated_field['ja']),
                                ('sr', u'српски')])

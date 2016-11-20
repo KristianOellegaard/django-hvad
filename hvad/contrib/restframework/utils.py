@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
@@ -10,8 +10,8 @@ class TranslationListSerializer(serializers.ListSerializer):
     'A custom serializer to output translations in a nice dict'
     many = True
     default_error_messages = {
-        'not_a_dict': _l('Expected a dictionary of items, but got a {input_type}.'),
-        'no_translation': _l('At least one translation must be provided.'),
+        'not_a_dict': _('Expected a dictionary of items, but got a {input_type}.'),
+        'no_translation': _('At least one translation must be provided.'),
     }
 
     def to_internal_value(self, data):

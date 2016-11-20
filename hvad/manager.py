@@ -15,13 +15,9 @@ from hvad.query import (query_terms, q_children, expression_nodes,
 from hvad.settings import hvad_settings
 from hvad.utils import combine
 from copy import deepcopy
-import logging
 import sys
 
-#===============================================================================
-
-# Logging-related globals
-_logger = logging.getLogger(__name__)
+__all__ = ('TranslationQueryset', 'TranslationManager')
 
 #===============================================================================
 

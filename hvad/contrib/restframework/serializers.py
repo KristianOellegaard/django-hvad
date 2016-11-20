@@ -1,5 +1,5 @@
 from django.db.models.fields import FieldDoesNotExist
-from django.utils.translation import get_language, ugettext_lazy as _l
+from django.utils.translation import get_language, ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SkipField
@@ -8,8 +8,14 @@ from hvad.utils import get_cached_translation, set_cached_translation, load_tran
 from hvad.contrib.restframework.utils import TranslationListSerializer
 from collections import OrderedDict
 
-veto_fields = ('id', 'master')
+__all__ = (
+    'TranslationsMixin',
+    'TranslatableModelSerializer',
+    'HyperlinkedTranslatableModelSerializer',
+    'NestedTranslationSerializer',
+)
 
+veto_fields = ('id', 'master')
 
 #=============================================================================
 
@@ -152,8 +158,8 @@ class TranslationsMixin(object):
 class TranslatableModelMixin(object):
     ''' Adds support for translated fields on a serializer '''
     default_error_messages = {
-        'enforce_violation': _l('Sending a language_code is invalid on serializers '
-                                'that enforce a language'),
+        'enforce_violation': _('Sending a language_code is invalid on serializers '
+                               'that enforce a language'),
     }
 
     def __init__(self, *args, **kwargs):

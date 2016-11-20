@@ -3,6 +3,8 @@ from django.views.generic.edit import ModelFormMixin, ProcessFormView, BaseDelet
 from django.utils.translation import get_language
 from hvad.forms import translatable_modelform_factory
 
+__all__ = ('TranslatableCreateView', 'TranslatableUpdateView', 'TranslatableDeleteView')
+
 
 class TranslatableModelFormMixin(ModelFormMixin):
     ''' ModelFormMixin that works with an TranslatableModelForm in **enforce** mode '''
