@@ -2,7 +2,6 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.manager import TranslationManager, TranslationQueryset
-from hvad.utils import get_cached_translation
 from django.utils.encoding import python_2_unicode_compatible
 
 #===============================================================================
@@ -16,7 +15,7 @@ class Normal(TranslatableModel):
     )
 
     def __str__(self):
-        return self.safe_translation_getter('translated_field', self.shared_field)
+        return self.translated_field if self.translations.active else self.shared_field
 
 @python_2_unicode_compatible
 class Unique(TranslatableModel):
@@ -30,7 +29,7 @@ class Unique(TranslatableModel):
         unique_together = [('language_code', 'unique_by_lang')]
 
     def __str__(self):
-        return self.safe_translation_getter('translated_field', self.shared_field)
+        return self.translated_field if self.translations.active else self.shared_field
 
 @python_2_unicode_compatible
 class NormalProxy(Normal):
@@ -122,7 +121,7 @@ class TranslatedMany(TranslatableModel):
 
     def __str__(self):
         return ('%s, %s <%s>' % (self.name, self.translated_field, self.language_code)
-                if get_cached_translation(self) is not None
+                if self.translations.active is not None
                 else '%s <none>' % self.name)
 
 
@@ -215,18 +214,18 @@ class ConcreteAB(AbstractAA, AbstractB):
 
     def __str__(self):
         return '%s, %s, %s' % (
-            str(self.safe_translation_getter('translated_field_a', self.shared_field_a)),
-            self.safe_translation_getter('translated_field_b', str(self.shared_field_b)),
-            self.safe_translation_getter('translated_field_ab', self.shared_field_ab),
+            (self.translated_field_a, self.translated_field_b, self.translated_field_ab)
+            if self.translations.active else
+            (self.shared_field_a, self.shared_field_b, self.shared_field_ab)
         )
 
 @python_2_unicode_compatible
 class ConcreteABProxy(ConcreteAB):
     def __str__(self):
         return 'proxied %s, %s, %s' % (
-            str(self.safe_translation_getter('translated_field_a', self.shared_field_a)),
-            self.safe_translation_getter('translated_field_b', str(self.shared_field_b)),
-            self.safe_translation_getter('translated_field_ab', self.shared_field_ab),
+            (self.translated_field_a, self.translated_field_b, self.translated_field_ab)
+            if self.translations.active else
+            (self.shared_field_a, self.shared_field_b, self.shared_field_ab)
         )
     class Meta:
         proxy = True

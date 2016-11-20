@@ -4,6 +4,28 @@
 
 .. module:: hvad.utils
 
+.. function:: translation_rater(*languages)
+
+    Returns a translation rater for the given set of languages. That translation
+    rater is a function that, given a :term:`Translations Model`, returns an
+    integer whose value decreases the more its language is far in the given
+    language list. If its language is not in the list at all, returns
+    the minimum score of **-1**.
+
+    If language list is omitted, a default list is built, given scores in decreasing
+    order to:
+
+        * current language
+        * site's default language
+        * site's fallback languages
+
+    Example::
+
+        # Get a list of instance's translations, from most relevant to less relevant
+        # language:
+        translations = sorted(instance.translations.all(),
+                              key=translation_rater(), reverse=True)
+
 .. function:: get_cached_translation(instance)
 
     Returns the cached translation from an instance or ``None``.

@@ -884,19 +884,3 @@ class TranslationAwareManager(models.Manager):
     def get_queryset(self):
         qs = TranslationAwareQueryset(self.model, using=self.db)
         return qs
-
-#===============================================================================
-# Translations Model Manager
-#===============================================================================
-
-
-class TranslationsModelManager(models.Manager):
-    def get_language(self, language):
-        qs = self.all()
-        if qs._result_cache is None:
-            return self.get(language_code=language)
-        else: # take advantage of cached translations
-            for obj in qs:
-                if obj.language_code == language:
-                    return obj
-        raise self.model.DoesNotExist

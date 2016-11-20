@@ -2,23 +2,46 @@ import django
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
 from hvad.exceptions import WrongManager
+from hvad.settings import hvad_settings
 
 __all__ = (
+    'translation_rater',
     'get_translation_aware_manager',
 )
+
+#=============================================================================
+# Public utils
+
+def translation_rater(*languages):
+    """ Return a translation rater for the given set of languages.
+        If language list is omitted, use:
+            - current language, then
+            - site's default language, then
+            - site's fallback languages, then
+            - equal score of -1 for all other languages
+    """
+    if not languages:
+        languages = (get_language(), hvad_settings.DEFAULT_LANGUAGE) + hvad_settings.FALLBACK_LANGUAGES
+    score_dict = dict((code, idx) for idx, code in enumerate(languages[::-1], 1))
+    return lambda translation: score_dict.get(translation.language_code, -1)
 
 #=============================================================================
 # Translation manipulators
 
 def get_cached_translation(instance):
-    'Get currently cached translation of the instance'
+    """ Get currently cached translation of the instance.
+        Intended for internal use and third-party modules.
+        User code should use instance.translations.active instead.
+    """
     return getattr(instance, instance._meta.translations_cache, None)
 
 def set_cached_translation(instance, translation):
-    '''Sets the translation cached onto instance.
+    """ Sets the translation cached onto instance.
+        Intended for internal use and third-party modules.
+        User code should use instance.translations.activate(translation) instead
         - Passing None unsets the translation cache
         - Returns the translation that was loaded before
-    '''
+    """
     tcache = instance._meta.translations_cache
     previous = getattr(instance, tcache, None)
     if translation is None:

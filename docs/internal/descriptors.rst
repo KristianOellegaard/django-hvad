@@ -5,29 +5,6 @@
 .. module:: hvad.descriptors
 
 
-**************
-BaseDescriptor
-**************
-
-.. class:: BaseDescriptor
-
-    Base class for the descriptors, should not be used directly.
-        
-    .. attribute:: opts
-    
-        The options (meta) of the model.
-
-    .. method:: translation(self, instance)
-    
-        Get the cached translation object on an instance. If no translation is
-        cached yet, use the :func:`~django.utils.translation.get_language` function
-        to get the current language, load it from the database and cache it on the
-        instance.
-
-        If no translation is cached, and no translation exists for current language,
-        raise an :exc:`~exceptions.AttributeError`.
-
-
 *******************
 TranslatedAttribute
 *******************
@@ -40,32 +17,45 @@ TranslatedAttribute
         
         The name of this attribute
         
-    .. attribute:: opts
+    .. attribute:: translations_model
     
-        The options (meta) of the model.
+        The model class for :term:`Translations Model`.
+
+    .. attribute:: tcache_name
+
+        The name of the translation cache attribute, in model instances.
+
+    .. method:: load_translation(self, instance)
+
+        Load translation for this instance from the database or the prefetch cache.
+        Only loads if ``AUTOLOAD_TRANSLATIONS`` setting is True, otherwise raise
+        an :exc:`~exceptions.AttributeError`.
 
     .. method:: __get__(self, instance, instance_type=None)
     
-        Gets the attribute from the translation object using
-        :meth:`BaseDescriptor.translation`. If no instance is given (used from
-        the model instead of an instance) it returns the field object itself,
-        allowing introspection of the model.
+        Gets the attribute from the translation object, loading one with
+        :meth:`~hvad.descriptors.TranslatedAttribute.load_translation`
+        if none is currently cached.
+        If no instance is given (used from the model instead of an instance),
+        returns the field object itself, allowing introspection of the model.
 
-        Starting from Django 1.7, calling :func:`getattr` on a translated field
-        before the App Registry is initialized raises an
+        Calling :func:`getattr` on a translated field before the App Registry
+        is :attr:`initialized <django.apps.apps.ready>` raises an
         :exc:`~exceptions.AttributeError`.
 
     .. method:: __set__(self, instance, value)
     
-        Sets the value on the attribute on the translation object using
-        :meth:`BaseDescriptor.translation` if an instance is given, if no 
-        instance is given, raises an :exc:`~exceptions.AttributeError`.
+        Sets the value on the attribute on the translation object, loading one with
+        :meth:`~hvad.descriptors.TranslatedAttribute.load_translation`
+        if none is currently cached.
+        If no instance is given, raises an :exc:`~exceptions.AttributeError`.
 
     .. method:: __delete__(self, instance)
     
-        Deletes the attribute on the translation object using
-        :meth:`BaseDescriptor.translation` if an instance is given, if no 
-        instance is given, raises an :exc:`~exceptions.AttributeError`.
+        Deletes the attribute on the translation object, loading one with
+        :meth:`~hvad.descriptors.TranslatedAttribute.load_translation`
+        if none is currently cached.
+        If no instance is given, raises an :exc:`~exceptions.AttributeError`.
 
 
 *********************
@@ -76,6 +66,25 @@ LanguageCodeAttribute
 
     The language code descriptor is different than the other fields, since it's
     readonly. The getter is inherited from :class:`TranslatedAttribute`.
+
+    .. attribute:: translations_model
+
+        The model class for :term:`Translations Model`.
+
+    .. attribute:: tcache_name
+
+        The name of the translation cache attribute, in model instances.
+
+    .. method:: __get__(self, instance, instance_type=None)
+
+        Gets the ``language_code`` attribute from the translation object, or
+        returns ``None`` if no translation is currently cached.
+        If no instance is given (used from the model instead of an instance),
+        returns the field object itself, allowing introspection of the model.
+
+        Calling :func:`getattr` on a translated field before the App Registry
+        is :attr:`initialized <django.apps.apps.ready>` raises an
+        :exc:`~exceptions.AttributeError`.
 
     .. method:: __set__(self, instance, value)
     

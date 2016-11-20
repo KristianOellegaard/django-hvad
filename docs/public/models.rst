@@ -49,9 +49,9 @@ A full example of a model with translations::
           field ``language_code`` can be overriden in order to set it to be a
           different type of field, or change its options.
 
-***********************
-New and Changed Methods
-***********************
+***********************************
+New and Changed Methods and Objects
+***********************************
 
 translate
 =========
@@ -63,60 +63,6 @@ translate
     .. note:: This method does not perform any database queries. It assumes the
               translation does not exist. If it does exist, trying to save the
               instance will raise an :exc:`~django.db.IntegrityError`.
-
-
-safe_translation_getter
-=======================
-
-.. method:: safe_translation_getter(name, default=None)
-
-    Returns the value of the field specified by ``name`` if it's available on
-    this instance in the currently cached language. It does not try to get the
-    value from the database. Returns the value specified in ``default`` if no
-    translation was cached on this instance or the translation does not have a
-    value for this field.
-
-    This method is useful to safely get a value in methods such as
-    :meth:`~django.db.models.Model.__unicode__`.
-
-    .. note:: This method never performs any database queries.
-
-Example usage::
-
-    class MyModel(TranslatableModel):
-        translations = TranslatedFields(
-            name = models.CharField(max_length=255)
-        )
-
-        def __unicode__(self):
-            return self.safe_translation_getter('name', str(self.pk))
-
-
-lazy_translation_getter
-=======================
-
-.. versionchanged:: 0.4
-.. method:: lazy_translation_getter(name, default=None)
-
-    Tries to get the value of the field specified by ``name`` using
-    :meth:`safe_translation_getter`. If this fails, tries to load a translation
-    from the database. If none exists, returns the value specified in ``default``.
-
-    This method is useful to get a value in methods such as
-    :meth:`~django.db.models.Model.__unicode__`.
-
-
-get_available_languages
-=======================
-
-.. method:: get_available_languages
-
-    Returns a list of available language codes for this instance.
-
-    .. note:: This method runs a database query to fetch the available
-              languages, unless they were prefetched before (if the instance
-              was retrieved with a call to ``prefetch_related('translations')``).
-
 
 save
 ====
@@ -134,6 +80,66 @@ save
     - If only translated fields are specified, the shared model update will be skipped.
       Note that this means signals will not be triggered.
 
+    The two queries are run in a single translation
+
+translations
+============
+
+.. attribute:: translations
+
+    The actual name of this attribute is that of the
+    :class:`~hvad.models.TranslatedFields` instance. It gives access to the
+    :class:`~django.db.models.fields.related.RelatedManager` for
+    :term:`translations <Translations Model>`. This manager includes the
+    following additions:
+
+    .. method:: prefetch(self, force_reload=False)
+
+        Force loading of all translations for the instance. If they are
+        already loaded, this is a no-op unless ``force_reload`` is ``True``.
+
+        The cache used by this method is the same as the one used by
+        :meth:`~django.db.models.query.QuerySet.prefetch_related`, so
+        generally it is better to do ``prefetch_related('translations')``
+        when loading the model.
+
+    .. method:: activate(self, language_or_translation)
+
+        Sets the active translation for the instance. Possible values are:
+
+            * ``None`` to unload any currently loaded translation and let
+              the object without a translation.
+            * A :term:`Translations Model` instance attached to this model, for
+              instance one returned by ``instance.translations.all()``.
+            * A language code to load the corresponding translation. This forces
+              a calls to :meth:`prefetch`, then looks for a translation in
+              loaded objects. Finally, if no translation is found in given
+              language, raise a :exc:`~django.db.models.Model.DoesNotExist` exception.
+
+    .. attribute:: active
+
+        Returns the translation currently cached onto the instance, or ``None``
+        if the instance has no translation cached.
+
+    .. method:: get_language(self, language)
+
+        Returns the :term:`Translations Model` instance for given language. Special
+        value ``None`` is replaced with
+        :func:`current language <django.utils.translation.get_language>`.
+
+        If translations have been cached by :meth:`prefetch` or
+        :meth:`~django.db.models.query.QuerySet.prefetch_related`, the cache is
+        used. Otherwise, a database query is run, and the result is **not** cached.
+
+    .. method:: all_languages(self)
+
+        Returns a set of all language codes the instance has a translation for.
+        As a set, it is not ordered, use :func:`sorted` built-in function to
+        get a specific order.
+
+        If translations have been cached by :meth:`prefetch` or
+        :meth:`~django.db.models.query.QuerySet.prefetch_related`, the cache is
+        used. Otherwise, a database query is run, and the result is **not** cached.
 
 **********************
 Working with relations

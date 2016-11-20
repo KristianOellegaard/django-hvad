@@ -70,7 +70,7 @@ class TranslatableModelAdminMixin(object):
 
         languages = []
         current_language = get_language()
-        for language in obj.get_available_languages():
+        for language in getattr(obj, obj._meta.translations_accessor).all_languages():
             entry = u'<a href="%s">%s</a>' % (self.get_url(obj, lang=language), language)
             if language == current_language:
                 entry = u'<strong>%s</strong>' % entry
@@ -171,7 +171,8 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                            form_url='', obj=None):
         lang_code = self._language(request)
         lang = get_language_info(lang_code)['name_local']
-        available_languages = [] if obj is None else obj.get_available_languages()
+        available_languages = ([] if obj is None else
+                               getattr(obj, obj._meta.translations_accessor).all_languages())
 
         context.update({
             'title': '%s (%s)' % (context['title'], lang),
@@ -224,7 +225,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         if not self.has_delete_permission(request, obj):
             raise PermissionDenied
         
-        if len(obj.master.get_available_languages()) <= 1:
+        if len(obj.master.translations.all_languages()) <= 1:
             return self.deletion_not_allowed(request, obj, language_code)
 
         using = router.db_for_write(translations_model)

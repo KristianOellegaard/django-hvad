@@ -1,10 +1,26 @@
-from hvad.utils import (get_cached_translation, set_cached_translation,
+from django.utils import translation
+from hvad.utils import (translation_rater, get_cached_translation, set_cached_translation,
                         combine, get_translation, load_translation)
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, NormalProxy
 
+
+class TranslationRaterTests(HvadTestCase):
+    def test_default_rater(self):
+        with self.settings(HVAD={'DEFAULT_LANGUAGE': 'aa', 'FALLBACK_LANGUAGES': ('bb', 'cc', 'dd')}):
+            with translation.override('ee'):
+                rater = translation_rater()
+        result = sorted([Normal._meta.translations_model(language_code=lang)
+                         for lang in ('aa', 'bb', 'cc', 'dd', 'ee', 'ff')], key=rater)
+        self.assertEqual([trobj.language_code for trobj in result], ['ff', 'dd', 'cc', 'bb', 'aa', 'ee'])
+
+    def test_specified_rater(self):
+        rater = translation_rater('cc', 'aa', 'bb')
+        result = sorted([Normal._meta.translations_model(language_code=lang)
+                         for lang in ('aa', 'bb', 'cc', 'dd')], key=rater)
+        self.assertEqual([trobj.language_code for trobj in result], ['dd', 'bb', 'aa', 'cc'])
 
 class TranslationAccessorTests(HvadTestCase, NormalFixture):
     normal_count = 1
@@ -37,12 +53,12 @@ class TranslationAccessorTests(HvadTestCase, NormalFixture):
         model = Normal._meta.translations_model
         qs = model.objects.select_related('master').filter(master=self.normal_id[1])
 
-        for translation in qs:
-            combined = combine(translation, NormalProxy)
+        for trobj in qs:
+            combined = combine(trobj, NormalProxy)
             self.assertEqual(combined.pk, self.normal_id[1])
             self.assertEqual(combined.shared_field, NORMAL[1].shared_field)
             self.assertEqual(combined.translated_field,
-                             NORMAL[1].translated_field[translation.language_code])
+                             NORMAL[1].translated_field[trobj.language_code])
             self.assertIsInstance(combined, NormalProxy)
 
     def test_get_translation(self):

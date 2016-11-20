@@ -76,44 +76,68 @@ TranslatableModel
     .. note:: When initializing a :class:`TranslatableModel`, positional
               arguments are only supported for the shared fields.
 
-    .. attribute:: objects
-    
-        An instance of :class:`hvad.manager.TranslationManager`.
-    
-    .. attribute:: _shared_field_names
-    
-        A list of field on the :term:`Shared Model`.
+    .. method:: __init__(self, *args, **kwargs)
 
-    .. attribute:: _translated_field_names
-    
-        A list of field on the :term:`Translations Model`.
-    
-    .. classmethod:: save_translations(cls, instance, **kwargs)
-    
-        This classmethod is connected to the model's post save signal from
-        :func:`prepare_translatable_model` and saves the cached translation if it's
-        available.
-    
+        Initializes the instance. Keyword arguments are split into translated
+        and untranslated fields. Untranslated fields are passed to
+        :class:`superclass <django.db.models.Model>`,
+        while translated fields are passed to a newly-initializeded
+        :term:`Translations Model` instance.
+
+        Passing special value ``NoTranslation`` as ``language_code`` skips
+        initialization of the translation instance, leaving no translation
+        loaded in the cache. Mainly useful to prevent double initialization
+        in :meth:`~hvad.models.TranslatableModel.from_db`.
+
+    .. method:: from_db(cls, db, field_names, values)
+
+        Initializes a model instance from database-read field values. Overriden
+        so it can pass ``NoTranslation`` to
+        :meth:`~hvad.models.TranslatableModel.__init__`, avoiding double initialization
+        of the :term:`Translations Model` instance.
+
+    .. method:: save(self, *args, **kwargs)
+
+        Saves the mode instance into the database. If ``update_fields`` is given,
+        specified fields are split into translatable and untranslatable fields
+        and passed to the appropriate ``save`` methods. In case ``update_fields``
+        is specified and has only translatable or only untranslatable fields,
+        only the :term:`Translations Model` or :term:`Shared Model` is saved.
+
+        Saving is done in a transaction.
+
     .. method:: translate(self, language_code)
     
-        Initializes a new instance of the :term:`Translations Model` (does not
-        check the database if one for the language given already exists) and
-        sets it as cached translation. Used by end users to translate instances
+        Initializes a new instance of the :term:`Translations Model`.
+        Inconditionnaly creates the new translation, without checking whether
+        it exists in the database or in the translations cache. Sets the new
+        translation as cached translation. Used by end users to translate instances
         of a model.
-    
-    .. method:: safe_translation_getter(self, name, default=None)
-    
-        Helper method to safely get a field from the :term:`Translations Model`.
-        
-    .. method:: lazy_translation_getter(self, name, default=None)
 
-        Helper method to get the cached translation, and in the case the cache
-        for some reason doesnt exist, it gets it from the database.
-    
-    .. method:: get_available_languages(self)
-    
-        Returns a list of language codes in which this instance is available.
+    .. method:: clean_fields(self, exclude=None)
 
+        Validate the content of model fields. Overrides
+        :meth:`superclass's clean_fields <django.db.models.Model.clean_fields>` to
+        propagate the call to the :term:`Translations Model` as well, if one is
+        currently cached.
+
+    .. method:: validate_unique(self, exclude=None)
+
+        Validate values of model fields marked as unique. Overrides
+        :meth:`superclass's clean_fields <django.db.models.Model.validate_unique>` to
+        propagate the call to the :term:`Translations Model` as well, if one is
+        currently cached.
+
+    .. attribute:: objects
+
+        An instance of :class:`hvad.manager.TranslationManager`.
+
+    .. method:: check(cls, **kwargs)
+
+        Extend model checks to add hvad-specific checks, namely:
+
+            * That translatable and untranslatable fields have different names.
+            * That the default manager is translation-aware.
 
 Extra information on _meta of Shared Models
 ===========================================

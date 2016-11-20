@@ -1,8 +1,15 @@
+import django
 from django.apps import apps
 from django.db import models
 from django.db.models.expressions import Expression, Col, Value
-from django.db.models.fields.related import ForeignObject
+if django.VERSION >= (1, 9):
+    from django.db.models.fields.related import ForeignObject, ReverseManyToOneDescriptor
+else:
+    from django.db.models.fields.related import (ForeignObject,
+                                                 ForeignRelatedObjectsDescriptor as ReverseManyToOneDescriptor)
 from django.utils import translation
+from django.utils.functional import cached_property
+from hvad.utils import set_cached_translation
 
 __all__ = ()
 
@@ -152,3 +159,96 @@ class SingleTranslationObject(ForeignObject):
         )
         kwargs = {}
         return name, path, args, kwargs
+
+#===============================================================================
+# Field for customizing related translation manager
+#===============================================================================
+
+class TranslationsAccessor(ReverseManyToOneDescriptor):
+    @cached_property
+    def related_manager_cls(self):
+        cls = super(TranslationsAccessor, self).related_manager_cls
+        class RelatedManager(cls):
+            """ Manager for translations, used by the translation accessor """
+
+            def prefetch(self, force_reload=False):
+                """ Load all translations for a model into the prefetched objects cache.
+                    Do nothing if prefetch cache is already loaded, unless force_reload is set
+                """
+                if django.VERSION >= (1, 9):
+                    query_name = self.field.related_query_name()
+                else:
+                    query_name = self.instance._meta.translations_accessor
+                try:
+                    cache = self.instance._prefetched_objects_cache
+                except AttributeError:
+                    cache = self.instance._prefetched_objects_cache = {}
+                try:
+                    qs = cache[query_name]
+                except KeyError:
+                    qs = cache[query_name] = self.get_queryset()
+                else:
+                    if force_reload:
+                        qs._result_cache = None
+                bool(qs)    # force evaluation
+            prefetch.alters_data = True
+
+            def activate(self, language):
+                """ Make translation in specified language current for the instance
+                    - Only available from shared model translations accessor
+                    - Load all translations if they were not already loaded
+                    - Passing None unloads current translation
+                    - Raise a DoesNotExist exception if no translation exist for that language
+                """
+                if language is None:
+                    translation = None
+                elif language.__class__ is self.model:
+                    if language.master_id is not None and language.master_id != self.instance.pk:
+                        raise ValueError('Trying to activate a translation that does not '
+                                         'belong to this %s' % (self.instance.__class__.__name__,))
+                    translation = language
+                else:
+                    self.prefetch()
+                    try:
+                        translation = next(obj for obj in self.all() if obj.language_code == language)
+                    except StopIteration:
+                        raise self.model.DoesNotExist
+                set_cached_translation(self.instance, translation)
+            activate.alters_data = True
+
+            @property
+            def active(self):
+                """ Direct reference to the translation currently cached on instance.
+                    Thus, obj.translations.active is equivalent to get_cached_translation(obj)
+                """
+                instance = self.instance
+                return getattr(instance, instance._meta.translations_cache, None)
+
+            def get_language(self, language):
+                """ Return the translation for given language.
+                    Use the prefetch cache if available, otherwise hit the database.
+                """
+                language = language or translation.get_language()
+                qs = self.all()
+                if qs._result_cache is not None:
+                    try:
+                        return next(obj for obj in qs if obj.language_code == language)
+                    except StopIteration:
+                        raise self.model.DoesNotExist('%r is not translated in %r' %
+                                                      (self.instance, language))
+                else:
+                    return qs.get(language_code=language)
+
+            def all_languages(self):
+                """ Return a list of all available languages in db.
+                    Use the prefetch cache if available, otherwise hit the database.
+                """
+                qs = self.all()
+                if qs._result_cache is not None:
+                    return set(obj.language_code for obj in qs)
+                return set(qs.values_list('language_code', flat=True))
+
+        return RelatedManager
+
+class MasterKey(models.ForeignKey):
+    related_accessor_class = TranslationsAccessor
