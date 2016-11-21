@@ -1,3 +1,6 @@
+__all__ = ('FormData',)
+
+#===============================================================================
 
 class FormData(dict):
     ''' A dict that can be built from a form or formset instance, and will fill

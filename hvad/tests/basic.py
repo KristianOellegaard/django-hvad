@@ -16,7 +16,6 @@ from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase
 from hvad.test_utils.project.app.models import Normal, Unique, Related, MultipleFields, Boolean, Standard
-from hvad.test_utils.project.alternate_models_app.models import NormalAlternate
 from copy import deepcopy
 
 
@@ -272,17 +271,6 @@ class QuerysetTest(HvadTestCase):
         qs = qs.fallbacks('en', 'fr')
         self.assertEquals(qs._language_fallbacks, ('en', 'fr'))
 
-class AlternateCreateTest(HvadTestCase):
-    def test_create_instance_simple(self):
-        obj = NormalAlternate(language_code='en')
-        obj.shared_field = "shared"
-        obj.translated_field = "English"
-        obj.save()
-        en = NormalAlternate.objects.language('en').get(pk=obj.pk)
-        self.assertEqual(en.shared_field, "shared")
-        self.assertEqual(en.translated_field, "English")
-        self.assertEqual(en.language_code, "en")
-    
 
 class CreateTest(HvadTestCase):
     def test_create(self):

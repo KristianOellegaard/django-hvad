@@ -1,40 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import with_statement
-import sys
 from django.test.testcases import TestCase
-from shutil import rmtree
-from tempfile import template, mkdtemp, _exists
+from hvad.test_utils.context_managers import TemporaryDirectory
 import os
+import sys
 
 
 ROOT_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
 DOCS_DIR = os.path.abspath(os.path.join(ROOT_DIR, 'docs'))
-
-class TemporaryDirectory:
-    """Create and return a temporary directory.  This has the same
-    behavior as mkdtemp but can be used as a context manager.  For
-    example:
-
-        with TemporaryDirectory() as tmpdir:
-            ...
-
-    Upon exiting the context, the directory and everything contained
-    in it are removed.
-    """
-
-    def __init__(self, suffix="", prefix=template, dir=None):
-        self.name = mkdtemp(suffix, prefix, dir)
-
-    def __enter__(self):
-        return self.name
-
-    def cleanup(self):
-        if _exists(self.name):
-            rmtree(self.name)
-
-    def __exit__(self, exc, value, tb):
-        self.cleanup()
-
 
 class DocumentationTests(TestCase):
     """
