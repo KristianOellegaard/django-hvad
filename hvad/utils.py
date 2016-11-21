@@ -1,3 +1,6 @@
+""" Miscellaneous standalone functions for manipulating translations.
+    Mostly intended for internal use and third-party modules.
+"""
 import django
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language
@@ -24,6 +27,18 @@ def translation_rater(*languages):
         languages = (get_language(), hvad_settings.DEFAULT_LANGUAGE) + hvad_settings.FALLBACK_LANGUAGES
     score_dict = dict((code, idx) for idx, code in enumerate(languages[::-1], 1))
     return lambda translation: score_dict.get(translation.language_code, -1)
+
+def get_translation_aware_manager(model):
+    """ Return a manager for an untranslatable model, that recognizes
+        hvad translations.
+    """
+    if hasattr(model._meta, 'translations_model'):
+        raise TypeError('get_translation_aware_manager must only be used on regular, '
+                        'untranslatable model. Model %s is translatable.' % model.__name__)
+    from hvad.manager import TranslationAwareManager
+    manager = TranslationAwareManager()
+    manager.model = model
+    return manager
 
 #=============================================================================
 # Translation manipulators
@@ -104,12 +119,6 @@ def load_translation(instance, language, enforce=False):
     return translation
 
 #=============================================================================
-
-def get_translation_aware_manager(model):
-    from hvad.manager import TranslationAwareManager
-    manager = TranslationAwareManager()
-    manager.model = model
-    return manager
 
 # remove when we drop support for django 1.8
 class SmartGetFieldByName(object):

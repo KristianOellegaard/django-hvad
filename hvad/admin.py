@@ -1,3 +1,6 @@
+""" Translatable administration for use with django.contrib.admin
+    Part of hvad public API.
+"""
 import functools
 import warnings
 import django
@@ -33,6 +36,7 @@ __all__ = (
     'InlineModelForm',
 )
 
+#===============================================================================
 
 class InlineModelForm(TranslatableModelForm):
     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
@@ -59,6 +63,7 @@ class InlineModelForm(TranslatableModelForm):
                                                      error_class, label_suffix,
                                                      empty_permitted, instance, **kwargs)
 
+#===============================================================================
 
 class TranslatableModelAdminMixin(object):
     query_language_key = 'language'
@@ -108,6 +113,7 @@ class TranslatableModelAdminMixin(object):
     def _language(self, request):
         return request.GET.get(self.query_language_key, get_language())
 
+#===============================================================================
 
 class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
     form = TranslatableModelForm
@@ -164,9 +170,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         defaults.update(kwargs)
         language = self._language(request)
         return translatable_modelform_factory(language, self.model, **defaults)
-    
 
-    
     def render_change_form(self, request, context, add=False, change=False,
                            form_url='', obj=None):
         lang_code = self._language(request)
@@ -356,6 +360,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         except TemplateDoesNotExist: #pragma: no cover
             return None
 
+#===============================================================================
 
 class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin):
     form = InlineModelForm
@@ -444,6 +449,8 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         if ordering:
             qs = qs.order_by(*ordering)
         return qs
+
+#===============================================================================
 
 class TranslatableStackedInline(TranslatableInlineModelAdmin):
     template = 'admin/hvad/edit_inline/stacked.html'

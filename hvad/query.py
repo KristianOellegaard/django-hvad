@@ -1,3 +1,10 @@
+""" Django ORM internals abstraction
+    Internal use only, third-party modules and user code must not import this.
+
+    This holds tools to abstract out the exact structures used by often-changing
+    Django ORM internals. Having them all here reduces maintenance time when
+    a new Django version comes out.
+"""
 import django
 from django.db.models import Q, FieldDoesNotExist
 from django.db.models.expressions import Expression, Col
@@ -119,6 +126,11 @@ def expression_nodes(expression):
 # Query manipulations
 
 def add_alias_constraints(queryset, alias, **kwargs):
+    """ Add constraints to queryset, for given alias.
+        Bypass high-level API to prevent ORM from creating a new JOIN.
+        alias   - table name or alias to modify; must already be in query
+        kwargs  - Django-style lookup=value conditions.
+    """
     model, alias = alias
     clause = queryset.query.where_class()
     for lookup, value in kwargs.items():

@@ -29,6 +29,7 @@ class NormalFixture(Fixture):
             obj.save()
         return obj
 
+#===============================================================================
 
 class StandardFixture(NormalFixture):
     standard_count = 0
@@ -48,6 +49,7 @@ class StandardFixture(NormalFixture):
         )
         return obj
 
+#===============================================================================
 
 class QONormalFixture(Fixture):
     qonormal_count = 0
@@ -68,6 +70,7 @@ class QONormalFixture(Fixture):
             obj.save()
         return obj
 
+#===============================================================================
 
 class ConcreteABFixture(NormalFixture):
     concreteab_count = 0
@@ -94,6 +97,7 @@ class ConcreteABFixture(NormalFixture):
             obj.save()
         return obj
 
+#===============================================================================
 
 class DateFixture(Fixture):
     date_count = 0
@@ -114,6 +118,7 @@ class DateFixture(Fixture):
             obj.save()
         return obj
 
+#===============================================================================
 
 class UsersFixture(Fixture):
     def create_fixtures(self):
@@ -132,4 +137,3 @@ class UsersFixture(Fixture):
         obj.set_password(data['username'])
         obj.save()
         return obj
-

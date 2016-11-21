@@ -1,3 +1,6 @@
+""" Queryset and manager used by translatable models
+    Part of hvad public API.
+"""
 import django
 from django.core.exceptions import FieldError
 from django.db import connections, models, transaction, IntegrityError
@@ -22,7 +25,7 @@ __all__ = ('TranslationQueryset', 'TranslationManager')
 
 #===============================================================================
 
-class FieldTranslator(object):
+class _FieldTranslator(object):
     """
     Translates *shared* field names from '<shared_field>' to
     'master__<shared_field>' and caches those names.
@@ -37,7 +40,7 @@ class FieldTranslator(object):
         fields.add('pk')
         self._shared_fields = tuple(fields)
         self._cache = dict()
-        super(FieldTranslator, self).__init__()
+        super(_FieldTranslator, self).__init__()
 
     def __call__(self, key):
         try:
@@ -200,7 +203,7 @@ class TranslationQueryset(QuerySet):
     @property
     def field_translator(self):
         if self._field_translator is None:
-            self._field_translator = FieldTranslator(self)
+            self._field_translator = _FieldTranslator(self)
         return self._field_translator
 
     @property

@@ -1,8 +1,13 @@
+""" Miscellaneous tools used by translation-aware serializers.
+    Mostly intended for internal use and third-party modules.
+"""
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.settings import api_settings
 from hvad.utils import get_cached_translation, set_cached_translation
+
+__all__ = ('TranslationListSerializer', )
 
 #=============================================================================
 

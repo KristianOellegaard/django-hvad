@@ -1,3 +1,8 @@
+""" Cross-version compatibility for python 2 / 3
+    Internal use only, third-party modules and user code must not import this.
+    NOTE: only python compatibility should be here. Django version
+          compatibility must be handled in relevant modules.
+"""
 import sys
 PYTHON_MAJOR, PYTHON_MINOR = sys.version_info[0:2]
 

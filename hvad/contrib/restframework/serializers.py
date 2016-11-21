@@ -1,3 +1,10 @@
+""" Translatable-model-aware serializers for use with django-rest-framework
+    Extension to hvad public API.
+
+    TranslationsMixin                       - Add nested translations in a serializer
+    TranslatableModelSerializer             - Serializer that handles translatable fields
+    HyperlinkedTranslatableModelSerializer  - Hyperlinked serializer that handles translatable fields
+"""
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.translation import get_language, ugettext_lazy as _
 from rest_framework import serializers
@@ -261,8 +268,10 @@ class TranslatableModelMixin(object):
 #=============================================================================
 
 class TranslatableModelSerializer(TranslatableModelMixin, serializers.ModelSerializer):
+    'Serializer that handles translatable fields'
     pass
 
 class HyperlinkedTranslatableModelSerializer(TranslatableModelMixin,
                                              serializers.HyperlinkedModelSerializer):
+    'HyperlinkedSerializer that handles translatable fields'
     pass

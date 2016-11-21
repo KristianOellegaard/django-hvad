@@ -1,3 +1,6 @@
+""" Translatable-model-aware forms for use as a replacement to django.forms
+    Part of hvad public API.
+"""
 from django.core.exceptions import FieldError, ValidationError
 from django.forms.fields import CharField
 from django.forms.formsets import formset_factory
@@ -22,6 +25,7 @@ __all__ = (
     'translationformset_factory',
 )
 
+# Those fields are never loaded nor validated, because hvad manages them manually
 veto_fields = {'id', 'master', 'master_id', 'language_code'}
 
 #=============================================================================
@@ -175,10 +179,10 @@ class BaseTranslatableModelForm(BaseModelForm):
         return exclude
 
     def save(self, commit=True):
-        ''' Saves the model
-            If will always use the language specified in self.cleaned_data, with
+        ''' Save the model
+            Always use the language specified in self.cleaned_data, with
             the usual None meaning 'call get_language()'. If instance has
-            another language loaded, it gets reloaded with the new language.
+            another language loaded, reload it with the new language first.
 
             If no language is specified in self.cleaned_data, assume the instance
             is preloaded with correct language.
@@ -211,9 +215,17 @@ class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
 #=============================================================================
 
 def translatable_modelform_factory(language, model, form=TranslatableModelForm, *args, **kwargs):
+    """ Build a TranslatableModelForm for given model.
+        Returned form class will enforce given language.
+    """
+    if not issubclass(model, TranslatableModel):
+        raise TypeError('The model class given to translatable_modelform_factory '
+                        'must be a subclass of hvad.forms.TranslatableModel. '
+                        '%s is not.' % model.__name__)
     if not issubclass(form, TranslatableModelForm):
         raise TypeError('The form class given to translatable_modelform_factory '
-                        'must be a subclass of hvad.forms.TranslatableModelForm')
+                        'must be a subclass of hvad.forms.TranslatableModelForm. '
+                        '%s is not.' % form.__name__)
     klass = modelform_factory(model, form, *args, **kwargs)
     klass.language = language
     return klass
@@ -223,6 +235,9 @@ def translatable_modelformset_factory(language, model, form=TranslatableModelFor
                                       formfield_callback=None, formset=BaseModelFormSet,
                                       extra=1, can_delete=False, can_order=False,
                                       max_num=None, fields=None, exclude=None, **kwargs):
+    """ Build a TranslatableModelFormSet for given model.
+        Returned formset class will enforce given language.
+    """
 
     # This Django API changes often, handle args we know and raise for others
     form_kwargs, formset_kwargs = {}, {}
@@ -252,6 +267,9 @@ def translatable_inlineformset_factory(language, parent_model, model, form=Trans
                                        fields=None, exclude=None, extra=3,
                                        can_order=False, can_delete=True,
                                        max_num=None, formfield_callback=None, **kwargs):
+    """ Build an inline ModelFormSet for given translatable model.
+        Returned formset class will enforce given language.
+    """
     from django.forms.models import _get_foreign_key
     fk = _get_foreign_key(parent_model, model, fk_name=fk_name)
     if fk.unique:  #pragma: no cover (internal Django behavior)
@@ -263,7 +281,6 @@ def translatable_inlineformset_factory(language, parent_model, model, form=Trans
          fields=fields, exclude=exclude, max_num=max_num, **kwargs)
     FormSet.fk = fk
     return FormSet
-
 
 #=============================================================================
 
@@ -278,9 +295,16 @@ class BaseTranslationFormSet(BaseInlineFormSet):
         self.queryset = self.order_translations(self.queryset)
 
     def order_translations(self, qs):
+        """ Defines how to order the given translation queryset.
+            Intended for overriding in user forms. Default behavior is to
+            order lexicographically by language_code.
+        """
         return qs.order_by('language_code')
 
     def clean(self):
+        """ Cross-validate instance with each of its translations in turn.
+            Also check at least one translation would remain after saving the form.
+        """
         super(BaseTranslationFormSet, self).clean()
 
         # Trigger combined instance validation
@@ -310,6 +334,10 @@ class BaseTranslationFormSet(BaseInlineFormSet):
                                   code='notranslation')
 
     def _save_translation(self, form, commit=True):
+        """ Save translation for given translation form.
+            Do it by loading it onto the master object and saving the master object
+            so custom save() behavior is properly triggered.
+        """
         obj = form.save(commit=False)
         assert isinstance(obj, BaseTranslationModel)
 
@@ -330,6 +358,7 @@ class BaseTranslationFormSet(BaseInlineFormSet):
         return self._save_translation(form, commit)
 
     def add_fields(self, form, index):
+        """ Ensure translation form has a language_code field """
         super(BaseTranslationFormSet, self).add_fields(form, index)
         # Add the language code automagically
         if not 'language_code' in form.fields:

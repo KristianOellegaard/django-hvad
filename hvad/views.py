@@ -1,3 +1,6 @@
+""" Translatable-model-aware views for use as a replacement to django.views.generic
+    Part of hvad public API.
+"""
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView, BaseDeleteView
 from django.utils.translation import get_language
@@ -5,15 +8,20 @@ from hvad.forms import translatable_modelform_factory
 
 __all__ = ('TranslatableCreateView', 'TranslatableUpdateView', 'TranslatableDeleteView')
 
+#=============================================================================
 
 class TranslatableModelFormMixin(ModelFormMixin):
     ''' ModelFormMixin that works with an TranslatableModelForm in **enforce** mode '''
     query_language_key = 'language'
 
     def get_language(self):
+        """ Return the language to enforce on the form.
+            Use request URI's "language=" parameter, defaulting to current language.
+        """
         return self.request.GET.get(self.query_language_key) or get_language()
 
     def get_form_class(self):
+        """ Return the form class to use within the view """
         if self.model is not None:
             model = self.model
         elif getattr(self, 'object', None) is not None:
@@ -41,7 +49,7 @@ class TranslatableBaseCreateView(TranslatableModelFormMixin, ProcessFormView):
 class TranslatableCreateView(SingleObjectTemplateResponseMixin, TranslatableBaseCreateView):
     template_name_suffix = '_form'
 
-#-------------------------------------------------------------------------
+#=============================================================================
 
 class TranslatableBaseUpdateView(TranslatableModelFormMixin, ProcessFormView):
     def get(self, request, *args, **kwargs):
@@ -55,7 +63,7 @@ class TranslatableBaseUpdateView(TranslatableModelFormMixin, ProcessFormView):
 class TranslatableUpdateView(SingleObjectTemplateResponseMixin, TranslatableBaseUpdateView):
     template_name_suffix = '_form'
 
-#-------------------------------------------------------------------------
+#=============================================================================
 
 class TranslatableBaseDeleteView(BaseDeleteView):
     pass

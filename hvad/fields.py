@@ -1,3 +1,6 @@
+""" Special model fields to generate translation JOINS and augment related_manager API.
+    Internal use only, third-party modules and user code must not import this.
+"""
 import django
 from django.apps import apps
 from django.db import models
@@ -15,7 +18,6 @@ __all__ = ()
 
 #===============================================================================
 # Field for language joins
-#===============================================================================
 
 class FallbacksConstraint(Expression):
     """ A constraint to be added on a Join clause to keep only relevant language """
@@ -51,10 +53,16 @@ class FallbacksConstraint(Expression):
 
 
 class BetterTranslationsField(object):
+    """ Abstract field used to inject a self-JOIN for computing fallbacks """
+
     def __init__(self, translation_fallbacks, master):
-        # Filter out duplicates, while preserving order
+        """ Setup the abstract field to add given fallbacks to master model
+            translation_fallbacks   - language codes, most priorized first
+            master                  - shared model to get fallbacks for
+        """
         self._fallbacks = []
         self._master = master
+        # Filter out duplicates, while preserving order
         seen = set()
         for lang in translation_fallbacks:
             if lang not in seen:
@@ -71,7 +79,6 @@ class BetterTranslationsField(object):
 
 #===============================================================================
 # Field for translation navigation
-#===============================================================================
 
 class LanguageConstraint(Expression):
     """ A constraint to be added on a Join clause to keep only relevant language """
@@ -162,9 +169,11 @@ class SingleTranslationObject(ForeignObject):
 
 #===============================================================================
 # Field for customizing related translation manager
-#===============================================================================
 
 class TranslationsAccessor(ReverseManyToOneDescriptor):
+    """ Accessor set on TranslatedFields instance.
+        Allows customizing the related manager, adding translation-manipulation methods
+    """
     @cached_property
     def related_manager_cls(self):
         cls = super(TranslationsAccessor, self).related_manager_cls
@@ -251,4 +260,7 @@ class TranslationsAccessor(ReverseManyToOneDescriptor):
         return RelatedManager
 
 class MasterKey(models.ForeignKey):
+    """ ForeignKey from translation model to its master.
+        Customized to it installs the TranslationsAccessor onto the master model.
+    """
     related_accessor_class = TranslationsAccessor

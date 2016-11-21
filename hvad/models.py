@@ -1,3 +1,5 @@
+""" Translatable models, the main hvad API.
+"""
 import django
 from django.core import checks
 from django.core.exceptions import ImproperlyConfigured
@@ -20,6 +22,10 @@ import sys
 __all__ = ('TranslatableModel', 'TranslatedFields', 'NoTranslation')
 
 forbidden_translated_fields = frozenset({'Meta', 'objects', 'master', 'master_id'})
+
+#===============================================================================
+
+NoTranslation = object()
 
 #===============================================================================
 
@@ -191,6 +197,8 @@ class TranslatedFields(object):
 #===============================================================================
 
 class BaseTranslationModel(models.Model):
+    """ Base model for all translation models """
+
     def _get_unique_checks(self, exclude=None):
         # Due to the way translations are handled, checking for unicity of
         # the ('language_code', 'master') constraint is useless. We filter it out
@@ -203,9 +211,7 @@ class BaseTranslationModel(models.Model):
     class Meta:
         abstract = True
 
-
-NoTranslation = object()
-
+#===============================================================================
 
 class TranslatableModel(models.Model):
     """
@@ -395,6 +401,9 @@ class TranslatableModel(models.Model):
 #=============================================================================
 
 def prepare_translatable_model(sender, **kwargs):
+    """ Make a model translatable if it inherits TranslatableModel.
+        Invoked by Django after it has finished setting up any model.
+    """
     model = sender
     if not issubclass(model, TranslatableModel) or model._meta.abstract:
         return

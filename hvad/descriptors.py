@@ -1,3 +1,6 @@
+""" Attribute descriptors for translatable models
+    Internal use only, third-party modules and user code must not import this.
+"""
 from django.apps import registry
 from django.utils.translation import get_language
 from hvad.settings import hvad_settings
@@ -5,6 +8,7 @@ from hvad.utils import get_translation, set_cached_translation
 
 __all__ = ()
 
+#===============================================================================
 
 class TranslatedAttribute(object):
     """ Proxy descriptor, forwarding attribute access to loaded translation.
@@ -12,6 +16,7 @@ class TranslatedAttribute(object):
     """
 
     def __init__(self, model, name):
+        """ Initialize translated attribute {name} on the given {model} """
         self.translations_model = model._meta.translations_model
         self.name = name
         self.tcache_name = model._meta.translations_cache
@@ -21,6 +26,12 @@ class TranslatedAttribute(object):
         super(TranslatedAttribute, self).__init__()
 
     def load_translation(self, instance):
+        """ Load a translation for instance, if the those conditions are met:
+            * AUTOLOAD_TRANSLATIONS is True (otherwise AttributeError is raised)
+            * A translation exists for current language (otherwise self._NoTranslationError
+              is raised).
+            Returns the loaded translation
+        """
         if not hvad_settings.AUTOLOAD_TRANSLATIONS:
             raise AttributeError('Field %r is a translatable field, but no translation is loaded '
                                  'and auto-loading is disabled because '
@@ -60,6 +71,7 @@ class TranslatedAttribute(object):
             translation = self.load_translation(instance)
         delattr(translation, self.name)
 
+#===============================================================================
 
 class LanguageCodeAttribute(object):
     """

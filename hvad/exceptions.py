@@ -1,3 +1,7 @@
+""" Hvad-specific exceptions
+    Part of hvad public API.
+"""
+
 __all__ = ('WrongManager', )
 
 class WrongManager(Exception):
