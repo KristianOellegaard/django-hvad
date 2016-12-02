@@ -427,6 +427,19 @@ class InBulkTests(HvadTestCase, NormalFixture):
                 self.assertCountEqual((pk1,), result)
             with self.assertNumQueries(0):
                 self.assertEqual(result[pk1].shared_field, NORMAL[1].shared_field)
+            with self.assertNumQueries(0):
+                self.assertRaises(AttributeError, getattr, result[pk1], 'translated_field')
+            with self.assertNumQueries(0):
+                self.assertIs(result[pk1].language_code, None)
+
+    def test_untranslated_in_bulk_autoload(self):
+        pk1 = self.normal_id[1]
+        with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('ja'):
+            with self.assertNumQueries(1):
+                result = Normal.objects.untranslated().in_bulk([pk1])
+                self.assertCountEqual((pk1,), result)
+            with self.assertNumQueries(0):
+                self.assertEqual(result[pk1].shared_field, NORMAL[1].shared_field)
             with self.assertNumQueries(1):
                 self.assertEqual(result[pk1].translated_field, NORMAL[1].translated_field['ja'])
             with self.assertNumQueries(0):
@@ -532,29 +545,29 @@ class GetTranslationFromInstanceTests(HvadTestCase, NormalFixture):
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
 
-    def test_cached_autoload(self):
-        # get the english instance
+    def test_cached_no_autoload(self):
         en = Normal.objects.untranslated().prefetch_related('translations').get()
-        with self.assertNumQueries(0):
-            ja_trans = en.translations.get_language('ja')
-
-        # get the japanese *combined*
         ja = Normal.objects.language('ja').get(pk=en.pk)
 
         self.assertEqual(en.shared_field, NORMAL[1].shared_field)
-        self.assertEqual(en.translated_field, NORMAL[1].translated_field['en'])
-        self.assertRaises(AttributeError, getattr, ja_trans, 'shared_field')
-        self.assertEqual(ja_trans.translated_field, NORMAL[1].translated_field['ja'])
+        self.assertRaises(AttributeError, getattr, en, 'translated_field') # no autoload => error
         self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
         self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
 
-    def test_cached_no_autoload(self):
-        with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': False}):
+    def test_cached_autoload(self):
+        with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}):
+            # get the english instance
             en = Normal.objects.untranslated().prefetch_related('translations').get()
+            with self.assertNumQueries(0):
+                ja_trans = en.translations.get_language('ja')
+
+            # get the japanese *combined*
             ja = Normal.objects.language('ja').get(pk=en.pk)
 
             self.assertEqual(en.shared_field, NORMAL[1].shared_field)
-            self.assertRaises(AttributeError, getattr, en, 'translated_field') # no autoload => error
+            self.assertEqual(en.translated_field, NORMAL[1].translated_field['en'])
+            self.assertRaises(AttributeError, getattr, ja_trans, 'shared_field')
+            self.assertEqual(ja_trans.translated_field, NORMAL[1].translated_field['ja'])
             self.assertEqual(ja.shared_field, NORMAL[1].shared_field)
             self.assertEqual(ja.translated_field, NORMAL[1].translated_field['ja'])
 

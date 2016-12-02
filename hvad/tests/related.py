@@ -67,13 +67,19 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
         ja = Normal.objects.language('ja').get(pk=self.normal_id[1])
 
-        with translation.override('en'):
+        related = Standard.objects.get(pk=self.standard_id[1])
+        self.assertEqual(related.normal.pk, en.pk)
+        self.assertEqual(related.normal.shared_field, en.shared_field)
+        self.assertRaises(AttributeError, getattr, related.normal, 'translated_field')
+        self.assertTrue(related in en.standards.all())
+
+        with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('en'):
             related = Standard.objects.get(pk=self.standard_id[1])
             self.assertEqual(related.normal.pk, en.pk)
             self.assertEqual(related.normal.shared_field, en.shared_field)
             self.assertEqual(related.normal.translated_field, en.translated_field)
             self.assertTrue(related in en.standards.all())
-        with translation.override('ja'):
+        with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('ja'):
             related = Standard.objects.get(pk=self.standard_id[1])
             self.assertEqual(related.normal.pk, ja.pk)
             self.assertEqual(related.normal.shared_field, ja.shared_field)
@@ -88,8 +94,8 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
                 self.assertEqual(related.normal.pk, en.pk)
             with self.assertNumQueries(0):
                 self.assertEqual(related.normal.shared_field, en.shared_field)
-            with self.assertNumQueries(1):
-                self.assertEqual(related.normal.translated_field, en.translated_field)
+            with self.assertNumQueries(0):
+                self.assertRaises(AttributeError, getattr, related.normal, 'translated_field')
 
     def test_lookup_by_pk(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
@@ -97,7 +103,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
         with translation.override('en'):
             self.assertEqual(by_pk.normal.pk, en.pk)
             self.assertEqual(by_pk.normal.shared_field, en.shared_field)
-            self.assertEqual(by_pk.normal.translated_field, en.translated_field)
+            self.assertRaises(AttributeError, getattr, by_pk.normal, 'translated_field')
             self.assertTrue(by_pk in en.standards.all())
 
     def test_lookup_by_shared_field(self):
@@ -106,7 +112,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
         with translation.override('en'):
             self.assertEqual(by_shared_field.normal.pk, en.pk)
             self.assertEqual(by_shared_field.normal.shared_field, en.shared_field)
-            self.assertEqual(by_shared_field.normal.translated_field, en.translated_field)
+            self.assertRaises(AttributeError, getattr, by_shared_field.normal, 'translated_field')
             self.assertTrue(by_shared_field in en.standards.all())
 
     def test_lookup_by_translated_field(self):
@@ -118,7 +124,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             )
             self.assertEqual(by_translated_field.normal.pk, en.pk)
             self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
-            self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
+            self.assertRaises(AttributeError, getattr, by_translated_field.normal, 'translated_field')
             self.assertTrue(by_translated_field in en.standards.all())
 
     def test_lookup_by_translated_field_requires_translation_aware_manager(self):
@@ -140,7 +146,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             by_translated_field = translation_aware_manager.get(q)
             self.assertEqual(by_translated_field.normal.pk, en.pk)
             self.assertEqual(by_translated_field.normal.shared_field, en.shared_field)
-            self.assertEqual(by_translated_field.normal.translated_field, en.translated_field)
+            self.assertRaises(AttributeError, getattr, by_translated_field.normal, 'translated_field')
             self.assertTrue(by_translated_field in en.standards.all())
 
     def test_filter_by_shared_field(self):
@@ -153,9 +159,6 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             shared_fields = [obj.normal.shared_field for obj in by_shared_field]
             expected_fields = [en.shared_field]
             self.assertEqual(shared_fields, expected_fields)
-            translated_fields = [obj.normal.translated_field for obj in by_shared_field]
-            expected_fields = [en.translated_field]
-            self.assertEqual(translated_fields, expected_fields)
             for obj in by_shared_field:
                 self.assertTrue(obj in en.standards.all())
 
@@ -190,9 +193,6 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             shared_fields = [obj.normal.shared_field for obj in by_translated_field]
             expected_fields = [en.shared_field]
             self.assertEqual(shared_fields, expected_fields)
-            translated_fields = [obj.normal.translated_field for obj in by_translated_field]
-            expected_fields = [en.translated_field]
-            self.assertEqual(translated_fields, expected_fields)
             for obj in by_translated_field:
                 self.assertTrue(obj in en.standards.all())
 
@@ -214,9 +214,6 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             shared_fields = [obj.normal.shared_field for obj in by_translated_field]
             expected_fields = [en.shared_field]
             self.assertEqual(shared_fields, expected_fields)
-            translated_fields = [obj.normal.translated_field for obj in by_translated_field]
-            expected_fields = [en.translated_field]
-            self.assertEqual(translated_fields, expected_fields)
             for obj in by_translated_field:
                 self.assertTrue(obj in en.standards.all())
 

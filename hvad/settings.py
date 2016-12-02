@@ -17,7 +17,7 @@ _default_settings = {
     'LANGUAGES': djsettings.LANGUAGES,
     'FALLBACK_LANGUAGES': None,     # dynamic default
     'TABLE_NAME_FORMAT': '%s_translation',
-    'AUTOLOAD_TRANSLATIONS': True,
+    'AUTOLOAD_TRANSLATIONS': False,
     'USE_DEFAULT_QUERYSET': False,
 }
 
