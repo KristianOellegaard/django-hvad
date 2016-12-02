@@ -22,6 +22,38 @@ which is the Danish word for *What?*.
 If we were to continue the trend, we would rename to django-*quoi*, but that is
 very unlikely unless Django introduces major breaking changes in a future version.
 
+.. _translatable-str:
+
+***********************************************************
+How do I properly define my __str__ with translated fields?
+***********************************************************
+
+It is very common that the string representation of a model includes a
+translated field in some way. For instance::
+
+    class MyModel(TranslatableModel):
+        translations = TranslatedFields(
+            name=models.CharField(max_length=100),
+        )
+
+        def __str__(self):
+            return self.name
+
+Unfortunately, this approach will fail or behave in odd ways when,
+for some reason, an attempt is made to display an untranslated model.
+This commonly happens while debugging, and can make it really hard
+to pinpoint issues. The recommended way to solve this is to check
+whether a translation is loaded, like this::
+
+        def __str__(self):
+            return self.name if self.translations.active else str(self.pk)
+
+Now, if no translation is loaded, the primary key of the model is
+returned instead, avoiding a database query. The same thing should
+be done with other methods that may be used with untranslated instances,
+for instance :meth:`~django.db.models.Model.save` or
+:meth:`~django.db.models.Model.get_absolute_url`.
+
 .. _localemiddleware:
 
 *************************************************
@@ -146,12 +178,41 @@ to force it to be in the user's preferred language by adding another query::
           languages.
 
 
+.. _no-translated-many:
+
+***********************************************************
+Why are ManyToManyFields not supported as TranslatedFields?
+***********************************************************
+
+The central paradigm of hvad is making a :class:`~hvad.models.TranslatableModel`
+behave like it is a regular model. This means, from other models,
+that translations are not normally visible as a separate entity.
+They are just drop-in replacements for field values.
+
+There is inherent ambiguity in “translating a ManyToManyField”. Depending on
+specific situtation, this could mean:
+
+    * Make target object translatable. This is supported, it is a **untranslated**
+      ManyToManyField, pointing at another translatable model.
+    * Have the relation change depending on the language. This breaks hvad
+      paradigm, by making other models (namely, the ManyToMany target and the
+      through model) aware of the existence of specific translations.
+    * Have translatable fields on the through model. This is supported, as
+      long as neither the forward nor the backward foreign keys are translatable.
+      If they were, the relation would change depending on the language, and
+      we would be back to previous case.
+
+If you find yourself in case #2, this means you are not just adding translations
+to your database. Rather, your database interacts with language in a complex way,
+which you must design by yourself. This is beyond the scope of model translation
+packages like hvad.
+
+If you still want to use some of hvad facilities to design such a complex
+interaction, check out :issue:`this ticket <284>`.
+
 ****************************
 How do I use hvad with MPTT?
 ****************************
-
-.. note:: Since version 0.5, hvad no longer uses a custom metaclass, making
-          the old metaclass workaround unneeded.
 
 The `mptt`_ application implements Modified Preorder Tree Traversal
 for Django models. If you have any model in your project that is organized

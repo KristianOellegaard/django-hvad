@@ -4,6 +4,11 @@
 
 .. module:: hvad.models
 
+.. data:: NoTranslation
+
+    A special value used with :meth:`~hvad.models.TranslatableModel.__init__`
+    to prevent automatic creation of a translation.
+
 .. function:: create_translations_model(model, related_name, meta, **fields)
 
     A model factory used to create the :term:`Translations Model`. Makes sure
@@ -84,8 +89,8 @@ TranslatableModel
         while translated fields are passed to a newly-initializeded
         :term:`Translations Model` instance.
 
-        Passing special value ``NoTranslation`` as ``language_code`` skips
-        initialization of the translation instance, leaving no translation
+        Passing special value :data:`~hvad.models.NoTranslation` as ``language_code``
+        skips initialization of the translation instance, leaving no translation
         loaded in the cache. Mainly useful to prevent double initialization
         in :meth:`~hvad.models.TranslatableModel.from_db`.
 

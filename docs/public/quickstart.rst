@@ -28,12 +28,14 @@ descriptions and information about who wrote the description::
             description_author=models.CharField(max_length=255),
         )
         
-        def __unicode__(self):
+        def __str__(self):
             return self.name
 
 The fields ``name`` and ``author`` will not get translated, the fields
 ``description`` and ``description_author`` will.
 
+.. note:: To use a translated field in the ``__str__`` method,
+          please read :ref:`this FAQ entry <translatable-str>`.
 
 ****************************
 Create a translated instance
@@ -69,7 +71,7 @@ Create an instance::
 
 This is the most straightforward way to create a new instance with translated
 fields. Doing it this way avoids the possibility of creating instances with
-no translation at all, something one usually wants to avoid.
+no translation at all, which would be an error.
 
 Once we have an instance, we can add new translations. Let's add some French::
 
@@ -78,6 +80,8 @@ Once we have an instance, we can add new translations. Let's add some French::
     >>> hvad.name
     'django-hvad'
     >>> hvad.description
+    >>> hvad.language_code
+    'fr'
     >>> hvad.description = 'Un projet pour gérer des modèles multilingues sous Django'
     >>> hvad.description_author = 'Julien Hartmann'
     >>> hvad.save()
@@ -95,30 +99,40 @@ Get the instance again and check that the fields are correct::
 
     >>> obj = DjangoApplication.objects.language('en').get(name='django-hvad')
     >>> obj.name
-    u'django-hvad'
+    'django-hvad'
     >>> obj.author
-    u'Jonas Obrist'
+    'Jonas Obrist'
     >>> obj.description
-    u'A project to do multilingual models in Django'
+    'A project to do multilingual models in Django'
     >>> obj.description_author
-    u'Jonas Obrist'
+    'Jonas Obrist'
+    >>> obj.language_code
+    'en'
 
 We use :meth:`~hvad.manager.TranslationManager.language` to tell hvad we want
 to use translated fields, in English. This is one of the three ways to query
-a translatable model. It only ever considers instance that have a translation in
+a translatable model. It only ever considers instances that have a translation in
 the specified language and match the filters in that language.
 
-Other ways are :meth:`~hvad.manager.TranslationManager.untranslated`, which
-uses a fallback algorithm to fetch the best translation within a list of languages,
-and direct, vanilla use of the queryset, which does not know about translations or
-translated fields at all.
+Second way is to add a call to :meth:`~hvad.manager.TranslationManager.fallbacks`
+after ``language()``, enabling a fallback algorithm to fetch the best translation
+within a list of languages.
+
+Lastly, :meth:`~hvad.manager.TranslationManager.untranslated`, allows a direct,
+vanilla use of the queryset, which does not know about translations or translated
+fields at all.
+
+If neither ``language()`` nor ``untranslated()`` is used, one is picked
+automatically depending on :ref:`USE_DEFAULT_QUERYSET <settings>` setting.
 
 Back to our instance, get it again, in other languages::
 
     >>> obj = DjangoApplication.objects.language('fr').get(name='django-hvad')
     >>> obj.description
-    u'Un projet pour gérer des modèles multilingues sous Django'
-    >>>
+    'Un projet pour gérer des modèles multilingues sous Django'
+    >>> obj.language_code
+    'fr'
+
     >>> DjangoApplication.objects.language('ja').filter(name='django-hvad')
     []
 
@@ -127,11 +141,12 @@ our object had it filtered out of the query.
 
 .. note:: We set an explicit language when calling
           :meth:`~hvad.manager.TranslationQueryset.language` because
-          we are in an interactive shell, which is not necessarily in English.
+          we are in an interactive shell.
           In your normal views, you can usually omit the language simply writing
           ``MyModel.objects.language().get(...)``. This will use
           :func:`~django.utils.translation.get_language`
           to get the language the environment is using at the time of the query.
+          This requires the LocaleMiddleware is :ref:`properly setup <localemiddleware>`.
 
 Let's get all Django applications which have a description written by
 ``'Jonas Obrist'`` (in English, then in French)::

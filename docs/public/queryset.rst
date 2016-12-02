@@ -8,15 +8,10 @@ section, to start using your translatable models to :doc:`build some forms <form
 
 The queryset API is at the heart of hvad. It provides the ability to filter
 on translatable fields and retrieve instances along with their translations.
-They come in two flavors:
 
-- The :ref:`TranslationQueryset <TranslationQueryset-public>`, for working with
-  instances translated in a specific language. It is the one used when calling
-  :meth:`TranslationManager.language() <hvad.manager.TranslationManager.language>`.
-- The :ref:`FallbackQueryset <FallbackQueryset-public>`, for working with
-  all instances regardless of their language, and eventually loading translations
-  using a fallback algorithm. It is the one used when calling
-  :meth:`TranslationManager.untranslated() <hvad.manager.TranslationManager.untranslated>`.
+The :ref:`TranslationQueryset <TranslationQueryset-public>`, is for working with
+instances translated in a specific language. It is the one used when calling
+:meth:`TranslationManager.language() <hvad.manager.TranslationManager.language>`.
 
 .. note::
     It is possible to :ref:`override the querysets <custom-managers>` used on
@@ -74,7 +69,8 @@ fallbacks
     The `languages` arguments specified the languages to use, priorized from
     first to last. Special value `None` will be replaced with current language
     as returned by :func:`~django.utils.translation.get_language`. If called
-    with an empty argument list, the :setting:`LANGUAGES` setting will be used.
+    with an empty argument list, the ``FALLBACK_LANGUAGES`` :ref:`setting <settings>`
+    will be used.
 
     If an instance has no translation in the
     :ref:`language() <language-public>`-specified language,
@@ -137,8 +133,6 @@ not implemented (yet) in django-hvad:
 * :meth:`~hvad.manager.TranslationQueryset.bulk_create`
 * :meth:`~hvad.manager.TranslationQueryset.update_or_create`
 * :meth:`~hvad.manager.TranslationQueryset.complex_filter`
-* :meth:`~hvad.manager.TranslationQueryset.defer`
-* :meth:`~hvad.manager.TranslationQueryset.only`
 
 Using any of these methods will raise a :exc:`~exceptions.NotImplementedError`.
 
@@ -160,76 +154,6 @@ object exists, three queries if the object does not exist in this language, but
 in another language and four queries if the object does not exist at all. It
 will return ``True`` for created if either the shared or translated instance
 was created.
-
-
-.. _FallbackQueryset-public:
-
-****************
-FallbackQueryset
-****************
-
-.. deprecated:: 1.4
-
-This is a queryset returned by :meth:`~hvad.manager.TranslationManager.untranslated`,
-which can be used both to get the untranslated parts of models only or to use
-fallbacks for loading a translation based on a priority list of languages.
-By default, only the untranslated parts of models are retrieved from
-the database, and accessing translated field will trigger an additional query
-for each instance.
-
-.. warning:: You may not use any translated fields in any method on this
-             queryset class.
-
-.. warning:: If you have a default :attr:`~django.db.models.Options.ordering`
-             defined on your model and it includes any translated field, you
-             must specify an ordering on every query so as not to use the
-             translated fields specified by the default ordering.
-
-New Methods
-===========
-
-use_fallbacks
--------------
-
-.. versionchanged:: 0.5
-
-.. method:: use_fallbacks(*fallbacks)
-
-    .. deprecated:: 1.4
-
-    Returns a queryset which will use fallbacks to get the translated part of
-    the instances returned by this queryset. If ``fallbacks`` is given as a
-    tuple of language codes, it will try to get the translations in the order
-    specified, replacing the special `None` value with the current language at
-    query evaluation, as returned by :func:`~django.utils.translation.get_language`.
-    Otherwise the order of your LANGUAGES setting will be used, prepended with
-    current language.
-
-    This method is now deprecated, and one should use
-    :ref:`TranslationQueryset.fallbacks() <fallbacks-public>` for an equivalent
-    feature.
-    
-    .. warning:: Using fallbacks with a version of Django older than 1.6 will
-                 cause **a lot** of queries! In the worst
-                 case 1 + (n * x) with n being the amount of rows being fetched
-                 and x the amount of languages given as fallbacks. Only ever use
-                 this method when absolutely necessary and on a queryset with as
-                 few results as possible.
-
-                 .. versionchanged:: 0.5
-                    Fallbacks were reworked, so that when running
-                    on Django 1.6 or newer, only one query is needed.
-
-Not implemented public queryset methods
-=======================================
-
-The following are methods on a queryset which are public APIs in Django, but are
-not implemented on fallback querysets.
-
-* :meth:`~django.db.models.query.QuerySet.aggregate`
-* :meth:`~django.db.models.query.QuerySet.annotate`
-* :meth:`~django.db.models.query.QuerySet.defer`
-* :meth:`~django.db.models.query.QuerySet.only`
 
 ----------
 

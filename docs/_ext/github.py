@@ -1,12 +1,15 @@
 # Sphinx helper for github issue references
 from docutils import nodes
 from docutils.parsers.rst.roles import set_classes
+import re
 
 ISSUE_URL = 'https://github.com/{owner}/{repo}/issues/{num}'
+ISSUE_RE = re.compile(r'.*<(.*)>$')
 
 def github_issue_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
     try:
-        issuenum = int(text)
+        match = ISSUE_RE.match(text)
+        issuenum = int(match.group(1) if match else text)
         if issuenum <= 0:
             raise ValueError()
     except ValueError:
