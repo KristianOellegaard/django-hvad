@@ -18,7 +18,7 @@ if django.VERSION >= (1, 7):
 else: #pragma: no cover
     from django.forms.util import ErrorList
 from django.http import Http404, HttpResponseRedirect, QueryDict
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.context import RequestContext
 from django.template.loader import select_template
@@ -262,38 +262,38 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         else:
             title = _(u"Are you sure?")
 
-        context = {
-            "title": title,
-            "object_name": object_name,
-            "object": obj,
-            "deleted_objects": deleted_objects,
-            "perms_lacking": perms_needed,
-            "protected": protected,
-            "opts": opts,
-            "app_label": app_label,
-        }
-
-        return render_to_response(self.delete_confirmation_template or [
-            "admin/%s/%s/delete_confirmation.html" % (app_label, opts.object_name.lower()),
-            "admin/%s/delete_confirmation.html" % app_label,
-            "admin/delete_confirmation.html"
-        ], context, RequestContext(request))
+        return render(
+            request,
+            self.delete_confirmation_template or (
+                "admin/%s/%s/delete_confirmation.html" % (app_label, opts.object_name.lower()),
+                "admin/%s/delete_confirmation.html" % app_label,
+                "admin/delete_confirmation.html"
+            ), {
+                "title": title,
+                "object_name": object_name,
+                "object": obj,
+                "deleted_objects": deleted_objects,
+                "perms_lacking": perms_needed,
+                "protected": protected,
+                "opts": opts,
+                "app_label": app_label,
+            },
+        )
     
     def deletion_not_allowed(self, request, obj, language_code):
         opts = self.model._meta
-        app_label = opts.app_label
-        object_name = force_text(opts.verbose_name)
-        
-        context = RequestContext(request)
-        context.update({
-            'object': obj.master,
-            'language_code': language_code,
-            'opts': opts,
-            'app_label': app_label,
-            'language_name': get_language_name(language_code),
-            'object_name': object_name,
-        })
-        return render_to_response(self.deletion_not_allowed_template, context)
+        return render(
+            request,
+            self.deletion_not_allowed_template,
+            {
+                'object': obj.master,
+                'language_code': language_code,
+                'opts': opts,
+                'app_label': opts.app_label,
+                'language_name': get_language_name(language_code),
+                'object_name': force_text(opts.verbose_name),
+            },
+        )
         
     def delete_model_translation(self, request, obj):
         obj.delete()
@@ -520,25 +520,25 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
             "app_label": app_label,
         }
 
-        return render_to_response(self.delete_confirmation_template or [
+        return render(request, self.delete_confirmation_template or [
             "admin/%s/%s/delete_confirmation.html" % (app_label, opts.object_name.lower()),
             "admin/%s/delete_confirmation.html" % app_label,
             "admin/delete_confirmation.html"
-        ], context, RequestContext(request))
+        ], context)
 
     def deletion_not_allowed(self, request, obj, language_code):
         opts = self.model._meta
-        app_label = opts.app_label
-        object_name = force_text(opts.verbose_name)
-
-        context = RequestContext(request)
-        context['object'] = obj.master
-        context['language_code'] = language_code
-        context['opts'] = opts
-        context['app_label'] = app_label
-        context['language_name'] = get_language_name(language_code)
-        context['object_name'] = object_name
-        return render_to_response(self.deletion_not_allowed_template, context)
+        return render(
+            request, self.deletion_not_allowed_template,
+            {
+                'object': obj.master,
+                'language_code': language_code,
+                'opts': opts,
+                'app_label': opts.app_label,
+                'language_name': get_language_name(language_code),
+                'object_name': force_text(opts.verbose_name),
+            },
+        )
 
     def delete_model_translation(self, request, obj):
         obj.delete()
