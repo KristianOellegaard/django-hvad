@@ -149,8 +149,9 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
     def test_get_available_languages(self):
         obj = Normal.objects.language('en').get(pk=self.normal_id[1])
         admin = self._get_admin(Normal)
-        self.assertCountEqual(list(admin.get_available_languages(obj)), self.translations)
-        self.assertCountEqual(list(admin.get_available_languages(None)), [])
+        with self.assertThrowsWarning(DeprecationWarning, 2):
+            self.assertCountEqual(list(admin.get_available_languages(obj)), self.translations)
+            self.assertCountEqual(list(admin.get_available_languages(None)), [])
 
     def test_get_object(self):
         # Check if it returns a model, if there is at least one translation
@@ -278,26 +279,36 @@ class NormalAdminTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture
                 self.assertEqual(response.status_code, 200)
                 self.assertTrue('en' in response.content.decode('utf-8'))
 
-    def test_admin_change_form_language_tabs_urls(self):
-        with translation.override('en'):
-            with self.login_user_context('admin'):
-                get_url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
-                test_urls = [
-                    '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam'),
-                    '%s?%s' % (get_url, '_changelist_filters=q%3Dsearchparam&language=fr'),
-                ]
+    def test_admin_change_form_language_tabs(self):
+        with self.settings(LANGUAGES=(('en', 'English'),
+                                      ('fr', 'French'),
+                                      ('ja', 'Japanese'))):
+            with translation.override('en'):
+                with self.login_user_context('admin'):
+                    url = reverse('admin:app_normal_change', args=(self.normal_id[1],))
+                    test_data = (
+                        {},
+                        {'_changelist_filters': 'q=searchparam'},
+                        {'_changelist_filters': 'q=searchparam', 'language': 'fr'},
+                    )
 
-                for test_url in test_urls:
-                    response = self.client.get(test_url)
-                    self.assertEqual(response.status_code, 200)
-                    tabs = response.context['language_tabs']
+                    for data in test_data:
+                        response = self.client.get(url, data=data)
+                        self.assertEqual(response.status_code, 200)
+                        tabs = response.context['language_tabs']
 
-                    expected_querydict = QueryDict(urlparse(test_url).query, mutable=True)
-
-                    for actual_tab_url, name, key, status in tabs:
-                        expected_querydict['language'] = key
-                        actual_querydict = QueryDict(urlparse(actual_tab_url).query)
-                        self.assertEqual(expected_querydict, actual_querydict)
+                        for actual_tab_url, name, key, status, del_url in tabs:
+                            self.assertEqual(
+                                QueryDict(urlparse(actual_tab_url).query).dict(),
+                                dict(data, language=key)
+                            )
+                            self.assertEqual(url, urlparse(actual_tab_url).path)
+                            self.assertEqual(status, 'current' if key == data.get('language', 'en') else
+                                                     'available' if key in self.translations else
+                                                     'empty')
+                            expected_del_url = reverse('admin:app_normal_delete_translation',
+                                                       args=(self.normal_id[1], key))
+                            self.assertEqual(del_url, expected_del_url if key in self.translations else None)
 
     def test_admin_change_form_action_url(self):
         with translation.override('en'):
@@ -526,31 +537,6 @@ class AdminDeleteTranslationsTests(HvadTestCase, BaseAdminTests, UsersFixture, N
 
 
 class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
-    def test_language_tabs(self):
-        obj = Normal.objects.language("en").create(shared_field="shared",
-                                                   translated_field="english")
-        url = reverse('admin:app_normal_change', args=(obj.pk,))
-        request = self.request_factory.get(url)
-        normaladmin = self._get_admin(Normal)
-        available_languages = []
-        if obj:
-            available_languages = obj.get_available_languages()
-        tabs = normaladmin.get_language_tabs(request, available_languages)
-        languages = settings.LANGUAGES
-        self.assertEqual(len(languages), len(tabs))
-        for tab, lang in zip(tabs, languages):
-            _, tab_name, _, status = tab
-            _, lang_name = lang
-            self.assertEqual(tab_name, lang_name)
-            if lang == "en":
-                self.assertEqual(status, 'current')
-            elif lang == "ja":
-                self.assertEqual(status, 'available')
-                
-        with self.assertNumQueries(0):
-            with translation.override('en'):
-                normaladmin.get_language_tabs(request, [])
-
     def test_get_change_form_base_template(self):
         normaladmin = self._get_admin(Normal)
         template = normaladmin.get_change_form_base_template()

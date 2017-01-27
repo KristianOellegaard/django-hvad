@@ -16,6 +16,13 @@ New features:
   Support is limited to immediate fields at the moment, ie it is not possible
   to defer fields of additionals models loaded through ``select_related()``.
 
+Compatibility warnings:
+
+- Internal admin method ``TranslatableAdmin.get_available_languages()``
+  is deprecated and will be removed. Use :meth:`TranslatableModel.get_available_languages()
+  <hvad.models.TranslatableModel.get_available_languages>` instead.
+- Internal admin method ``TranslatableAdmin.get_language_tabs()`` signature changed.
+
 Fixes:
 
 - Do not consider annotations when looking up translatable query fields.
@@ -23,6 +30,8 @@ Fixes:
   — :issue:`303`.
 - Accept special value ``__all__`` for form field list, as a synonym for ``None``,
   meaning include all known fields. — :issue:`313`.
+- Fix translation deletion links that were improperly generated when using inline
+  change forms. — :issue:`317`.
 
 *****************************
 1.6.0 - current release

@@ -31,16 +31,5 @@
 
 {% block object-tools %}
 {{ block.super }}
-<div class="hvad-language-tabs nani-language-tabs">
-    {% with 'admin:'|add:opts.app_label|add:'_'|add:opts.model_name|add:'_delete_translation' as del_urlname %}
-	{% for url,name,code,status in language_tabs %}
-	   {% if status == 'current' %}
-           <input type="hidden" class="language_button selected" name="{{ code }}" />
-	       <span class="current">{{ name }}{% if current_is_translated and allow_deletion %}<a class="deletelink" href="{% url del_urlname object_id code %}" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
-       {% else %}
-	       <span class="{{ status }}"><a href="{{ url }}">{{ name }}</a> {% if status == 'available' and allow_deletion %}<a class="deletelink" href="{% url del_urlname object_id code %}" title="{% trans 'Delete Translation' %}">&nbsp;</a>{% endif %}</span>
-       {% endif %} 
-    {% endfor %}
-    {% endwith %}
-</div>
+{% include "admin/hvad/includes/translation_tabs.html" %}
 {% endblock %}

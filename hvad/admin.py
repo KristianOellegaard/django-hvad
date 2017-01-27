@@ -1,5 +1,6 @@
 import functools
 import django
+import warnings
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
 if django.VERSION >= (1, 7):
@@ -79,11 +80,16 @@ class TranslatableModelAdminMixin(object):
     all_translations.short_description = _(u'all translations')
 
     def get_available_languages(self, obj):
+        # remove in 1.8
+        warnings.warn('admin.get_available_languages is deprecated and will be removed. '
+                      'Please invoke the instance\'s get_available_languages directly.',
+                      DeprecationWarning, stacklevel=2)
         if obj is None:
             return []
         return obj.get_available_languages()
 
-    def get_language_tabs(self, request, available_languages):
+    def get_language_tabs(self, obj, request, available_languages):
+        info = None if obj is None else (obj._meta.app_label, obj._meta.model_name)
         tabs = []
         get = request.GET.copy()
         language = self._language(request)
@@ -96,7 +102,9 @@ class TranslatableModelAdminMixin(object):
                 status = 'available'
             else:
                 status = 'empty'
-            tabs.append((url, name, key, status))
+            del_url = (reverse('admin:%s_%s_delete_translation' % info, args=(obj.pk, key))
+                       if obj is not None and key in available_languages else None)
+            tabs.append((url, name, key, status, del_url))
         return tabs
 
     def _language(self, request):
@@ -171,7 +179,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
             'title': '%s (%s)' % (context['title'], lang),
             'current_is_translated': lang_code in available_languages,
             'allow_deletion': len(available_languages) > 1,
-            'language_tabs': self.get_language_tabs(request, available_languages),
+            'language_tabs': self.get_language_tabs(obj, request, available_languages),
             'base_template': self.get_change_form_base_template(),
         })
 
@@ -218,7 +226,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
         if not self.has_delete_permission(request, obj):
             raise PermissionDenied
         
-        if len(self.get_available_languages(obj.master)) <= 1:
+        if len(obj.master.get_available_languages()) <= 1:
             return self.deletion_not_allowed(request, obj, language_code)
 
         using = router.db_for_write(translations_model)
@@ -463,7 +471,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         if not self.has_delete_permission(request, obj):
             raise PermissionDenied
 
-        if len(self.get_available_languages(obj.master)) <= 1:
+        if len(obj.master.get_available_languages()) <= 1:
             return self.deletion_not_allowed(request, obj, language_code)
 
         using = router.db_for_write(translations_model)
