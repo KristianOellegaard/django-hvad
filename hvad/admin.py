@@ -409,7 +409,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
         from django.conf.urls import url
         urlpatterns = super(InlineModelAdmin, self).get_urls()
 
-        info = self.model._meta.app_label, self.model._meta.module_name
+        info = self.model._meta.app_label, self.model._meta.model_name
 
         return [
             url(r'^(.+)/delete-translation/(.+)/$',
@@ -507,7 +507,7 @@ class TranslatableInlineModelAdmin(InlineModelAdmin, TranslatableModelAdminMixin
 
             if not self.has_change_permission(request, None):
                 return HttpResponseRedirect(reverse('admin:index'))
-            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.module_name)))
+            return HttpResponseRedirect(reverse('admin:%s_%s_changelist' % (opts.app_label, opts.model_name)))
 
         object_name = '%s Translation' % force_text(opts.verbose_name)
 

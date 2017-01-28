@@ -569,6 +569,25 @@ class AdminNoFixturesTests(HvadTestCase, BaseAdminTests):
 class AdminRelationTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixture):
     normal_count = 1
 
+    def create_fixtures(self):
+        super(AdminRelationTests, self).create_fixtures()
+        self.simple = SimpleRelated.objects.language('en').create(
+            normal_id=self.normal_id[1], translated_field='English inline'
+        )
+        self.simple.translated_fields.create(language_code='fr', translated_field='French inline')
+        self.simple.translated_fields.create(language_code='da', translated_field='Danish inline')
+
+    def test_correct_id_in_inline(self):
+        with translation.override('da'):
+            instance = SimpleRelated.objects.get(pk=self.simple.pk)
+            class ExampleInlineForm(InlineModelForm):
+                class Meta:
+                    model = SimpleRelated
+                    exclude = []
+            form = ExampleInlineForm(instance=instance)
+
+            self.assertTrue(form.initial["id"] == instance.id)
+
     def test_adding_related_object(self):
         url = reverse('admin:app_simplerelated_add')
         TRANS_FIELD = "English Content" 
@@ -582,60 +601,8 @@ class AdminRelationTests(HvadTestCase, BaseAdminTests, UsersFixture, NormalFixtu
                 }
                 response = self.client.post(url, data)
 
-                simplerel = SimpleRelated.objects.all()[0]
+                simplerel = SimpleRelated.objects.language().get(translated_field=TRANS_FIELD)
                 self.assertEqual(simplerel.normal.pk, en.pk)
-                self.assertEqual(simplerel.translated_field, TRANS_FIELD)
 
                 expected_url = reverse('admin:app_simplerelated_change', args=(simplerel.pk,))
                 self.assertRedirects(response, expected_url)
-
-
-class TranslatableInlineAdminTests(HvadTestCase, BaseAdminTests, UsersFixture):
-    def test_correct_id_in_inline(self):
-        LANGUAGES = (
-            ('en', u'English'),
-            ('fr', u'Français'),
-            ('da', u'Dansk'),
-            ('ja', u'日本語'),
-        )
-        with self.settings(LANGUAGES=LANGUAGES):
-            with translation.override('en'):
-                normal = Normal.objects.language().create(
-                    shared_field="whatever1",
-                    translated_field="whatever in another language1"
-                )
-                normal2 = Normal.objects.language().create(
-                    shared_field="whatever2",
-                    translated_field="whatever in another language2"
-                )
-                normal3 = Normal.objects.language().create(
-                    shared_field="whatever3",
-                    translated_field="whatever in another language3"
-                )
-
-            simple1 = SimpleRelated.objects.language("en").create(
-                normal=normal3, translated_field="inline whatever translated"
-            )
-
-            simple1.translate("ja")
-            simple1.translated_field ="japanese stuff"
-            simple1.save()
-
-            simple1.translate("fr")
-            simple1.translated_field ="french stuff"
-            simple1.save()
-
-            simple1.translate("da")
-            simple1.translated_field ="danish stuff"
-            simple1.save()
-
-
-            with translation.override('da'):
-                instance = SimpleRelated.objects.get(pk=simple1.pk)
-                class ExampleInlineForm(InlineModelForm):
-                    class Meta:
-                        model = SimpleRelated
-                        exclude = []
-                form = ExampleInlineForm(instance=instance)
-
-                self.assertTrue(form.initial["id"] == instance.id)
