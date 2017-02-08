@@ -145,13 +145,11 @@ def where_node_children(node):
         - node: the node to visit
     '''
     todo = [node]
-    get_field_name = ((lambda n: n.lhs.target.name) if django.VERSION >= (1, 7) else
-                      (lambda n: n[0].field.name))
     while todo:
         node = todo.pop()
         for child in node.children:
             try:
-                field_name = get_field_name(child)
+                field_name = child.lhs.target.name
             except (TypeError, AttributeError):
                 pass
             else:

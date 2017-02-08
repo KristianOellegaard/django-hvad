@@ -1,6 +1,5 @@
 import django
-if django.VERSION >= (1, 7):
-    from django.core import checks
+from django.core import checks
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.db import models
@@ -41,10 +40,9 @@ class TranslatedFields(object):
     def _split_together(constraints, fields, meta, name):
         sconst, tconst = [], []
         if name in meta:
-            # raise in 1.4, remove in 1.6
-            warnings.warn('Passing \'%s\' to TranslatedFields is deprecated. Please use '
-                        'Please Meta.%s instead.' % (name, name), DeprecationWarning)
-            tconst.extend(meta[name])
+            # remove in 1.9
+            raise ValueError('Passing \'%s\' to TranslatedFields is no longer valid. '
+                             'Please use Meta.%s instead.' % (name, name), DeprecationWarning)
 
         for constraint in constraints:
             if all(item in fields for item in constraint):
@@ -155,17 +153,15 @@ class TranslatedFields(object):
             'app_label': model._meta.app_label,
             'db_table': meta.get('db_table',
                                  '%s%stranslation' % (model._meta.db_table, TABLE_NAME_SEPARATOR)),
+            'default_permissions': (),
         })
-        if django.VERSION >= (1, 7):
-            meta['default_permissions'] = ()
 
         # Split fields in Meta.unique_together
         sconst, tconst = self._split_together(
             model._meta.unique_together, tfields, meta, 'unique_together'
         )
         model._meta.unique_together = tuple(sconst)
-        if django.VERSION >= (1, 7):
-            model._meta.original_attrs['unique_together'] = tuple(sconst)
+        model._meta.original_attrs['unique_together'] = tuple(sconst)
         meta['unique_together'] = tuple(tconst)
         if not abstract:
             meta['unique_together'] += (('language_code', 'master'),)
@@ -175,8 +171,7 @@ class TranslatedFields(object):
             model._meta.index_together, tfields, meta, 'index_together'
         )
         model._meta.index_together = tuple(sconst)
-        if django.VERSION >= (1, 7):
-            model._meta.original_attrs['index_together'] = tuple(sconst)
+        model._meta.original_attrs['index_together'] = tuple(sconst)
         meta['index_together'] = tuple(tconst)
 
         return type('Meta', (object,), meta)
@@ -358,65 +353,64 @@ class TranslatableModel(models.Model):
     # Checks - require Django 1.7 or newer
     #===========================================================================
 
-    if django.VERSION >= (1, 7):
-        @classmethod
-        def check(cls, **kwargs):
-            errors = super(TranslatableModel, cls).check(**kwargs)
-            errors.extend(cls._check_shared_translated_clash())
-            return errors
+    @classmethod
+    def check(cls, **kwargs):
+        errors = super(TranslatableModel, cls).check(**kwargs)
+        errors.extend(cls._check_shared_translated_clash())
+        return errors
 
-        @classmethod
-        def _check_shared_translated_clash(cls):
-            fields = set(chain.from_iterable(
-                (f.name, f.attname)
-                for f in cls._meta.fields
-            ))
-            tfields = set(chain.from_iterable(
-                (f.name, f.attname)
-                for f in cls._meta.translations_model._meta.fields
-                if f.name not in ('id', 'master')
-            ))
-            return [checks.Error("translated field '%s' clashes with untranslated field." % field,
-                                hint=None, obj=cls, id='hvad.models.E01')
-                    for field in tfields.intersection(fields)]
+    @classmethod
+    def _check_shared_translated_clash(cls):
+        fields = set(chain.from_iterable(
+            (f.name, f.attname)
+            for f in cls._meta.fields
+        ))
+        tfields = set(chain.from_iterable(
+            (f.name, f.attname)
+            for f in cls._meta.translations_model._meta.fields
+            if f.name not in ('id', 'master')
+        ))
+        return [checks.Error("translated field '%s' clashes with untranslated field." % field,
+                             hint=None, obj=cls, id='hvad.models.E01')
+                for field in tfields.intersection(fields)]
 
-        @classmethod
-        def _check_local_fields(cls, fields, option):
-            """ Remove fields we recognize as translated fields from tests """
-            to_check = []
-            for field in fields:
-                try:
-                    cls._meta.translations_model._meta.get_field(field)
-                except FieldDoesNotExist:
-                    to_check.append(field)
-            return super(TranslatableModel, cls)._check_local_fields(to_check, option)
+    @classmethod
+    def _check_local_fields(cls, fields, option):
+        """ Remove fields we recognize as translated fields from tests """
+        to_check = []
+        for field in fields:
+            try:
+                cls._meta.translations_model._meta.get_field(field)
+            except FieldDoesNotExist:
+                to_check.append(field)
+        return super(TranslatableModel, cls)._check_local_fields(to_check, option)
 
-        @classmethod
-        def _check_ordering(cls):
-            if not cls._meta.ordering:
-                return []
+    @classmethod
+    def _check_ordering(cls):
+        if not cls._meta.ordering:
+            return []
 
-            if not isinstance(cls._meta.ordering, (list, tuple)):
-                return [checks.Error("'ordering' must be a tuple or list.",
-                                    hint=None, obj=cls, id='models.E014')]
+        if not isinstance(cls._meta.ordering, (list, tuple)):
+            return [checks.Error("'ordering' must be a tuple or list.",
+                                 hint=None, obj=cls, id='models.E014')]
 
-            fields = [f for f in cls._meta.ordering if f != '?']
-            fields = [f[1:] if f.startswith('-') else f for f in fields]
-            fields = set(f for f in fields if f not in ('_order', 'pk') and '__' not in f)
+        fields = [f for f in cls._meta.ordering if f != '?']
+        fields = [f[1:] if f.startswith('-') else f for f in fields]
+        fields = set(f for f in fields if f not in ('_order', 'pk') and '__' not in f)
 
-            valid_fields = set(chain.from_iterable(
-                (f.name, f.attname)
-                for f in cls._meta.fields
-            ))
-            valid_tfields = set(chain.from_iterable(
-                (f.name, f.attname)
-                for f in cls._meta.translations_model._meta.fields
-                if f.name not in ('master', 'language_code')
-            ))
+        valid_fields = set(chain.from_iterable(
+            (f.name, f.attname)
+            for f in cls._meta.fields
+        ))
+        valid_tfields = set(chain.from_iterable(
+            (f.name, f.attname)
+            for f in cls._meta.translations_model._meta.fields
+            if f.name not in ('master', 'language_code')
+        ))
 
-            return [checks.Error("'ordering' refers to the non-existent field '%s' --hvad." % field,
-                                hint=None, obj=cls, id='models.E015')
-                    for field in fields - valid_fields - valid_tfields]
+        return [checks.Error("'ordering' refers to the non-existent field '%s' --hvad." % field,
+                             hint=None, obj=cls, id='models.E015')
+                for field in fields - valid_fields - valid_tfields]
 
     #===========================================================================
     # Internals

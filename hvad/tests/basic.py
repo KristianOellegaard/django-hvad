@@ -38,7 +38,6 @@ class DefinitionTests(HvadTestCase):
         self.assertRaises(ImproperlyConfigured, type,
                           'InvalidModel2', bases, attrs)
 
-    @minimumDjangoVersion(1, 7)
     def test_field_name_clash_check(self):
         class ClashingFieldsModel(TranslatableModel):
             field = models.CharField(max_length=50)
@@ -76,9 +75,8 @@ class DefinitionTests(HvadTestCase):
             class Meta:
                 unique_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
 
-        if django.VERSION >= (1, 7):
-            errors = UniqueTogetherModel.check()
-            self.assertFalse(errors)
+        errors = UniqueTogetherModel.check()
+        self.assertFalse(errors)
 
         self.assertIn(('sfield_a', 'sfield_b'),
                          UniqueTogetherModel._meta.unique_together)
@@ -89,15 +87,13 @@ class DefinitionTests(HvadTestCase):
         self.assertIn(('tfield_a', 'tfield_b'),
                       UniqueTogetherModel._meta.translations_model._meta.unique_together)
 
-        with self.assertThrowsWarning(DeprecationWarning):
+        with self.assertRaises(ValueError):
             class DeprecatedUniqueTogetherModel(TranslatableModel):
                 translations = TranslatedFields(
                     tfield_a = models.CharField(max_length=250),
                     tfield_b = models.CharField(max_length=250),
                     meta = { 'unique_together': [('tfield_a', 'tfield_b')] }
                 )
-        self.assertIn(('tfield_a', 'tfield_b'),
-                      DeprecatedUniqueTogetherModel._meta.translations_model._meta.unique_together)
 
     def test_unique_together_invalid(self):
         with self.assertRaises(ImproperlyConfigured):
@@ -121,7 +117,6 @@ class DefinitionTests(HvadTestCase):
         self.assertIn(('tfield_a', 'tfield_b', 'language_code'),
                       UniqueTogetherModel2._meta.translations_model._meta.unique_together)
 
-    @minimumDjangoVersion(1, 7)
     def test_unique_together_migration(self):
         class UniqueTogetherModel3(TranslatableModel):
             sfield_a = models.CharField(max_length=250)
@@ -152,9 +147,8 @@ class DefinitionTests(HvadTestCase):
             class Meta:
                 index_together = [('sfield_a', 'sfield_b'), ('tfield_a', 'tfield_b')]
 
-        if django.VERSION >= (1, 7):
-            errors = IndexTogetherModel.check()
-            self.assertFalse(errors)
+        errors = IndexTogetherModel.check()
+        self.assertFalse(errors)
 
         self.assertIn(('sfield_a', 'sfield_b'),
                          IndexTogetherModel._meta.index_together)
@@ -165,15 +159,13 @@ class DefinitionTests(HvadTestCase):
         self.assertIn(('tfield_a', 'tfield_b'),
                       IndexTogetherModel._meta.translations_model._meta.index_together)
 
-        with self.assertThrowsWarning(DeprecationWarning):
+        with self.assertRaises(ValueError):
             class DeprecatedIndexTogetherModel(TranslatableModel):
                 translations = TranslatedFields(
                     tfield_a = models.CharField(max_length=250),
                     tfield_b = models.CharField(max_length=250),
                     meta = { 'index_together': [('tfield_a', 'tfield_b')] }
                 )
-        self.assertIn(('tfield_a', 'tfield_b'),
-                      DeprecatedIndexTogetherModel._meta.translations_model._meta.index_together)
 
         with self.assertRaises(ImproperlyConfigured):
             class InvalidIndexTogetherModel(TranslatableModel):
@@ -184,7 +176,6 @@ class DefinitionTests(HvadTestCase):
                 class Meta:
                     index_together = [('sfield', 'tfield')]
 
-    @minimumDjangoVersion(1, 7)
     def test_index_together_migration(self):
         class IndexTogetherModel2(TranslatableModel):
             sfield_a = models.CharField(max_length=250)
@@ -388,8 +379,8 @@ class CreateTest(HvadTestCase):
             with self.assertRaises(AttributeError):
                 ut.language_code
 
-    def test_create_lang_deprecation(self):
-        with self.assertRaises(RuntimeError):
+    def test_create_lang_override(self):
+        with self.assertRaises(ValueError):
             Normal.objects.language('en').create(
                 language_code="en",
                 shared_field="shared",
@@ -543,8 +534,8 @@ class GetByLanguageTest(HvadTestCase, NormalFixture):
             self.assertEqual(obj.shared_field, NORMAL[1].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
 
-    def test_args_override_deprecation(self):
-        with self.assertRaises(RuntimeError):
+    def test_args_override(self):
+        with self.assertRaises(Normal.DoesNotExist):
             Normal.objects.language('en').get(language_code='ja', pk=self.normal_id[1])
 
 
@@ -842,8 +833,8 @@ class GetOrCreateTest(HvadTestCase):
         self.assertRaises(ValueError, Normal.objects.language().get_or_create,
                           shared_field='nonexistent', defaults={'language_code': 'all'})
 
-    def test_get_or_create_lang_deprecation(self):
-        with self.assertRaises(RuntimeError):
+    def test_get_or_create_lang_override(self):
+        with self.assertRaises(ValueError):
             Normal.objects.language('en').get_or_create(
                 shared_field="shared",
                 translated_field='English',

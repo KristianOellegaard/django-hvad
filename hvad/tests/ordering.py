@@ -42,7 +42,6 @@ class OrderingTest(HvadTestCase, NormalFixture):
 class DefaultOrderingTest(HvadTestCase, NormalFixture):
     normal_count = 2
 
-    @minimumDjangoVersion(1, 7)
     def test_checks(self):
         from django.db import models
         from hvad.models import TranslatableModel, TranslatedFields

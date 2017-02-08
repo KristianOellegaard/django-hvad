@@ -427,8 +427,7 @@ class TranslationQueryset(QuerySet):
                 ))
             else:
                 masteratt = self.model._meta.get_field('master').attname
-                nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
-                            {'nullable': True, 'outer_if_first': True})
+                nullable = {'nullable': True}
                 alias = self.query.join((self.query.get_initial_alias(), self.model._meta.db_table,
                                         ((masteratt, masteratt),)),
                                         join_field=BetterTranslationsField(languages, master=masteratt),
@@ -441,15 +440,7 @@ class TranslationQueryset(QuerySet):
 
         else:
             language_code = self._language_code or get_language()
-            for _, field_name in where_node_children(self.query.where):
-                if field_name == 'language_code':
-                    # remove in 1.4
-                    raise RuntimeError(
-                        'Overriding language_code in get() or filter() is no longer supported. '
-                        'Please set the language in Model.objects.language() instead, '
-                        'or use language("all") to do manual filtering on languages.')
-            else:
-                self.query.add_filter(('language_code', language_code))
+            self.query.add_filter(('language_code', language_code))
             self._add_select_related(language_code)
 
         # if queryset is about to use the model's default ordering, we
@@ -572,13 +563,12 @@ class TranslationQueryset(QuerySet):
             yield obj
 
     def create(self, **kwargs):
-        if 'language_code' in kwargs:
-            if self._language_code is not None:
-                # remove in 1.4
-                raise RuntimeError('Overriding language_code in create() is no longer allowed. '
-                                   'Please set the language with language() instead.')
-        else:
+        if 'language_code' not in kwargs:
             kwargs['language_code'] = self._language_code or get_language()
+        elif self._language_code is not None:
+            raise ValueError('Overriding language_code in create() is not allowed. '
+                             'Please set the language with language() instead.')
+
         if kwargs['language_code'] == 'all':
             raise ValueError('Cannot create an object with language \'all\'')
         obj = self.shared_model(**kwargs)
@@ -622,13 +612,12 @@ class TranslationQueryset(QuerySet):
         params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
         params.update(defaults)
 
-        if 'language_code' in params:
-            if self._language_code is not None:
-                # remove in 1.4
-                raise RuntimeError('Overriding language_code in get_or_create() is no longer allowed. '
-                                   'Please set the language in Model.objects.language() instead.')
-        else:
+        if 'language_code' not in params:
             params['language_code'] = self._language_code or get_language()
+        elif self._language_code is not None:
+            raise ValueError('Overriding language_code in get_or_create() is not allowed. '
+                             'Please set the language with language() instead.')
+
         if params['language_code'] == 'all':
             raise ValueError('Cannot create an object with language \'all\'')
 
@@ -644,7 +633,6 @@ class TranslationQueryset(QuerySet):
             except self.model.DoesNotExist:
                 raise exc_info[1]
 
-    @minimumDjangoVersion(1, 7)
     def update_or_create(self, defaults=None, **kwargs):
         raise NotImplementedError()
 
@@ -758,10 +746,8 @@ class TranslationQueryset(QuerySet):
                                       'you must provide a list of fields.')
         if fields == (None,):
             self._raw_select_related = []
-        elif django.VERSION >= (1, 7):  # in newer versions, calls are cumulative
+        else:
             self._raw_select_related.extend(fields)
-        else:  #pragma: no cover        # in older versions, they overwrite each other
-            self._raw_select_related = list(fields)
         return self
 
     def complex_filter(self, filter_obj):
@@ -985,8 +971,7 @@ class SelfJoinFallbackQueryset(_SharedFallbackQueryset):
                     True
                 ))
             else:
-                nullable = ({'nullable': True} if django.VERSION >= (1, 7) else
-                            {'nullable': True, 'outer_if_first': True})
+                nullable = {'nullable': True}
                 alias1 = qs.query.join((qs.query.get_initial_alias(), tmodel._meta.db_table,
                                         ((qs.model._meta.pk.attname, masteratt),)),
                                     join_field=getattr(qs.model, taccessor).related.field.rel,
@@ -1053,10 +1038,7 @@ class TranslationManager(models.Manager):
             core_filters tells whether the queryset will bypass RelatedManager
             mechanics and therefore needs to reapply the filters on its own.
         '''
-        if django.VERSION >= (1, 7):
-            qs = klass(self.model, using=self.db, hints=self._hints)
-        else:
-            qs = klass(self.model, using=self.db) #pragma: no cover
+        qs = klass(self.model, using=self.db, hints=self._hints)
         core_filters = getattr(self, 'core_filters', None) if core_filters else None
         if core_filters:
             qs = qs._next_is_sticky().filter(**core_filters)

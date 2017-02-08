@@ -6,10 +6,7 @@ from django.forms.formsets import formset_factory
 from django.forms.models import (ModelForm, BaseModelForm, ModelFormMetaclass,
     fields_for_model, model_to_dict, construct_instance, BaseInlineFormSet, BaseModelFormSet,
     modelform_factory, inlineformset_factory, ALL_FIELDS)
-if django.VERSION >= (1, 7):
-    from django.forms.utils import ErrorList
-else: #pragma: no cover
-    from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
 from hvad.compat import with_metaclass
@@ -203,16 +200,9 @@ class BaseTranslatableModelForm(BaseModelForm):
         return super(BaseTranslatableModelForm, self).save(commit=commit)
 
 
-if django.VERSION >= (1, 7):
-    class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
-                                               BaseTranslatableModelForm)):
-        pass
-else: #pragma: no cover
-    # Older django version have buggy metaclass
-    class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
-                                               BaseTranslatableModelForm, ModelForm)):
-        __metaclass__ = TranslatableModelFormMetaclass # Django 1.4 compatibility
-
+class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
+                                            BaseTranslatableModelForm)):
+    pass
 
 #=============================================================================
 

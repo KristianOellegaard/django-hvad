@@ -130,12 +130,8 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_lookup_by_non_existing_field(self):
         with translation.override('en'):
-            if django.VERSION >= (1, 7):
-                self.assertRaises(TypeError, Standard.objects.get,
-                                  normal__non_existing_field=1)
-            else:
-                self.assertRaises(FieldError, Standard.objects.get,
-                                  normal__non_existing_field=1)
+            self.assertRaises(TypeError, Standard.objects.get,
+                              normal__non_existing_field=1)
 
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
@@ -472,10 +468,7 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
         qs = qs.select_related('normal')
         self.assertCountEqual(qs._raw_select_related, ['normal'])
         qs = qs.select_related('translated')
-        if django.VERSION >= (1, 7):
-            self.assertCountEqual(qs._raw_select_related, ['normal', 'translated'])
-        else:
-            self.assertCountEqual(qs._raw_select_related, ['translated'])
+        self.assertCountEqual(qs._raw_select_related, ['normal', 'translated'])
         qs = qs.select_related(None)
         self.assertCountEqual(qs._raw_select_related, [])
 

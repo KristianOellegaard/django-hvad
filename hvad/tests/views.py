@@ -27,25 +27,10 @@ class TestDeleteView(TranslatableDeleteView):
     model = Normal
     slug_field = 'shared_field'
 
-class DeprecatedObjectUpdateView(TranslatableUpdateView):
-    model = Normal
-    def _get_object(self, queryset=None):
-        return Normal.objects.untranslated().get(pk=self.kwargs['pk'])
-
-class DeprecatedLanguageUpdateView(TranslatableUpdateView):
-    model = Normal
-    def _language(self, request):
-        return request.GET.get('lang')
-
 class DeprecatedFilterUpdateView(TranslatableUpdateView):
     model = Normal
     def filter_kwargs(self):
         return {'shared_field': self.kwargs['custom']}
-
-class DeprecatedContextUpdateView(TranslatableUpdateView):
-    model = Normal
-    def context_modifier_foo(self, **kwargs):
-        return { 'modifier': 'foo' }
 
 #=============================================================================
 
@@ -327,50 +312,3 @@ class UpdateViewTests(HvadTestCase, NormalFixture):
             obj = Normal.objects.language('ja').get(pk=self.normal_id[2])
             self.assertEqual(obj.shared_field, NORMAL[2].shared_field)
             self.assertEqual(obj.translated_field, NORMAL[2].translated_field['ja'])
-
-
-class TransitionTests(HvadTestCase, NormalFixture):
-    normal_count = 1
-
-    def setUp(self):
-        super(TransitionTests, self).setUp()
-        self.user = User.objects.create(username='admin', is_superuser=True)
-
-    def test__get_object_deprecation(self):
-        with translation.override('en'):
-            request = self.request_factory.get('/url/')
-            request.user = self.user
-            with self.assertRaises(AssertionError):
-                response = DeprecatedObjectUpdateView.as_view()(request, pk=self.normal_id[1])
-
-    def test_filter_kwargs_deprecation(self):
-        with translation.override('en'):
-            request = self.request_factory.get('/url/')
-            request.user = self.user
-            with self.assertRaises(AssertionError):
-                response = DeprecatedFilterUpdateView.as_view()(request, custom=NORMAL[1].shared_field)
-
-    def test_object_id_deprecation(self):
-        with translation.override('en'):
-            request = self.request_factory.get('/url/')
-            request.user = self.user
-            with self.assertRaises(AssertionError):
-                response = TestUpdateView.as_view()(request, object_id=self.normal_id[1])
-
-    def test__language_deprecation(self):
-        request = self.request_factory.get('/url/?lang=ja')
-        request.user = self.user
-        with self.assertRaises(AssertionError):
-            response = DeprecatedLanguageUpdateView.as_view()(request, pk=self.normal_id[1])
-
-    def test_context_modifiers_deprecation(self):
-        with translation.override('en'):
-            request = self.request_factory.get('/url/')
-            request.user = self.user
-            with self.assertRaises(AssertionError):
-                response = DeprecatedContextUpdateView.as_view()(request, pk=self.normal_id[1])
-
-    def test_translatable_base_deprecation(self):
-        from hvad.views import TranslatableBaseView
-        with self.assertRaises(AssertionError):
-            TranslatableBaseView()

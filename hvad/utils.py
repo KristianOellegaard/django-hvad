@@ -138,38 +138,6 @@ class SmartGetField(object):
                                    "For translatable models, use the language() "
                                    "method." % name)
 
-def collect_context_modifiers(instance, include=None, exclude=None, extra_kwargs=None):
-    """
-    helper method that updates the context with any instance methods that start
-    with `context_modifier_`. `include` is an optional list of method names
-    that also should be called. Any method names in `exclude` will not be
-    added to the context.
-
-    This helper is most useful when called from get_context_data()::
-
-        def get_context_data(self, **kwargs):
-            context = super(MyViewClass, self).get_context_data(**kwargs)
-            context.update(collect_context_modifiers(self, extra_kwargs=kwargs))
-            return context
-    """
-    include = include or []
-    exclude = exclude or []
-    extra_kwargs = extra_kwargs or {}
-    context = {}
-
-    for thing in dir(instance):
-        if (thing.startswith('context_modifier_') or thing in include) and \
-            not thing in exclude:
-            context.update(getattr(instance, thing, lambda x:x)(**extra_kwargs))
-
-    # remove whole function in 1.5
-    assert not context, ('Context modifiers have been removed. Please update '
-                         'view %s to use \'get_context_data()\' instead.' % instance.__class__.__name__)
-    warnings.warn('Context modifiers have been removed. Please remove the call to '
-                  '\'collect_context_modifiers()\' from view : %s.' % instance.__class__.__name__,
-                    DeprecationWarning, stacklevel=2)
-    return context
-
 #=============================================================================
 # Internal sugar
 

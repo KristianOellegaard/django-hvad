@@ -703,14 +703,7 @@ class NotImplementedTests(HvadTestCase):
         self.assertRaises(NotImplementedError, baseqs.bulk_create, [])
         # select_related with no field is not implemented
         self.assertRaises(NotImplementedError, baseqs.select_related)
-        if django.VERSION >= (1, 7):
-            self.assertRaises(NotImplementedError, baseqs.update_or_create)
-
-class MinimumVersionTests(HvadTestCase):
-    def test_versions(self):
-        qs = SimpleRelated.objects.language('en')
-        if django.VERSION < (1, 7):
-            self.assertRaises(AttributeError, getattr, qs, 'update_or_create')
+        self.assertRaises(NotImplementedError, baseqs.update_or_create)
 
 
 class ExcludeTests(HvadTestCase, NormalFixture):

@@ -48,8 +48,7 @@ def configure(**extra):
             'django.contrib.auth.middleware.AuthenticationMiddleware',
             'django.contrib.messages.middleware.MessageMiddleware',
             'django.middleware.common.CommonMiddleware',
-            ('django.contrib.admindocs.middleware.XViewMiddleware'
-             if django.VERSION >= (1, 7) else 'django.middleware.doc.XViewMiddleware'),
+            'django.contrib.admindocs.middleware.XViewMiddleware',
             'django.middleware.csrf.CsrfViewMiddleware',
         ],
         INSTALLED_APPS = [
@@ -92,6 +91,5 @@ def configure(**extra):
     defaults.update(extra)
     settings.configure(**defaults)
     from django.contrib import admin
-    if django.VERSION >= (1, 7):
-        django.setup()
+    django.setup()
     admin.autodiscover()

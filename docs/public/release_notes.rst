@@ -3,8 +3,10 @@ Release Notes
 #############
 
 *****************************
-1.7.0 - upcoming release
+1.7.0 - current release
 *****************************
+
+Released on February 8, 2017
 
 New features:
 
@@ -34,7 +36,7 @@ Fixes:
   change forms. — :issue:`317`.
 
 *****************************
-1.6.0 - current release
+1.6.0
 *****************************
 
 Released on September 6, 2016

@@ -4,7 +4,6 @@ from hvad.test_utils.project.app.models import Normal, NormalProxy, NormalProxyP
 
 
 class ProxyTests(HvadTestCase):
-    @minimumDjangoVersion(1, 7)
     def test_check(self):
         self.assertEqual(len(NormalProxy.check()), 0)
         self.assertEqual(len(NormalProxyProxy.check()), 0)
