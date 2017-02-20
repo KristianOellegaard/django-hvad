@@ -53,10 +53,13 @@ class NormalProxyProxy(NormalProxy):
 
 class Related(TranslatableModel):
     """ Model with foreign keys to Normal, both shared and translatable """
-    normal = models.ForeignKey(Normal, related_name='rel1', null=True)
+    normal = models.ForeignKey(Normal, related_name='rel1',
+                               null=True, on_delete=models.CASCADE)
     translated_fields = TranslatedFields(
-        translated = models.ForeignKey(Normal, related_name='rel3', null=True),
-        translated_to_translated = models.ForeignKey(Normal, related_name='rel4', null=True),
+        translated = models.ForeignKey(Normal, related_name='rel3',
+                                       null=True, on_delete=models.CASCADE),
+        translated_to_translated = models.ForeignKey(Normal, related_name='rel4',
+                                                     null=True, on_delete=models.CASCADE),
     )
 
 class RelatedProxy(Related):
@@ -67,7 +70,7 @@ class RelatedProxy(Related):
 
 class SimpleRelated(TranslatableModel):
     """ Model with foreign key to Normal, shared only and regular translatable field """
-    normal = models.ForeignKey(Normal, related_name='simplerel')
+    normal = models.ForeignKey(Normal, related_name='simplerel', on_delete=models.CASCADE)
     manynormals = models.ManyToManyField(Normal, blank=True, related_name='manysimplerel')
     translated_fields = TranslatedFields(
         translated_field = models.CharField(max_length=255),
@@ -83,12 +86,16 @@ class RelatedRelated(TranslatableModel):
     """ Model with foreign keys to Related and SimpleRelated, both shared and transltable.
         This is used to test deep relations to Normal
     """
-    related = models.ForeignKey(Related, related_name='+', null=True)
-    simple = models.ForeignKey(SimpleRelated, related_name='+', null=True)
+    related = models.ForeignKey(Related, related_name='+',
+                                null=True, on_delete=models.CASCADE)
+    simple = models.ForeignKey(SimpleRelated, related_name='+',
+                               null=True, on_delete=models.CASCADE)
 
     translated_fields = TranslatedFields(
-        trans_related = models.ForeignKey(Related, related_name='+', null=True),
-        trans_simple = models.ForeignKey(SimpleRelated, related_name='+', null=True),
+        trans_related = models.ForeignKey(Related, related_name='+',
+                                          null=True, on_delete=models.CASCADE),
+        trans_simple = models.ForeignKey(SimpleRelated, related_name='+',
+                                         null=True, on_delete=models.CASCADE),
     )
 
 
@@ -122,14 +129,15 @@ class TranslatedMany(TranslatableModel):
 class Standard(models.Model):
     """ Untranslatable Model with foreign key to Normal """
     normal_field = models.CharField(max_length=255)
-    normal = models.ForeignKey(Normal, related_name='standards')
-    date = models.ForeignKey('Date', null=True, related_name='standards')
+    normal = models.ForeignKey(Normal, related_name='standards', on_delete=models.CASCADE)
+    date = models.ForeignKey('Date', related_name='standards',
+                             null=True, on_delete=models.CASCADE)
 
 
 class StandardRelated(TranslatableModel):
     """ Translatable mode with foreign key to untranslatable """
     shared_field = models.CharField(max_length=255)
-    standard = models.ForeignKey(Standard, related_name='related')
+    standard = models.ForeignKey(Standard, related_name='related', on_delete=models.CASCADE)
     translations = TranslatedFields(
         translated_field = models.CharField(max_length=255),
     )
@@ -147,7 +155,8 @@ class QONormal(TranslatableModel):
     objects = FullTranslationManager()
 
 class QOSimpleRelated(TranslatableModel):
-    normal = models.ForeignKey(QONormal, related_name='simplerel', null=True)
+    normal = models.ForeignKey(QONormal, related_name='simplerel',
+                               null=True, on_delete=models.CASCADE)
     translations = TranslatedFields(
         translated_field = models.CharField(max_length=255),
     )
@@ -177,7 +186,8 @@ class QOMany(TranslatableModel):
 
 class AbstractA(TranslatableModel):
     translations = TranslatedFields(
-        translated_field_a = models.ForeignKey(Normal, related_name='%(class)s_set'),
+        translated_field_a = models.ForeignKey(Normal, related_name='%(class)s_set',
+                                               on_delete=models.CASCADE),
     )
     class Meta:
         abstract = True
@@ -188,7 +198,8 @@ class AbstractAA(AbstractA):
         abstract = True
 
 class AbstractB(TranslatableModel):
-    shared_field_b = models.ForeignKey(Normal, related_name='%(class)s_set')
+    shared_field_b = models.ForeignKey(Normal, related_name='%(class)s_set',
+                                       on_delete=models.CASCADE)
     translations = TranslatedFields(
         translated_field_b = models.CharField(max_length=255),
     )
@@ -227,6 +238,7 @@ class LimitedChoice(models.Model):
     choice_fk = models.ForeignKey(Normal,
         limit_choices_to={'shared_field__startswith': 'Shared1',},
         related_name='limitedchoices_fk',
+        on_delete=models.CASCADE,
     )
     choice_mm = models.ManyToManyField(Normal,
         limit_choices_to={'shared_field__startswith': 'Shared2',},

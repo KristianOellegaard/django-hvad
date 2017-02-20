@@ -1,3 +1,4 @@
+import django
 from django.db.models import Q, FieldDoesNotExist
 from django.db.models.expressions import Expression, Col
 from django.db.models.sql.where import WhereNode, AND
@@ -42,10 +43,16 @@ def query_terms(model, path):
 
         # STEP 2 -- Find out the target of the relation, if it is one
         if direct:  # field is on model
-            if field.rel:    # field is a foreign key, follow it
-                target = field.rel.to._meta.concrete_model
-            else:            # field is a regular field
-                target = None
+            if django.VERSION >= (1, 9):
+                if field.remote_field:      # field is a foreign key, follow it
+                    target = field.remote_field.model._meta.concrete_model
+                else:
+                    target = None           # field is a regular field
+            else:
+                if field.rel:               # field is a foreign key, follow it
+                    target = field.rel.to._meta.concrete_model
+                else:
+                    target = None           # field is a regular field
         else:       # field is a m2m or reverse fk, follow it
             target = field.related_model._meta.concrete_model
 

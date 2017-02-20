@@ -1,10 +1,14 @@
 import functools
 import warnings
+import django
 from django.contrib.admin.options import ModelAdmin, csrf_protect_m, InlineModelAdmin
 from django.contrib.admin.utils import flatten_fieldsets, unquote, get_deleted_objects
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
-from django.core.urlresolvers import reverse
+if django.VERSION >= (1, 10):
+    from django.urls import reverse
+else:
+    from django.core.urlresolvers import reverse
 from django.db import router, transaction
 from django.forms.models import model_to_dict
 from django.forms.utils import ErrorList
@@ -169,7 +173,7 @@ class TranslatableAdmin(ModelAdmin, TranslatableModelAdminMixin):
                            form_url='', obj=None):
         lang_code = self._language(request)
         lang = get_language_info(lang_code)['name_local']
-        available_languages = self.get_available_languages(obj)
+        available_languages = [] if obj is None else obj.get_available_languages()
 
         context.update({
             'title': '%s (%s)' % (context['title'], lang),

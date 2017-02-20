@@ -67,19 +67,64 @@ class FieldTranslator(object):
 #===============================================================================
 
 if django.VERSION >= (1, 9):
-    from django.db.models.query import ValuesIterable, ValuesListIterable, FlatValuesListIterable
+    from django.db.models.query import (ModelIterable, ValuesIterable,
+                                        ValuesListIterable, FlatValuesListIterable)
+
+    class TranslatableModelIterable(ModelIterable):
+        def __iter__(self):
+            qs = self.queryset._clone()._add_language_filter()
+            qs._iterable_class = ModelIterable
+            qs._known_related_objects = {}
+            if qs._forced_unique_fields:
+                with ForcedUniqueFields(qs._forced_unique_fields):
+                    objects = list(qs.iterator())
+
+                if type(qs.query.select_related) == dict:
+                    for obj in objects:
+                        qs._use_related_translations(obj, qs.query.select_related)
+            else:
+                objects = qs.iterator()
+
+            for obj in objects:
+                for name in qs._hvad_switch_fields:
+                    try:
+                        setattr(obj.master, name, getattr(obj, name))
+                    except AttributeError: # pragma: no cover
+                        pass
+                    else:
+                        delattr(obj, name)
+                obj = combine(obj, qs.shared_model)
+                # use known objects from self.queryset, not qs as we cleared it earlier
+                for field, rel_objs in self.queryset._known_related_objects.items():
+                    if hasattr(obj, field.get_cache_name()):
+                        continue # pragma: no cover (conform to Django behavior)
+                    pk = getattr(obj, field.get_attname())
+                    try:
+                        rel_obj = rel_objs[pk]
+                    except KeyError: # pragma: no cover
+                        pass
+                    else:
+                        setattr(obj, field.name, rel_obj)
+                yield obj
+
     class TranslatedValuesIterable(ValuesIterable):
         def __iter__(self):
-            queryset = self.queryset
-            for row in super(TranslatedValuesIterable, self).__iter__():
-                yield queryset._reverse_translate_fieldnames_dict(row)
+            qs = self.queryset._clone()._add_language_filter()
+            qs._iterable_class = ValuesIterable
+            for row in qs.iterator():
+                yield qs._reverse_translate_fieldnames_dict(row)
 
-    iterable_overrides = {
-        ValuesIterable: TranslatedValuesIterable,
-        ValuesListIterable: ValuesListIterable,
-        FlatValuesListIterable: FlatValuesListIterable,
-    }
+    class TranslatedValuesListIterable(ValuesListIterable):
+        def __iter__(self):
+            qs = self.queryset._clone()._add_language_filter()
+            qs._iterable_class = ValuesListIterable
+            return qs.iterator()
 
+    class TranslatedFlatValuesListIterable(FlatValuesListIterable):
+        def __iter__(self):
+            qs = self.queryset._clone()._add_language_filter()
+            qs._iterable_class = FlatValuesListIterable
+            return qs.iterator()
 else:
     class ValuesMixin(object):
         _skip_master_select = True
@@ -91,9 +136,6 @@ else:
                     yield qs._reverse_translate_fieldnames_dict(row)
                 else:
                     yield row
-
-    class SkipMasterSelectMixin(object):
-        _skip_master_select = True
 
 #===============================================================================
 
@@ -193,6 +235,8 @@ class TranslationQueryset(QuerySet):
         self._language_filter_tag = False
         self._hvad_switch_fields = ()
         super(TranslationQueryset, self).__init__(model, *args, **kwargs)
+        if django.VERSION >= (1, 9):
+            self._iterable_class = TranslatableModelIterable
 
     #===========================================================================
     # Helpers and properties (INTERNAL!)
@@ -294,6 +338,7 @@ class TranslationQueryset(QuerySet):
         return shared, translated
 
     def _get_class(self, klass):
+        # remove whole method when we drop support for Django 1.8
         for key, value in self.override_classes.items():
             if issubclass(klass, key):
                 return type(value.__name__, (value, klass, TranslationQueryset,), {})
@@ -464,66 +509,42 @@ class TranslationQueryset(QuerySet):
     # Queryset/Manager API that do database queries
     #===========================================================================
 
-    def iterator(self):
-        """
-        If this queryset is not filtered by a language code yet, it should be
-        filtered first by calling self.language.
+    if django.VERSION < (1, 9):
+        def iterator(self):
+            qs = self._clone()._add_language_filter()
+            qs._known_related_objects = {}  # super's iterator will attempt to set them
+            if qs._forced_unique_fields:
+                with ForcedUniqueFields(qs._forced_unique_fields):
+                    objects = list(super(TranslationQueryset, qs).iterator())
 
-        If someone doesn't want a queryset filtered by language, they should use
-        Model.objects.untranslated()
-        """
-        qs = self._clone()._add_language_filter()
-        qs._known_related_objects = {}  # super's iterator will attempt to set them
+                if type(qs.query.select_related) == dict:
+                    for obj in objects:
+                        qs._use_related_translations(obj, qs.query.select_related)
+            else:
+                objects = super(TranslationQueryset, qs).iterator()
 
-        if django.VERSION >= (1, 9) and qs._iterable_class in iterable_overrides:
-            qs._iterable_class = iterable_overrides[qs._iterable_class]
-            for obj in super(TranslationQueryset, qs).iterator():
+            for obj in objects:
+                for name in self._hvad_switch_fields:
+                    try:
+                        setattr(obj.master, name, getattr(obj, name))
+                    except AttributeError: # pragma: no cover
+                        pass
+                    else:
+                        delattr(obj, name)
+                obj = combine(obj, qs.shared_model)
+                # use known objects from self, not qs as we cleared it earlier
+                for field, rel_objs in self._known_related_objects.items():
+                    if hasattr(obj, field.get_cache_name()):
+                        # should not happen, but we conform to Django behavior
+                        continue #pragma: no cover
+                    pk = getattr(obj, field.get_attname())
+                    try:
+                        rel_obj = rel_objs[pk]
+                    except KeyError: #pragma: no cover
+                        pass
+                    else:
+                        setattr(obj, field.name, rel_obj)
                 yield obj
-            return
-
-        if qs._forced_unique_fields:
-            # HACK: In order for select_related to properly load data from
-            # translated models, we have to force django to treat
-            # certain fields as one-to-one relations
-            # before this queryset calls get_cached_row()
-            # We change it back so that things get reset to normal
-            # before execution returns to user code.
-            # It would be more direct and robust if we could wrap
-            # django.db.models.query.get_cached_row() instead, but that's not a class
-            # method, sadly, so we cannot override it just for this query
-
-            with ForcedUniqueFields(qs._forced_unique_fields):
-                # Pre-fetch all objects:
-                objects = list(super(TranslationQueryset, qs).iterator())
-
-            if type(qs.query.select_related) == dict:
-                for obj in objects:
-                    qs._use_related_translations(obj, qs.query.select_related)
-        else:
-            objects = super(TranslationQueryset, qs).iterator()
-
-        for obj in objects:
-            for name in self._hvad_switch_fields:
-                try:
-                    setattr(obj.master, name, getattr(obj, name))
-                except AttributeError: # pragma: no cover
-                    pass
-                else:
-                    delattr(obj, name)
-            obj = combine(obj, qs.shared_model)
-            # use known objects from self, not qs as we cleared it earlier
-            for field, rel_objs in self._known_related_objects.items():
-                if hasattr(obj, field.get_cache_name()):
-                    # should not happen, but we conform to Django behavior
-                    continue #pragma: no cover
-                pk = getattr(obj, field.get_attname())
-                try:
-                    rel_obj = rel_objs[pk]
-                except KeyError: #pragma: no cover
-                    pass
-                else:
-                    setattr(obj, field.name, rel_obj)
-            yield obj
 
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
@@ -638,12 +659,14 @@ class TranslationQueryset(QuerySet):
     delete.queryset_only = True
 
     def delete_translations(self):
+        qs = self._clone()._add_language_filter()
         if connections[self._db].features.update_can_self_select:
-            qs = self._clone()._add_language_filter()
             super(TranslationQueryset, qs).delete()
         else:
             with transaction.atomic(using=self._db, savepoint=False):
-                pks = list(super(TranslationQueryset, self).values_list('pk', flat=True))
+                qs = (super(TranslationQueryset, qs) if django.VERSION >= (1, 9) else
+                      super(TranslationQueryset, self))
+                pks = list(qs.values_list('pk', flat=True))
                 self.model._base_manager.filter(pk__in=pks).delete()
     delete_translations.alters_data = True
 
@@ -687,11 +710,19 @@ class TranslationQueryset(QuerySet):
 
     def values(self, *fields):
         fields = self._translate_fieldnames(fields)
-        return super(TranslationQueryset, self).values(*fields)
+        qs = super(TranslationQueryset, self).values(*fields)
+        if django.VERSION >= (1, 9):
+            qs._iterable_class = TranslatedValuesIterable
+        return qs
 
     def values_list(self, *fields, **kwargs):
         fields = self._translate_fieldnames(fields)
-        return super(TranslationQueryset, self).values_list(*fields, **kwargs)
+        qs = super(TranslationQueryset, self).values_list(*fields, **kwargs)
+        if django.VERSION >= (1, 9):
+            qs._iterable_class = (TranslatedFlatValuesListIterable
+                                  if qs._iterable_class is FlatValuesListIterable else
+                                  TranslatedValuesListIterable)
+        return qs
 
     def select_related(self, *fields):
         if not fields:

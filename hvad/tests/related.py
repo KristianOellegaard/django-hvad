@@ -129,7 +129,8 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_lookup_by_non_existing_field(self):
         with translation.override('en'):
-            self.assertRaises(TypeError, Standard.objects.get, normal__non_existing_field=1)
+            self.assertRaises(FieldError if django.VERSION >= (1, 11) else TypeError,
+                              Standard.objects.get, normal__non_existing_field=1)
 
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])
@@ -414,7 +415,8 @@ class ForwardDeclaringForeignKeyTests(HvadTestCase):
         class ForwardRelated(TranslatableModel):
             shared_field = models.CharField(max_length=255)
             translations = TranslatedFields(
-                translated = models.ForeignKey("ReverseRelated", related_name='rel', null=True),
+                translated = models.ForeignKey("ReverseRelated", related_name='rel',
+                                               null=True, on_delete=models.CASCADE),
             )
         
         class ReverseRelated(TranslatableModel):
@@ -427,7 +429,8 @@ class ForwardDeclaringForeignKeyTests(HvadTestCase):
     def test_issue_22_non_translatable_model(self):
         class ForwardRelated2(models.Model):
             shared_field = models.CharField(max_length=255)
-            fk = models.ForeignKey("ReverseRelated2", related_name='rel', null=True)
+            fk = models.ForeignKey("ReverseRelated2", related_name='rel',
+                                   null=True, on_delete=models.CASCADE)
         
         
         class ReverseRelated2(TranslatableModel):

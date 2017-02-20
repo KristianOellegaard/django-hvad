@@ -97,7 +97,7 @@ class CreateViewTests(HvadTestCase):
         'A view with no model specified, should use that of the queryset'
         class QuerysetView(TranslatableCreateView):
             queryset = Normal.objects.untranslated()
-            success_url = '%(id)s'
+            success_url = '{id}'
         request = self.request_factory.post('/url/?language=ja', {
             'shared_field': 'shared',
             'translated_field': 'translated',
@@ -108,7 +108,7 @@ class CreateViewTests(HvadTestCase):
 
         class TranslationQuerysetView(TranslatableCreateView):
             queryset = Normal.objects.language()
-            success_url = '%(id)s'
+            success_url = '{id}'
         request = self.request_factory.post('/url/?language=ja', {
             'shared_field': 'shared',
             'translated_field': 'translated',
@@ -119,7 +119,7 @@ class CreateViewTests(HvadTestCase):
 
         class CustomFormView(TranslatableCreateView):
             model = Normal
-            success_url = '%(id)s'
+            success_url = '{id}'
             class form_class(TranslatableModelForm):
                 additional = forms.CharField(max_length=250)
         request = self.request_factory.post('/url/?language=ja', {

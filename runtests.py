@@ -14,6 +14,8 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 #=============================================================================
 
+MIDDLEWARE_KEY = 'MIDDLEWARE' if django.VERSION >= (1, 10) else 'MIDDLEWARE_CLASSES'
+
 CONFIGURATION = {
     'DEBUG': True,
     'USE_I18N': True,
@@ -29,7 +31,7 @@ CONFIGURATION = {
         'APP_DIRS': True,
         'OPTIONS': {'context_processors': ['django.contrib.auth.context_processors.auth']}
     }],
-    'MIDDLEWARE_CLASSES': (
+    MIDDLEWARE_KEY: (
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',

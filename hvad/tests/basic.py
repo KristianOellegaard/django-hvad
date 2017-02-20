@@ -256,7 +256,7 @@ class QuerysetTest(HvadTestCase):
     def test_deepcopy(self):
         qs = Normal.objects.language().all()
         other = deepcopy(qs)
-        self.assertEquals(other.model, qs.model)
+        self.assertEqual(other.model, qs.model)
 
     def test_bad_model(self):
         with self.assertRaises(TypeError):
@@ -265,11 +265,11 @@ class QuerysetTest(HvadTestCase):
     def test_fallbacks_semantics(self):
         from hvad.settings import hvad_settings
         qs = Normal.objects.language().fallbacks()
-        self.assertEquals(qs._language_fallbacks, hvad_settings.FALLBACK_LANGUAGES)
+        self.assertEqual(qs._language_fallbacks, hvad_settings.FALLBACK_LANGUAGES)
         qs = qs.fallbacks(None)
-        self.assertEquals(qs._language_fallbacks, None)
+        self.assertEqual(qs._language_fallbacks, None)
         qs = qs.fallbacks('en', 'fr')
-        self.assertEquals(qs._language_fallbacks, ('en', 'fr'))
+        self.assertEqual(qs._language_fallbacks, ('en', 'fr'))
 
 
 class CreateTest(HvadTestCase):
@@ -440,8 +440,8 @@ class DeleteTest(HvadTestCase, NormalFixture):
     def test_basic_delete(self):
         with translation.override('en'):
             Normal.objects.language().filter(pk=self.normal_id[1]).delete()
-            self.assertEquals(Normal.objects.untranslated().count(), self.normal_count - 1)
-            self.assertEquals(Normal.objects.language().count(), self.normal_count - 1)
+            self.assertEqual(Normal.objects.untranslated().count(), self.normal_count - 1)
+            self.assertEqual(Normal.objects.language().count(), self.normal_count - 1)
             self.assertNotIn(self.normal_id[1],
                             [obj.pk for obj in Normal.objects.untranslated().all()])
             self.assertFalse(
