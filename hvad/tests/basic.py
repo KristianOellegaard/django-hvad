@@ -3,12 +3,13 @@ from __future__ import with_statement
 import django
 from django.apps import apps
 from django.core import checks
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db import connection, models, IntegrityError
 from django.db.models.manager import Manager
 from django.db.models.query_utils import Q
 from django.utils import translation
 from hvad import settings
+from hvad.exceptions import WrongManager
 from hvad.manager import TranslationQueryset
 from hvad.models import TranslatableModel, TranslatedFields
 from hvad.utils import get_cached_translation
@@ -57,6 +58,12 @@ class SettingsTests(HvadTestCase):
         with self.settings(HVAD={'TABLE_NAME_FORMAT': 'foo%strans%slation'}):
             self.assertIn(error, settings.check(apps))
 
+    def test_unknown_setting(self):
+        error = checks.Warning('Unknown setting HVAD[\'UNKNOWN\']', obj='UNKNOWN',
+                               id='hvad.settings.W01')
+        with self.settings(HVAD={'UNKNOWN': 'foo'}):
+            self.assertIn(error, settings.check(apps))
+
 
 class DefinitionTests(HvadTestCase):
     def test_invalid_manager(self):
@@ -83,6 +90,18 @@ class DefinitionTests(HvadTestCase):
         errors = ClashingFieldsModel.check()
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0].id, 'hvad.models.E01')
+
+    def test_ordering_invalid(self):
+        class InvalidOrderingModel(TranslatableModel):
+            shared_field = models.CharField(max_length=50)
+            translations = TranslatedFields(
+                field=models.CharField(max_length=50),
+            )
+            class Meta:
+                ordering = 'shared_field'
+        self.assertIn(checks.Error("'ordering' must be a tuple or list.", hint=None,
+                                   obj=InvalidOrderingModel, id='models.E014'),
+                      InvalidOrderingModel.check())
 
     def test_multi_table_raises(self):
         with self.assertRaises(TypeError):
@@ -245,11 +264,15 @@ class DefinitionTests(HvadTestCase):
 
 class OptionsTest(HvadTestCase):
     def test_options(self):
-        opts = Normal._meta
-        self.assertTrue(hasattr(opts, 'translations_model'))
-        self.assertTrue(hasattr(opts, 'translations_accessor'))
-        relmodel = Normal._meta.get_field(opts.translations_accessor).field.model
-        self.assertEqual(relmodel, opts.translations_model)
+        self.assertEqual(Normal._meta.translations_model.__name__, 'NormalTranslation')
+        self.assertEqual(Normal._meta.translations_accessor, 'translations')
+        if django.VERSION < (1, 9):
+            self.assertRaises(FieldDoesNotExist, Normal._meta.get_field_by_name, 'inexistent_field')
+            self.assertRaises(WrongManager, Normal._meta.get_field_by_name, 'translated_field')
+        self.assertRaises(FieldDoesNotExist, Normal._meta.get_field, 'inexistent_field')
+        self.assertRaises(WrongManager, Normal._meta.get_field, 'translated_field')
+        self.assertIs(Normal._meta.get_field(Normal._meta.translations_accessor).field.model,
+                      Normal._meta.translations_model)
 
 
 class QuerysetTest(HvadTestCase):
@@ -601,13 +624,13 @@ class DeleteLanguageCodeTest(HvadTestCase, NormalFixture):
         self.assertRaises(AttributeError, delattr, en, 'language_code')
 
 
-class DescriptorTests(HvadTestCase):
-    def test_translated_attribute_get(self):
-        # 'MyDescriptorTestModel' should return the default field value,
-        # in case there is no translation
-        from hvad.models import TranslatedFields
-        from django.db import models
+class DescriptorTests(HvadTestCase, NormalFixture):
+    normal_count = 1
 
+    def test_translated_attribute_get(self):
+        """ Translated attribute get behaviors """
+
+        # Get translated attribute on class itself
         DEFAULT = 'world'
         class MyDescriptorTestModel(TranslatableModel):
             translations = TranslatedFields(
@@ -615,37 +638,127 @@ class DescriptorTests(HvadTestCase):
             )
         self.assertEqual(MyDescriptorTestModel.hello, DEFAULT)
 
+        # Get translated attribute with a translation loaded
+        obj = Normal.objects.language("en").get(pk=self.normal_id[1])
+        with self.assertNumQueries(0):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+
+        # Get translated attribute without a translation loaded, AUTOLOAD is false
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(0):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': False}):
+                self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+
+        # Get translated attribute without a translation loaded, AUTOLOAD is true and one exists
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('ja'):
+                self.assertEqual(obj.translated_field, NORMAL[1].translated_field['ja'])
+
+        # Get translated attribute without a translation loaded, AUTOLOAD is true but none exists
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('fr'):
+                self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+
+    def test_translated_attribute_set(self):
+        """ Translated attribute set behaviors """
+
+        # Set translated attribute with a translation loaded
+        obj = Normal.objects.language("en").get(pk=self.normal_id[1])
+        trans = get_cached_translation(obj)
+        with self.assertNumQueries(0):
+            obj.translated_field = 'foo'
+            self.assertNotIn('translated_field', obj.__dict__)
+            self.assertEqual(trans.__dict__['translated_field'], 'foo')
+
+        # Set translated attribute without a translation loaded, AUTOLOAD is false
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(0):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': False}):
+                self.assertRaises(AttributeError, setattr, obj, 'translated_field', 'foo')
+
+        # Set translated attribute without a translation loaded, AUTOLOAD is true and one exists
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('ja'):
+                obj.translated_field = 'foo'
+                trans = get_cached_translation(obj)
+                self.assertNotIn('translated_field', obj.__dict__)
+                self.assertEqual(trans.__dict__['translated_field'], 'foo')
+
+        # Set translated attribute without a translation loaded, AUTOLOAD is true but none exists
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('fr'):
+                self.assertRaises(AttributeError, setattr, obj, 'translated_field', 'foo')
+
+    def test_translated_attribute_delete(self):    
+        """ Translated attribute delete behaviors """
+
+        # Delete a translated field with a translation loaded
+        obj = Normal.objects.language("en").get(pk=self.normal_id[1])
+        with self.assertNumQueries(0):
+            del obj.translated_field
+        if django.VERSION >= (1, 10):   # on version 1.10 and newer, this refreshes from db
+            with self.assertNumQueries(1):
+                self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
+        else:
+            with self.assertNumQueries(0):
+                self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+
+        # Delete a translated field without a translation loaded, AUTOLOAD is false
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(0):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': False}):
+                self.assertRaises(AttributeError, delattr, obj, 'translated_field')
+
+        # Delete translated attribute without a translation loaded, AUTOLOAD is true and one exists
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with translation.override('en'):
+                del obj.translated_field
+
+        # Delete translated attribute without a translation loaded, AUTOLOAD is true but none exists
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with self.settings(HVAD={'AUTOLOAD_TRANSLATIONS': True}), translation.override('fr'):
+                self.assertRaises(AttributeError, delattr, obj, 'translated_field')
+
     def test_translated_foreignkey_set(self):
+        """ Special behavior for ForeignKey and its remote id """
         cache = Related._meta.translations_cache
 
-        normal = Normal(language_code='en')
-        normal.save()
+        normal = Normal.objects.language('en').get(pk=self.normal_id[1])
         related = Related(language_code='en')
         related.translated = normal
         self.assertNotIn('translated_id', related.__dict__)
         self.assertIn('translated_id', getattr(related, cache).__dict__)
-        self.assertEqual(getattr(related, cache).__dict__['translated_id'], normal.pk)
+        self.assertEqual(getattr(related, cache).__dict__['translated_id'], self.normal_id[1])
 
         related.translated_id = 4242
         self.assertNotIn('translated_id', related.__dict__)
         self.assertIn('translated_id', getattr(related, cache).__dict__)
         self.assertEqual(getattr(related, cache).__dict__['translated_id'], 4242)
 
-    def test_translated_attribute_delete(self):    
-        # Accessing a deleted translated attribute reloads the translation
-        obj = Normal.objects.language("en").create(shared_field="test", translated_field="en")
-        obj.save()
-        self.assertEqual(obj.translated_field, "en")
-        delattr(obj, 'translated_field')
-        if django.VERSION >= (1, 10):   # on version 1.10 and newer, this refreshes from db
-            self.assertEqual(obj.translated_field, "en")
-        else:
-            self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+    def test_language_code_attribute(self):
+        """ Language code special attribute behaviors """
 
-    def test_languagecodeattribute(self):
-        # Its not possible to set/delete a language code
-        self.assertRaises(AttributeError, setattr, Normal(), 'language_code', "en")
-        self.assertRaises(AttributeError, delattr, Normal(), 'language_code')
+        obj = Normal.objects.language("en").get(pk=self.normal_id[1])
+
+        # Get language_code with a translation loaded
+        with translation.override('ja'):    # this must be ignored
+            self.assertEqual(obj.language_code, 'en')
+
+        # Get language_code without a translation loaded
+        obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
+        with self.assertNumQueries(1):
+            with translation.override('ja'):
+                self.assertEqual(obj.language_code, 'ja')
+
+        # Alter or delete language_code
+        self.assertRaises(AttributeError, setattr, obj, 'language_code', "en")
+        self.assertRaises(AttributeError, delattr, obj, 'language_code')
 
 
 class TableNameTest(HvadTestCase):

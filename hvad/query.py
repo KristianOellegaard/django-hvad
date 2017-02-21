@@ -1,7 +1,7 @@
 import django
 from django.db.models import Q, FieldDoesNotExist
 from django.db.models.expressions import Expression, Col
-from django.db.models.sql.where import WhereNode, AND
+from django.db.models.sql.where import AND
 from collections import namedtuple
 
 __all__ = ()
@@ -114,23 +114,6 @@ def expression_nodes(expression):
             yield expression
         if isinstance(expression, Expression):
             todo.extend(expression.get_source_expressions())
-
-def where_node_children(node):
-    ''' Recursively visit all children of a where node, yielding each field in turn.
-        - node: the node to visit
-    '''
-    todo = [node]
-    while todo:
-        node = todo.pop()
-        for child in node.children:
-            try:
-                field_name = child.lhs.target.name
-            except (TypeError, AttributeError):
-                pass
-            else:
-                yield child, field_name
-            if isinstance(child, WhereNode):
-                todo.append(child)
 
 #===============================================================================
 # Query manipulations

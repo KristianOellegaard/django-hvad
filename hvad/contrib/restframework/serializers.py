@@ -31,9 +31,9 @@ class NestedTranslationSerializer(serializers.ModelSerializer):
                     attribute = field.get_attribute(instance)
                 except (WrongManager, FieldDoesNotExist):
                     attribute = field.get_attribute(translation)
-            except SkipField:
+            except SkipField:   # pragma: no cover
                 continue
-            if attribute is None:
+            if attribute is None:   # pragma: no cover
                 ret[field.field_name] = None
             else:
                 ret[field.field_name] = field.to_representation(attribute)
