@@ -27,6 +27,8 @@ New features:
   See the section about
   :ref:`overriding the default queryset <override-default-queryset>`
   for advantages and caveats of doing so.
+- Field declaration for internal ``language_code`` attribute can be overriden.
+  — :issue:`332`.
 
 Compatibility warnings:
 
@@ -53,6 +55,9 @@ Fixes:
 
 - Increase speed of translated attribute access by ~30%, by avoiding a method call
   when a translation is loaded.
+- Attempting to use a reserved name for a translated field now raises an
+  :exc:`~django.core.exceptions.ImproperlyConfigured` exception instead of silently
+  ignoring the field.
 
 *****************************
 1.7.0 - current release

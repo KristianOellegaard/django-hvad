@@ -262,6 +262,16 @@ class DefinitionTests(HvadTestCase):
         manager = Normal.objects
         self.assertEqual(manager.translations_model, Normal._meta.translations_model)
 
+    def test_language_code_override(self):
+        class LanguageCodeOverrideModel(TranslatableModel):
+            translations = TranslatedFields(
+                tfield=models.CharField(max_length=250),
+                language_code=models.UUIDField(editable=False, db_index=True),
+            )
+        tmodel = LanguageCodeOverrideModel._meta.translations_model
+        self.assertIsInstance(tmodel._meta.get_field('language_code'), models.UUIDField)
+
+
 class OptionsTest(HvadTestCase):
     def test_options(self):
         self.assertEqual(Normal._meta.translations_model.__name__, 'NormalTranslation')

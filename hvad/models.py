@@ -18,12 +18,18 @@ import sys
 
 __all__ = ('TranslatableModel', 'TranslatedFields', 'NoTranslation')
 
+forbidden_translated_fields = frozenset({'Meta', 'objects', 'master', 'master_id'})
+
 #===============================================================================
 
 class TranslatedFields(object):
     """ Wrapper class to define translated fields on a model. """
 
     def __init__(self, meta=None, base_class=None, **fields):
+        forbidden = forbidden_translated_fields.intersection(fields)
+        if forbidden:
+            raise ImproperlyConfigured(
+                'Invalid translated field: %s' % ', '.join(sorted(forbidden)))
         self.meta = meta or {}
         self.base_class = base_class
         self.fields = fields
@@ -76,14 +82,12 @@ class TranslatedFields(object):
         })
 
         if not model._meta.abstract:
-            attrs.update({
-                # If this class is abstract, we must not contribute management fields
-                'objects': TranslationsModelManager(),
-                'language_code': models.CharField(max_length=15, db_index=True),
-                # Nullable so we can prevent cascade deletion
-                'master': models.ForeignKey(model, related_name=related_name, editable=False,
-                                            on_delete=models.CASCADE),
-            })
+            # If this class is abstract, we must not contribute management fields
+            attrs['objects'] = TranslationsModelManager()
+            attrs['master'] = models.ForeignKey(model, related_name=related_name,
+                                                editable=False, on_delete=models.CASCADE)
+            if 'language_code' not in attrs:    # allow overriding
+                attrs['language_code'] = models.CharField(max_length=15, db_index=True)
 
         # Create the new model
         if self.base_class:

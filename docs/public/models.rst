@@ -23,8 +23,8 @@ regular Django, with the following additional features:
 - Translatable fields can be used in the model options. For options that take
   groupings of fields (``unique_together`` and ``index_together``), each grouping
   may have either translatable or non-translatable fields, but not both.
-- Special field ``language_code`` may be used for defining ``unique_together``
-  constraints that are only unique per language.
+- Special field ``language_code`` is automatically created by hvad, and may be used
+  for defining ``unique_together`` constraints that are only unique per language.
 
 A full example of a model with translations::
 
@@ -44,6 +44,10 @@ A full example of a model with translations::
 
 .. note:: The :djterm:`Meta <meta-options>` class of the model may not use the
           translatable fields in :attr:`~django.db.models.Options.order_with_respect_to`.
+.. note:: TranslatedFields cannot contain a field named ``master``, as this name
+          is reserved by hvad to refer to the :term:`Shared Model`. Also, special
+          field ``language_code`` can be overriden in order to set it to be a
+          different type of field, or change its options.
 
 ***********************
 New and Changed Methods
