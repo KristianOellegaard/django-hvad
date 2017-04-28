@@ -154,6 +154,20 @@ class TranslatableModelSerializerTests(HvadTestCase, NormalFixture):
         self.assertIsNotNone(obj.pk)
         self.assertSavedObject(obj, 'en', **data)
 
+    def test_create_normal_no_language(self):
+        'Deserialize a new instance, without including any translated field'
+        data = {
+            'shared_field': 'shared',
+        }
+        serializer = AutoSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        with translation.override('en'):
+            obj = serializer.save()
+        self.assertIsNotNone(obj.pk)
+        self.assertSavedObject(obj, 'en', **data)
+        self.assertEqual(obj.language_code, 'en')
+
     def test_create_enforce(self):
         'Deserialize a new instance, with language-enforcing mode'
         data = {

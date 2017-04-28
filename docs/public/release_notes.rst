@@ -58,6 +58,10 @@ Fixes:
 - Attempting to use a reserved name for a translated field now raises an
   :exc:`~django.core.exceptions.ImproperlyConfigured` exception instead of silently
   ignoring the field.
+- Instances created by serializers using
+  :class:`~hvad.contrib.restframework.serializers.TranslatableModelMixin`
+  in normal, non-*enforcing* mode can no longer be created without a translation.
+  — :issue:`322`.
 
 *****************************
 1.7.0 - current release

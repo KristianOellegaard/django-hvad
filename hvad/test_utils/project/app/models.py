@@ -12,7 +12,7 @@ from django.utils.encoding import python_2_unicode_compatible
 class Normal(TranslatableModel):
     shared_field = models.CharField(max_length=255)
     translations = TranslatedFields(
-        translated_field = models.CharField(max_length=255)
+        translated_field = models.CharField(max_length=255, blank=True)
     )
 
     def __str__(self):

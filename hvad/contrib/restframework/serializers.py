@@ -238,6 +238,14 @@ class TranslatableModelMixin(object):
             data['language_code'] = self.language
         return data
 
+    def create(self, validated_data):
+        # Having a language_code key forces creation of a translation in default
+        # language, even if no translated field is provided.
+        # This ensures the serializer will not create untranslated instances.
+        if 'language_code' not in validated_data:
+            validated_data['language_code'] = None
+        return super(TranslatableModelMixin, self).create(validated_data)
+
     def update(self, instance, data):
         'Handle switching to correct translation before actual update'
         enforce = 'language_code' in data
