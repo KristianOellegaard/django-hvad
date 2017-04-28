@@ -43,20 +43,46 @@ class SettingsTests(HvadTestCase):
         ), errors)
 
     def test_languages(self):
-        error = checks.Error('HVAD["LANGUAGES"] must be a sequence of language codes',
+        with self.settings(HVAD={'LANGUAGES': [('fr', 'French'), ('en', 'English')]}):
+            self.assertFalse(settings.check(apps))
+            self.assertIsInstance(settings.hvad_settings.LANGUAGES, tuple)
+
+        error = checks.Error('HVAD["LANGUAGES"] must be a sequence of (code, name)'
+                             'tuples describing languages',
                              obj='LANGUAGES', id='hvad.settings.E02')
         with self.settings(HVAD={'LANGUAGES': 'fr'}):
             self.assertIn(error, settings.check(apps))
-        with self.settings(HVAD={'LANGUAGES': [('fr', 'French'), ('en', 'English')]}):
+        with self.settings(HVAD={'LANGUAGES': [['fr', 'French']]}):
+            self.assertIn(error, settings.check(apps))
+        with self.settings(HVAD={'LANGUAGES': [('fr', 'French', 42)]}):
+            self.assertIn(error, settings.check(apps))
+
+    def test_fallback_languages(self):
+        with self.settings(HVAD={'FALLBACK_LANGUAGES': ['fr']}):
+            self.assertFalse(settings.check(apps))
+            self.assertIsInstance(settings.hvad_settings.FALLBACK_LANGUAGES, tuple)
+
+        error = checks.Error('HVAD["FALLBACK_LANGUAGES"] must be a sequence of language codes',
+                             obj='FALLBACK_LANGUAGES', id='hvad.settings.E03')
+        with self.settings(HVAD={'FALLBACK_LANGUAGES': 'fr'}):
+            self.assertIn(error, settings.check(apps))
+        with self.settings(HVAD={'FALLBACK_LANGUAGES': (('fr', 'French'), )}):
             self.assertIn(error, settings.check(apps))
 
     def test_table_name_format(self):
         error = checks.Error('HVAD["TABLE_NAME_FORMAT"] must contain exactly one string '
-                             'specifier ("%s")', obj='TABLE_NAME_FORMAT', id='hvad.settings.E03')
+                             'specifier ("%s")', obj='TABLE_NAME_FORMAT', id='hvad.settings.E04')
         with self.settings(HVAD={'TABLE_NAME_FORMAT': 'foo'}):
             self.assertIn(error, settings.check(apps))
         with self.settings(HVAD={'TABLE_NAME_FORMAT': 'foo%strans%slation'}):
             self.assertIn(error, settings.check(apps))
+
+    def test_boolean_settings(self):
+        for key, err in (('AUTOLOAD_TRANSLATIONS', 'W02'), ('USE_DEFAULT_QUERYSET', 'W03')):
+            error = checks.Warning('HVAD["%s"] should be True or False' % key,
+                                   obj=key, id='hvad.settings.%s' % err)
+            with self.settings(HVAD={key: 'foo'}):
+                self.assertIn(error, settings.check(apps))
 
     def test_unknown_setting(self):
         error = checks.Warning('Unknown setting HVAD[\'UNKNOWN\']', obj='UNKNOWN',
