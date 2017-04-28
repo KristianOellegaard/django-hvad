@@ -5,14 +5,14 @@ python:
   - 3.5
   - 3.6
 env:
-  - DJANGO=django==1.8.17 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.8.17 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
-  - DJANGO=django==1.9.12 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.9.12 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
-  - DJANGO=django==1.10.5 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.10.5 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
-  - DJANGO=https://github.com/django/django/archive/stable/1.11.x.tar.gz DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=https://github.com/django/django/archive/stable/1.11.x.tar.gz DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
+  - DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
+  - DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
+  - DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
+  - DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
+  - DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
+  - DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
+  - DJANGO=django==1.11 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
+  - DJANGO=django==1.11 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
 
 sudo: false
 install:
@@ -31,14 +31,14 @@ after_success:
 matrix:
   exclude:
     - python: 3.6
-      env: DJANGO=django==1.8.17 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
+      env: DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
     - python: 3.6
-      env: DJANGO=django==1.8.17 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
+      env: DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
     - python: 3.6
-      env: DJANGO=django==1.9.12 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
+      env: DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
     - python: 3.6
-      env: DJANGO=django==1.9.12 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
+      env: DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
     - python: 3.6
-      env: DJANGO=django==1.10.5 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
+      env: DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
     - python: 3.6
-      env: DJANGO=django==1.10.5 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
+      env: DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test

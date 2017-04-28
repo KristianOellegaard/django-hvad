@@ -3,14 +3,17 @@ Release Notes
 #############
 
 *****************************
-1.8.0 - upcoming release
+1.8.0 - current release
 *****************************
+
+Released on April 28, 2017
 
 Python and Django versions supported:
 
+- Support for Django 1.10 was added.
 - Django 1.7 is no longer supported.
 - So, as a reminder, supported Django versions for this release are:
-  1.8 LTS, 1.9, 1.10.x (for x ≥ 1).
+  1.8 LTS, 1.9, 1.10.x (for x ≥ 1) and 1.11.
 
 New features:
 
@@ -64,7 +67,7 @@ Fixes:
   — :issue:`322`.
 
 *****************************
-1.7.0 - current release
+1.7.0
 *****************************
 
 Released on February 8, 2017

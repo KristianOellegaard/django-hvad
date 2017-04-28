@@ -151,9 +151,7 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
     def test_get_available_languages(self):
         obj = Normal.objects.language('en').get(pk=self.normal_id[1])
         admin = self._get_admin(Normal)
-        with self.assertThrowsWarning(DeprecationWarning, 2):
-            self.assertCountEqual(list(admin.get_available_languages(obj)), self.translations)
-            self.assertCountEqual(list(admin.get_available_languages(None)), [])
+        self.assertRaises(NotImplementedError, admin.get_available_languages, obj)
 
     def test_get_object(self):
         # Check if it returns a model, if there is at least one translation

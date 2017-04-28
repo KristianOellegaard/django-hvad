@@ -80,13 +80,11 @@ class TranslatableModelAdminMixin(object):
     all_translations.short_description = _(u'all translations')
 
     def get_available_languages(self, obj):
-        # remove in 1.8
-        warnings.warn('admin.get_available_languages is deprecated and will be removed. '
-                      'Please invoke the instance\'s get_available_languages directly.',
-                      DeprecationWarning, stacklevel=2)
-        if obj is None:
-            return []
-        return obj.get_available_languages()
+        # remove in 1.9
+        raise NotImplementedError(
+            'admin.get_available_languages is obsolete and has been removed. '
+            'Invoke the instance\'s get_available_languages() method directly.'
+        )
 
     def get_language_tabs(self, obj, request, available_languages):
         info = None if obj is None else (obj._meta.app_label, obj._meta.model_name)
