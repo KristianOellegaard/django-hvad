@@ -10,7 +10,7 @@ Released on April 28, 2017
 
 Python and Django versions supported:
 
-- Support for Django 1.10 was added.
+- Support for Django 1.11 was added.
 - Django 1.7 is no longer supported.
 - So, as a reminder, supported Django versions for this release are:
   1.8 LTS, 1.9, 1.10.x (for x ≥ 1) and 1.11.
