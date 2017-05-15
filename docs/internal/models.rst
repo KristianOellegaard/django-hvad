@@ -7,7 +7,6 @@
 .. function:: create_translations_model(model, related_name, meta, **fields)
 
     A model factory used to create the :term:`Translations Model`. Makes sure
-    that the *unique_together* option on the options (meta) contain
     ``('language_code', 'master')`` as they always have to be unique together.
     Sets the ``master`` foreign key to *model* onto the
     :term:`Translations Model` as well as the ``language_code`` field, which is
@@ -79,14 +78,6 @@ TranslatableModel
     .. attribute:: objects
     
         An instance of :class:`hvad.manager.TranslationManager`.
-    
-    .. attribute:: _shared_field_names
-    
-        A list of field on the :term:`Shared Model`.
-
-    .. attribute:: _translated_field_names
-    
-        A list of field on the :term:`Translations Model`.
     
     .. classmethod:: save_translations(cls, instance, **kwargs)
     
