@@ -64,7 +64,6 @@ html_theme_options = {
 html_style = 'stylesheet.css'
 html_static_path = ['_static']
 
-html_use_smartypants = True
 html_show_sourcelink = False
 
 # Custom sidebar templates, maps document names to template names.
