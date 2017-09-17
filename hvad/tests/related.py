@@ -46,7 +46,8 @@ class NormalToNormalFKTest2(TransactionTestCase, NormalFixture):
         related = Related.objects.create()
         related.normal_id = 999
         if connection.features.supports_foreign_keys:
-            if connection.features.supports_forward_references:
+            if (connection.features.supports_forward_references and
+                not connection.features.autocommits_when_autocommit_is_off):
                 try:
                     transaction.set_autocommit(False)
                     related.save()
@@ -300,7 +301,6 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
             self.assertRaises(NotImplementedError, manager.datetimes, 'dummy')
             self.assertRaises(NotImplementedError, manager.complex_filter, Q(normal_field=''))
             self.assertRaises(NotImplementedError, manager.annotate)
-            self.assertRaises(NotImplementedError, manager.reverse)
             self.assertRaises(NotImplementedError, manager.defer)
             self.assertRaises(NotImplementedError, manager.only)
 
@@ -484,16 +484,6 @@ class SelectRelatedTests(HvadTestCase, NormalFixture):
                 self.assertEqual(list((obj.normal.shared_field, obj.normal.translated_field)
                                       for obj in rel_objects),
                                  check)
-
-    def test_select_related_cleans_cache(self):
-        with translation.override('en'):
-            rel_objects = SimpleRelated.objects.language().select_related('normal')
-            cache = (
-                getattr(Normal, Normal._meta.translations_accessor).rel.get_cache_name()
-                if django.VERSION >= (1, 9) else
-                getattr(Normal, Normal._meta.translations_accessor).related.get_cache_name()
-            )
-            self.assertFalse(hasattr(rel_objects[0].normal, cache))
 
     def test_select_related_using_get(self):
         with translation.override('en'):

@@ -32,17 +32,21 @@ class TranslatedAttribute(object):
               is raised).
             Returns the loaded translation
         """
-        if not hvad_settings.AUTOLOAD_TRANSLATIONS:
-            raise AttributeError('Field %r is a translatable field, but no translation is loaded '
-                                 'and auto-loading is disabled because '
-                                 'settings.HVAD[\'AUTOLOAD_TRANSLATIONS\'] is False' % self.name)
+        query_field = instance._meta.get_field(instance._meta.translations_query)
         try:
-            translation = get_translation(instance)
-        except instance._meta.translations_model.DoesNotExist:
-            raise self._NoTranslationError('Accessing a translated field requires that '
-                                           'the instance has a translation loaded, or a '
-                                           'valid translation in current language (%s) '
-                                           'loadable from the database' % get_language())
+            translation = query_field.get_cached_value(instance)
+        except KeyError:
+            if not hvad_settings.AUTOLOAD_TRANSLATIONS:
+                raise AttributeError('Field %r is a translatable field, but no translation is loaded '
+                                    'and auto-loading is disabled because '
+                                    'settings.HVAD[\'AUTOLOAD_TRANSLATIONS\'] is False' % self.name)
+            try:
+                translation = get_translation(instance)
+            except instance._meta.translations_model.DoesNotExist:
+                raise self._NoTranslationError('Accessing a translated field requires that '
+                                            'the instance has a translation loaded, or a '
+                                            'valid translation in current language (%s) '
+                                            'loadable from the database' % get_language())
         set_cached_translation(instance, translation)
         return translation
 

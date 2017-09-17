@@ -183,22 +183,16 @@ class TranslationQueryset(QuerySet):
         """ Creates a clone of this queryset - Django equivalent of copy()
         This method keeps all defining attributes and drops data caches
         """
-        kwargs.update({
-            'shared_model': self.shared_model,
-            '_local_field_names': self._local_field_names,
-            '_field_translator': self._field_translator,
-            '_language_code': self._language_code,
-            '_language_fallbacks': self._language_fallbacks,
-            '_raw_select_related': self._raw_select_related,
-            '_language_filter_tag': getattr(self, '_language_filter_tag', False),
-            '_hvad_switch_fields': self._hvad_switch_fields,
-        })
-        if django.VERSION < (1, 9):
-            kwargs.update({
-                'klass': None if klass is None else self._get_class(klass),
-                'setup': setup,
-            })
-        return super(TranslationQueryset, self)._clone(**kwargs)
+        qs = super(TranslationQueryset, self)._clone()
+        qs.shared_model = self.shared_model
+        qs._local_field_names = self._local_field_names
+        qs._field_translator = self._field_translator
+        qs._language_code = self._language_code
+        qs._language_fallbacks = self._language_fallbacks
+        qs._raw_select_related = self._raw_select_related
+        qs._language_filter_tag = getattr(self, '_language_filter_tag', False)
+        qs._hvad_switch_fields = self._hvad_switch_fields
+        return qs
 
     @property
     def field_translator(self):
@@ -316,7 +310,7 @@ class TranslationQueryset(QuerySet):
                                      'Use prefetch_related instead.' % query_key)
                 if term.target is None:
                     raise FieldError('Cannot select_related: %s is a regular field' % query_key)
-                if hasattr(term.field.rel, 'through'):
+                if term.field.many_to_many or term.field.one_to_many:
                     raise FieldError('Cannot select_related: %s can be multiple objects. '
                                      'Use prefetch_related instead.' % query_key)
 
@@ -394,34 +388,6 @@ class TranslationQueryset(QuerySet):
     #===========================================================================
     # Queryset/Manager API that do database queries
     #===========================================================================
-
-    if django.VERSION < (1, 9):
-        def iterator(self):
-            qs = self._clone()._add_language_filter()
-            qs._known_related_objects = {}  # super's iterator will attempt to set them
-
-            for obj in super(TranslationQueryset, qs).iterator():
-                for name in self._hvad_switch_fields:
-                    try:
-                        setattr(obj.master, name, getattr(obj, name))
-                    except AttributeError: # pragma: no cover
-                        pass
-                    else:
-                        delattr(obj, name)
-                obj = combine(obj, qs.shared_model)
-                # use known objects from self, not qs as we cleared it earlier
-                for field, rel_objs in self._known_related_objects.items():
-                    if hasattr(obj, field.get_cache_name()):
-                        # should not happen, but we conform to Django behavior
-                        continue #pragma: no cover
-                    pk = getattr(obj, field.get_attname())
-                    try:
-                        rel_obj = rel_objs[pk]
-                    except KeyError: #pragma: no cover
-                        pass
-                    else:
-                        setattr(obj, field.name, rel_obj)
-                yield obj
 
     def create(self, **kwargs):
         if 'language_code' not in kwargs:
@@ -854,9 +820,6 @@ class TranslationAwareQueryset(QuerySet):
         fieldnames, extra_filters = self._translate_fieldnames(field_names)
         return self._filter_extra(extra_filters).order_by(*fieldnames)
 
-    def reverse(self):
-        raise NotImplementedError()
-
     def defer(self, *fields):
         raise NotImplementedError()
 
@@ -864,12 +827,9 @@ class TranslationAwareQueryset(QuerySet):
         raise NotImplementedError()
 
     def _clone(self, klass=None, setup=False, **kwargs):
-        kwargs.update({
-            '_language_code': self._language_code,
-        })
-        if django.VERSION < (1, 9):
-            kwargs.update({'klass': klass, 'setup': setup})
-        return super(TranslationAwareQueryset, self)._clone(**kwargs)
+        qs = super(TranslationAwareQueryset, self)._clone(**kwargs)
+        qs._language_code = self._language_code
+        return qs
 
     def _filter_extra(self, extra_filters):
         if extra_filters.children:
