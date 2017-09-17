@@ -50,16 +50,10 @@ def query_terms(model, path):
 
         # STEP 2 -- Find out the target of the relation, if it is one
         if direct:  # field is on model
-            if django.VERSION >= (1, 9):
-                if field.remote_field:      # field is a foreign key, follow it
-                    target = field.remote_field.model._meta.concrete_model
-                else:
-                    target = None           # field is a regular field
+            if field.remote_field:      # field is a foreign key, follow it
+                target = field.remote_field.model._meta.concrete_model
             else:
-                if field.rel:               # field is a foreign key, follow it
-                    target = field.rel.to._meta.concrete_model
-                else:
-                    target = None           # field is a regular field
+                target = None           # field is a regular field
         else:       # field is a m2m or reverse fk, follow it
             target = field.related_model._meta.concrete_model
 

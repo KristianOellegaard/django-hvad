@@ -5,11 +5,7 @@ import django
 from django.apps import apps
 from django.db import models
 from django.db.models.expressions import Expression, Col, Value
-if django.VERSION >= (1, 9):
-    from django.db.models.fields.related import ForeignObject, ReverseManyToOneDescriptor
-else:
-    from django.db.models.fields.related import (ForeignObject,
-                                                 ForeignRelatedObjectsDescriptor as ReverseManyToOneDescriptor)
+from django.db.models.fields.related import ForeignObject, ReverseManyToOneDescriptor
 from django.utils import translation
 from django.utils.functional import cached_property
 from hvad.utils import set_cached_translation
@@ -184,10 +180,7 @@ class TranslationsAccessor(ReverseManyToOneDescriptor):
                 """ Load all translations for a model into the prefetched objects cache.
                     Do nothing if prefetch cache is already loaded, unless force_reload is set
                 """
-                if django.VERSION >= (1, 9):
-                    query_name = self.field.related_query_name()
-                else:
-                    query_name = self.instance._meta.translations_accessor
+                query_name = self.field.related_query_name()
                 try:
                     cache = self.instance._prefetched_objects_cache
                 except AttributeError:

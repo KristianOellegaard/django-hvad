@@ -31,16 +31,6 @@ class SettingsTests(HvadTestCase):
                 id='hvad.settings.C01'
             ), errors)
 
-    def test_table_name_separator(self):
-        with self.settings(HVAD={'TABLE_NAME_SEPARATOR': 'foo'}):
-            errors = settings.check(apps)
-        self.assertIn(checks.Error('Obsolete setting HVAD["TABLE_NAME_SEPARATOR"]',
-            hint='TABLE_NAME_SEPARATOR has been superceded by TABLE_NAME_FORMAT. '
-                 'Set it to "%sfootranslation" to keep the old behavior',
-            obj='TABLE_NAME_SEPARATOR',
-            id='hvad.settings.E01',
-        ), errors)
-
     def test_languages(self):
         with self.settings(HVAD={'LANGUAGES': [('fr', 'French'), ('en', 'English')]}):
             self.assertFalse(settings.check(apps))
@@ -302,9 +292,6 @@ class OptionsTest(HvadTestCase):
         self.assertEqual(Normal._meta.translations_model.__name__, 'NormalTranslation')
         self.assertEqual(Normal._meta.translations_accessor, 'translations')
         self.assertEqual(Normal._meta.translations_query, 'translations_query')
-        if django.VERSION < (1, 9):
-            self.assertRaises(FieldDoesNotExist, Normal._meta.get_field_by_name, 'inexistent_field')
-            self.assertRaises(WrongManager, Normal._meta.get_field_by_name, 'translated_field')
         self.assertRaises(FieldDoesNotExist, Normal._meta.get_field, 'inexistent_field')
         self.assertRaises(WrongManager, Normal._meta.get_field, 'translated_field')
         self.assertIs(Normal._meta.get_field(Normal._meta.translations_accessor).field.model,
@@ -837,12 +824,8 @@ class DescriptorTests(HvadTestCase, NormalFixture):
         obj = Normal.objects.language("en").get(pk=self.normal_id[1])
         with self.assertNumQueries(0):
             del obj.translated_field
-        if django.VERSION >= (1, 10):   # on version 1.10 and newer, this refreshes from db
-            with self.assertNumQueries(1):
-                self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
-        else:
-            with self.assertNumQueries(0):
-                self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+        with self.assertNumQueries(1):
+            self.assertEqual(obj.translated_field, NORMAL[1].translated_field['en'])
 
         # Delete a translated field without a translation loaded, AUTOLOAD is false
         obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
@@ -883,10 +866,7 @@ class DescriptorTests(HvadTestCase, NormalFixture):
         obj = Normal.objects.language("en").create(shared_field="test", translated_field="en")
         self.assertEqual(obj.translated_field, "en")
         delattr(obj, 'translated_field')
-        if django.VERSION >= (1, 10):   # on version 1.10 and newer, this refreshes from db
-            self.assertEqual(obj.translated_field, "en")
-        else:
-            self.assertRaises(AttributeError, getattr, obj, 'translated_field')
+        self.assertEqual(obj.translated_field, "en")
 
     def test_language_code_attribute(self):
         """ Language code special attribute behaviors """

@@ -120,28 +120,6 @@ def load_translation(instance, language, enforce=False):
 
 #=============================================================================
 
-# remove when we drop support for django 1.8
-class SmartGetFieldByName(object):
-    """
-    Get field by name from a shared model or raise a smart exception to help the
-    developer.
-    """
-    def __init__(self, real):
-        self.real = real
-    
-    def __call__(self, meta, name):
-        assert not isinstance(self.real, SmartGetFieldByName)
-        try:
-            return self.real(name)
-        except FieldDoesNotExist as e:
-            try:
-                meta.translations_model._meta.get_field_by_name(name)
-            except FieldDoesNotExist:
-                raise e
-            else:
-                raise WrongManager(meta, name)
-
-
 class SmartGetField(object):
     ''' Smart get_field that raises a helpful exception on get_field() '''
     def __init__(self, real):

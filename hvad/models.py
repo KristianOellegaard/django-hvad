@@ -13,9 +13,8 @@ from hvad.descriptors import LanguageCodeAttribute, TranslatedAttribute
 from hvad.fields import SingleTranslationObject, MasterKey
 from hvad.manager import TranslationManager
 from hvad.settings import hvad_settings
-from hvad.utils import (get_cached_translation, set_cached_translation,
-                        SmartGetFieldByName, SmartGetField)
-from hvad.compat import MethodType
+from hvad.utils import get_cached_translation, set_cached_translation, SmartGetField
+from types import MethodType
 from itertools import chain
 import sys
 
@@ -222,8 +221,7 @@ class TranslatableModel(models.Model):
 
     class Meta:
         abstract = True
-        if django.VERSION >= (1, 10):
-            base_manager_name = '_plain_manager'
+        base_manager_name = '_plain_manager'
 
     def __init__(self, *args, **kwargs):
         # Split arguments into shared/translatd
@@ -248,16 +246,13 @@ class TranslatableModel(models.Model):
 
     @classmethod
     def from_db(cls, db, field_names, values):
-        if django.VERSION >= (1, 10):
-            if len(values) != len(cls._meta.concrete_fields):
-                # Missing values are deferred and must be marked as such
-                values = list(values)
-                values.reverse()
-                values = [values.pop() if f.attname in field_names else models.DEFERRED
-                        for f in cls._meta.concrete_fields]
-            new = cls(*values, language_code=NoTranslation)
-        else:
-            new = cls(language_code=NoTranslation, **dict(zip(field_names, values)))
+        if len(values) != len(cls._meta.concrete_fields):
+            # Missing values are deferred and must be marked as such
+            values = list(values)
+            values.reverse()
+            values = [values.pop() if f.attname in field_names else models.DEFERRED
+                    for f in cls._meta.concrete_fields]
+        new = cls(*values, language_code=NoTranslation)
         new._state.adding = False
         new._state.db = db
         return new
@@ -420,21 +415,7 @@ def prepare_translatable_model(sender, **kwargs):
 
     #### Now we have to work ####
 
-    # Ensure _base_manager cannot be TranslationManager despite use_for_related_fields
-    # 1- it is useless unless default_class is overriden
-    # 2- in that case, _base_manager is used for saving objects and must not be
-    #    translation aware.
-    base_mgr = getattr(model, '_base_manager', None)
-    if base_mgr is None or isinstance(base_mgr, TranslationManager):
-        assert django.VERSION < (1, 10)
-        model.add_to_class('_base_manager', Manager())
-
     # Replace get_field_by_name with one that warns for common mistakes
-    if django.VERSION < (1, 9) and not isinstance(model._meta.get_field_by_name, SmartGetFieldByName):
-        model._meta.get_field_by_name = MethodType(
-            SmartGetFieldByName(model._meta.get_field_by_name),
-            model._meta
-        )
     if not isinstance(model._meta.get_field, SmartGetField):
         model._meta.get_field = MethodType(
             SmartGetField(model._meta.get_field),

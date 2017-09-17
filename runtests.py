@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core import checks
 from django.test.utils import get_runner
 from django.utils.encoding import force_str
-from hvad.compat import urlparse
+from urllib.parse import urlparse
 import argparse
 import os.path
 import sys

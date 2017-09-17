@@ -2,15 +2,12 @@
 import django
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
-if django.VERSION >= (1, 10):
-    from django.urls import reverse
-else:
-    from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils import translation
 from django.http import HttpResponseForbidden, HttpResponseRedirect, QueryDict
+from urllib.parse import urlparse
 from hvad.admin import InlineModelForm
 from hvad.admin import translatable_modelform_factory
-from hvad.compat import urlparse
 from hvad.forms import TranslatableModelForm
 from hvad.test_utils.fixtures import NormalFixture, UsersFixture
 from hvad.test_utils.data import NORMAL
@@ -66,11 +63,6 @@ class AdminMethodsTests(HvadTestCase, BaseAdminTests, NormalFixture):
         with translation.override('th'):
             with self.assertNumQueries(0):
                 self.assertTrue(myadmin.all_translations(obj).find("<strong>") == -1)
-
-    def test_get_available_languages(self):
-        obj = Normal.objects.language('en').get(pk=self.normal_id[1])
-        admin = self._get_admin(Normal)
-        self.assertRaises(NotImplementedError, admin.get_available_languages, obj)
 
     def test_get_object(self):
         # Check if it returns a model, if there is at least one translation

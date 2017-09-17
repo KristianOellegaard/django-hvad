@@ -136,8 +136,7 @@ class StandardToTransFKTest(HvadTestCase, StandardFixture, NormalFixture):
 
     def test_lookup_by_non_existing_field(self):
         with translation.override('en'):
-            self.assertRaises(FieldError if django.VERSION >= (1, 11) else TypeError,
-                              Standard.objects.get, normal__non_existing_field=1)
+            self.assertRaises(FieldError, Standard.objects.get, normal__non_existing_field=1)
 
     def test_lookup_by_translated_field_using_q_objects(self):
         en = Normal.objects.language('en').get(pk=self.normal_id[1])

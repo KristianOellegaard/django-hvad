@@ -10,7 +10,6 @@ from django.forms.models import (BaseModelForm, ModelFormMetaclass,
 from django.forms.utils import ErrorList
 from django.forms.widgets import Select
 from django.utils.translation import get_language, ugettext as _
-from hvad.compat import with_metaclass
 from hvad.models import TranslatableModel, BaseTranslationModel
 from hvad.settings import hvad_settings
 from hvad.utils import (set_cached_translation, get_cached_translation, load_translation)
@@ -208,8 +207,7 @@ class BaseTranslatableModelForm(BaseModelForm):
         return super(BaseTranslatableModelForm, self).save(commit=commit)
 
 
-class TranslatableModelForm(with_metaclass(TranslatableModelFormMetaclass,
-                                           BaseTranslatableModelForm)):
+class TranslatableModelForm(BaseTranslatableModelForm, metaclass=TranslatableModelFormMetaclass):
     pass
 
 #=============================================================================

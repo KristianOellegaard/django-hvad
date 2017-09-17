@@ -24,18 +24,6 @@ _default_settings = {
 #===============================================================================
 
 class HvadSettingsChecks:
-    # Legacy setting, remove extended error description in hvad 1.9 """
-    @staticmethod
-    def check_TABLE_NAME_SEPARATOR(value):
-        return (
-            checks.Error('Obsolete setting HVAD["TABLE_NAME_SEPARATOR"]',
-                hint='TABLE_NAME_SEPARATOR has been superceded by TABLE_NAME_FORMAT. '
-                     'Set it to "%%s%stranslation" to keep the old behavior' % value,
-                obj='TABLE_NAME_SEPARATOR',
-                id='hvad.settings.E01',
-            ),
-        )
-
     @staticmethod
     def check_LANGUAGES(value):
         errors = []
