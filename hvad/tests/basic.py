@@ -291,7 +291,6 @@ class OptionsTest(HvadTestCase):
     def test_options(self):
         self.assertEqual(Normal._meta.translations_model.__name__, 'NormalTranslation')
         self.assertEqual(Normal._meta.translations_accessor, 'translations')
-        self.assertEqual(Normal._meta.translations_query, 'translations_query')
         self.assertRaises(FieldDoesNotExist, Normal._meta.get_field, 'inexistent_field')
         self.assertRaises(WrongManager, Normal._meta.get_field, 'translated_field')
         self.assertIs(Normal._meta.get_field(Normal._meta.translations_accessor).field.model,
@@ -847,19 +846,19 @@ class DescriptorTests(HvadTestCase, NormalFixture):
 
     def test_translated_foreignkey_set(self):
         """ Special behavior for ForeignKey and its remote id """
-        cache = Related._meta.translations_cache
+        hvad_query = Related._meta.get_field('_hvad_query')
 
         normal = Normal.objects.language('en').get(pk=self.normal_id[1])
         related = Related(language_code='en')
         related.translated = normal
         self.assertNotIn('translated_id', related.__dict__)
-        self.assertIn('translated_id', getattr(related, cache).__dict__)
-        self.assertEqual(getattr(related, cache).__dict__['translated_id'], self.normal_id[1])
+        self.assertIn('translated_id', hvad_query.get_cached_value(related).__dict__)
+        self.assertEqual(hvad_query.get_cached_value(related).__dict__['translated_id'], self.normal_id[1])
 
         related.translated_id = 4242
         self.assertNotIn('translated_id', related.__dict__)
-        self.assertIn('translated_id', getattr(related, cache).__dict__)
-        self.assertEqual(getattr(related, cache).__dict__['translated_id'], 4242)
+        self.assertIn('translated_id', hvad_query.get_cached_value(related).__dict__)
+        self.assertEqual(hvad_query.get_cached_value(related).__dict__['translated_id'], 4242)
 
     def test_translated_attribute_delete(self):
         # Accessing a deleted translated attribute reloads the translation

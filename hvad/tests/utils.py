@@ -1,6 +1,6 @@
 from django.utils import translation
 from hvad.utils import (translation_rater, get_cached_translation, set_cached_translation,
-                        combine, get_translation, load_translation)
+                        get_translation, load_translation)
 from hvad.test_utils.data import NORMAL
 from hvad.test_utils.fixtures import NormalFixture
 from hvad.test_utils.testcase import HvadTestCase
@@ -29,7 +29,7 @@ class TranslationAccessorTests(HvadTestCase, NormalFixture):
         obj = Normal.objects.untranslated().get(pk=self.normal_id[1])
         with self.assertNumQueries(0):
             self.assertIs(get_cached_translation(obj), None)
-            self.assertFalse(hasattr(obj, obj._meta.translations_cache))
+            self.assertFalse(obj._meta.get_field('_hvad_query').is_cached(obj))
 
             obj.translate('sr')
             self.assertIsNot(get_cached_translation(obj), None)
@@ -43,23 +43,11 @@ class TranslationAccessorTests(HvadTestCase, NormalFixture):
 
             set_cached_translation(obj, None)
             self.assertIs(get_cached_translation(obj), None)
-            self.assertFalse(hasattr(obj, obj._meta.translations_cache))
+            self.assertFalse(obj._meta.get_field('_hvad_query').is_cached(obj))
 
         obj = Normal.objects.language('en').get(pk=self.normal_id[1])
         with self.assertNumQueries(0):
             self.assertEqual(get_cached_translation(obj).language_code, 'en')
-
-    def test_combine(self):
-        model = Normal._meta.translations_model
-        qs = model.objects.select_related('master').filter(master=self.normal_id[1])
-
-        for trobj in qs:
-            combined = combine(trobj, NormalProxy)
-            self.assertEqual(combined.pk, self.normal_id[1])
-            self.assertEqual(combined.shared_field, NORMAL[1].shared_field)
-            self.assertEqual(combined.translated_field,
-                             NORMAL[1].translated_field[trobj.language_code])
-            self.assertIsInstance(combined, NormalProxy)
 
     def test_get_translation(self):
         # no translation loaded

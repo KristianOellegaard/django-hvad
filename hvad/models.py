@@ -20,7 +20,7 @@ import sys
 
 __all__ = ('TranslatableModel', 'TranslatedFields', 'NoTranslation')
 
-forbidden_translated_fields = frozenset({'Meta', 'objects', 'master', 'master_id'})
+forbidden_translated_fields = ('Meta', 'objects', 'master', 'master_id')
 
 #===============================================================================
 
@@ -32,7 +32,7 @@ class TranslatedFields(object):
     """ Wrapper class to define translated fields on a model. """
 
     def __init__(self, meta=None, base_class=None, **fields):
-        forbidden = forbidden_translated_fields.intersection(fields)
+        forbidden = set(forbidden_translated_fields).intersection(fields)
         if forbidden:
             raise ImproperlyConfigured(
                 'Invalid translated field: %s' % ', '.join(sorted(forbidden)))
@@ -69,7 +69,7 @@ class TranslatedFields(object):
         translations_model = self.create_translations_model(model, name)
         model._meta.translations_model = translations_model
         if not model._meta.abstract:
-            self.contribute_translations(model, translations_model, name)
+            model._meta.translations_accessor = name
 
     def create_translations_model(self, model, related_name):
         """ Create the translations model for a shared model.
@@ -171,27 +171,6 @@ class TranslatedFields(object):
         meta['index_together'] = tuple(tconst)
 
         return type('Meta', (object,), meta)
-
-    def contribute_translations(self, model, translations_model, related_name):
-        """ Contribute translations model to the Meta class and set descriptors """
-
-        model._meta.translations_accessor = related_name
-        model._meta.translations_cache = '%s_cache' % related_name
-        model._meta.translations_query = '%s_query' % related_name
-
-        # Set descriptors
-        ignore_fields = ('pk', 'master', 'master_id', translations_model._meta.pk.name)
-        for field in translations_model._meta.fields:
-            if field.name in ignore_fields:
-                continue
-            if field.name == 'language_code':
-                attr = LanguageCodeAttribute(model)
-            else:
-                attr = TranslatedAttribute(model, field.name)
-                attname = field.get_attname()
-                if attname and attname != field.name:
-                    setattr(model, attname, TranslatedAttribute(model, attname))
-            setattr(model, field.name, attr)
 
 #===============================================================================
 
@@ -406,14 +385,31 @@ def prepare_translatable_model(sender, **kwargs):
     if model._meta.proxy:
         model._meta.translations_accessor = model._meta.concrete_model._meta.translations_accessor
         model._meta.translations_model = model._meta.concrete_model._meta.translations_model
-        model._meta.translations_cache = model._meta.concrete_model._meta.translations_cache
-        model._meta.translations_query = model._meta.concrete_model._meta.translations_query
 
     if not hasattr(model._meta, 'translations_model'):
         raise ImproperlyConfigured("No TranslatedFields found on %r, subclasses of "
                                    "TranslatableModel must define TranslatedFields." % model)
 
     #### Now we have to work ####
+
+    # Create query foreign object
+    if model._meta.proxy:
+        hvad_query = model._meta.concrete_model._meta.get_field('_hvad_query')
+    else:
+        hvad_query = SingleTranslationObject(model)
+        model.add_to_class('_hvad_query', hvad_query)
+
+    # Set descriptors
+    ignore_fields = ('pk', 'master', 'master_id', 'language_code',
+                     model._meta.translations_model._meta.pk.name)
+    setattr(model, 'language_code', LanguageCodeAttribute(model, hvad_query))
+    for field in model._meta.translations_model._meta.fields:
+        if field.name in ignore_fields:
+            continue
+        setattr(model, field.name, TranslatedAttribute(model, field.name, hvad_query))
+        attname = field.get_attname()
+        if attname and attname != field.name:
+            setattr(model, attname, TranslatedAttribute(model, attname, hvad_query))
 
     # Replace get_field_by_name with one that warns for common mistakes
     if not isinstance(model._meta.get_field, SmartGetField):
@@ -422,7 +418,5 @@ def prepare_translatable_model(sender, **kwargs):
             model._meta
         )
 
-    if not model._meta.proxy:
-        model.add_to_class(model._meta.translations_query, SingleTranslationObject(model))
 
 class_prepared.connect(prepare_translatable_model)

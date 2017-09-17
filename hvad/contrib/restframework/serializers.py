@@ -55,7 +55,7 @@ class TranslationsMixin(object):
     # Add the translations accessor to default serializer fields
     def get_default_field_names(self, *args):
         names = super(TranslationsMixin, self).get_default_field_names(*args)
-        query_name = self.Meta.model._meta.translations_query
+        query_name = '_hvad_query'
         if query_name in names:
             names.remove(query_name)
         names.append(self.Meta.model._meta.translations_accessor)
@@ -182,7 +182,7 @@ class TranslatableModelMixin(object):
     def get_default_field_names(self, *args):
         # Add translated fields into default field names
         names = super(TranslatableModelMixin, self).get_default_field_names(*args)
-        query_name = self.Meta.model._meta.translations_query
+        query_name = '_hvad_query'
         if query_name in names:
             names.remove(query_name)
         names.extend(field.name for field in self.Meta.model._meta.translations_model._meta.fields

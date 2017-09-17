@@ -15,7 +15,6 @@ from hvad.fields import BetterTranslationsField
 from hvad.query import (query_terms, q_children, expression_nodes,
                         add_alias_constraints)
 from hvad.settings import hvad_settings
-from hvad.utils import combine
 from copy import deepcopy
 import sys
 
@@ -81,7 +80,13 @@ class TranslatableModelIterable(ModelIterable):
                     pass
                 else:
                     delattr(obj, name)
-            obj = combine(obj, qs.shared_model)
+
+            # Load translation and swap to shared model
+            obj.master._meta.get_field('_hvad_query').set_cached_value(obj.master, obj)
+            obj = obj.master
+            if qs.shared_model._meta.proxy:
+                obj.__class__ = qs.shared_model
+
             # use known objects from self.queryset, not qs as we cleared it earlier
             for field, rel_objs in self.queryset._known_related_objects.items():
                 if hasattr(obj, field.get_cache_name()):
@@ -272,7 +277,7 @@ class TranslationQueryset(QuerySet):
                     # on deeper levels we must key to translations model
                     # this will work because translations will be seen as _unique
                     # at query time
-                    newbits.append('%s__%s' % (term.model._meta.translations_query, term.term))
+                    newbits.append('%s__%s' % ('_hvad_query', term.term))
                 else:
                     newbits.append(term.term)
 
@@ -290,7 +295,7 @@ class TranslationQueryset(QuerySet):
                 if hasattr(term.target._meta, 'translations_model'):
                     # Add the model
                     target_query = '__'.join(newbits)
-                    related_queries.append('%s__%s' % (target_query, term.target._meta.translations_query))
+                    related_queries.append('%s__%s' % (target_query, '_hvad_query'))
 
             related_queries.append('__'.join(newbits))
 

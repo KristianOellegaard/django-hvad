@@ -129,10 +129,6 @@ class SingleTranslationObject(ForeignObject):
             on_delete=models.DO_NOTHING,
         )
 
-    def get_cache_name(self):
-        """ Have select_related store loaded translation right into translation cache """
-        return self.shared_model._meta.translations_cache
-
     def get_extra_restriction(self, where_class, alias, related_alias):
         """ Inject the LanguageConstraint into the join clause. Actual language
             will be resolved by the constraint itself.
@@ -224,7 +220,7 @@ class TranslationsAccessor(ReverseManyToOneDescriptor):
                     Thus, obj.translations.active is equivalent to get_cached_translation(obj)
                 """
                 instance = self.instance
-                return getattr(instance, instance._meta.translations_cache, None)
+                return instance._meta.get_field('_hvad_query').get_cached_value(instance, None)
 
             def get_language(self, language):
                 """ Return the translation for given language.

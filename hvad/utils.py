@@ -48,7 +48,7 @@ def get_cached_translation(instance):
         Intended for internal use and third-party modules.
         User code should use instance.translations.active instead.
     """
-    return getattr(instance, instance._meta.translations_cache, None)
+    return instance._meta.get_field('_hvad_query').get_cached_value(instance, None)
 
 def set_cached_translation(instance, translation):
     """ Sets the translation cached onto instance.
@@ -57,29 +57,14 @@ def set_cached_translation(instance, translation):
         - Passing None unsets the translation cache
         - Returns the translation that was loaded before
     """
-    tcache = instance._meta.translations_cache
-    previous = getattr(instance, tcache, None)
+    hvad_query = instance._meta.get_field('_hvad_query')
+    previous = hvad_query.get_cached_value(instance, None)
     if translation is None:
         if previous is not None:
-            delattr(instance, tcache)
+            hvad_query.delete_cached_value(instance)
     else:
-        setattr(instance, tcache, translation)
+        hvad_query.set_cached_value(instance, translation)
     return previous
-
-def combine(trans, klass):
-    """
-    'Combine' the shared and translated instances by setting the translation
-    on the 'translations_cache' attribute of the shared instance and returning
-    the shared instance.
-
-    The result is casted to klass (needed for proxy models).
-    """
-    combined = trans.master
-    if klass._meta.proxy:
-        combined.__class__ = klass
-    setattr(combined, combined._meta.translations_cache, trans)
-    return combined
-
 
 def get_translation(instance, language_code=None):
     ''' Get translation by language. Fresh copy is loaded from DB.
