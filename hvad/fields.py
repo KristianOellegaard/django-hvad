@@ -146,9 +146,9 @@ class SingleTranslationObject(ForeignObject):
             Col(alias, related_model._meta.get_field('language_code'), models.CharField())
         )
 
-    def get_path_info(self):
+    def get_path_info(self, filtered_relation=None):
         """ Mark the field as indirect so most Django automation ignores it """
-        path = super(SingleTranslationObject, self).get_path_info()
+        path = super(SingleTranslationObject, self).get_path_info(filtered_relation)
         return [path[0]._replace(direct=False)]
 
     def contribute_to_class(self, cls, name, virtual_only=False):

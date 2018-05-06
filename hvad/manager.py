@@ -198,7 +198,11 @@ class TranslationQueryset(QuerySet):
                 'klass': None if klass is None else self._get_class(klass),
                 'setup': setup,
             })
-        return super(TranslationQueryset, self)._clone(**kwargs)
+        cloned = super(TranslationQueryset, self)._clone()
+        cloned.__dict__.update(kwargs)
+        if klass is not None:
+            cloned.__class__ = klass
+        return cloned
 
     @property
     def field_translator(self):
@@ -316,7 +320,7 @@ class TranslationQueryset(QuerySet):
                                      'Use prefetch_related instead.' % query_key)
                 if term.target is None:
                     raise FieldError('Cannot select_related: %s is a regular field' % query_key)
-                if hasattr(term.field.rel, 'through'):
+                if hasattr(term.field.remote_field.model, 'through'):
                     raise FieldError('Cannot select_related: %s can be multiple objects. '
                                      'Use prefetch_related instead.' % query_key)
 
