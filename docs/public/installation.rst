@@ -7,8 +7,9 @@ Installation
 Requirements
 ************
 
-* `Django`_ 1.8 or higher.
-* Python 2.7 or PyPy 1.5 or higher, Python 3.4 or higher.
+* `Django`_ 1.8 to 1.11 using hvad < 2.0.
+* `Django` 2.1 or higher for hvad ≥ 2.0.
+* A Python version matching django's compatibility matrix.
 
 ************
 Installation

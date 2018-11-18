@@ -26,7 +26,7 @@ Features
 * **Complete** - relationships, custom managers and querysets, proxy models, and abstract models.
 * **Batteries included** - translation-enabled forms and admin are provided.
 * **Reliable** - more than 300 test cases and counting. |coverage| |build|
-* **Compatible** with Django 1.8 to 1.11, running Python 2.7, 3.4, 3.5 or 3.6.
+* **Compatible** - follows Django compatibility matrix.
 
 Django-hvad also features support for `Django REST framework`_ 3.1 or newer, including
 translation-aware serializers.

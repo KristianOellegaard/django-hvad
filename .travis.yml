@@ -1,22 +1,14 @@
 language: python
 python:
-  - 2.7
-  - 3.4
   - 3.5
   - 3.6
 env:
-  - DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
-  - DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
-  - DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
-  - DJANGO=django==1.11 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
-  - DJANGO=django==1.11 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
+  - DJANGO=django==2.1.2 DRF=3.9.0 DATABASE_URL=mysql://root@localhost/test
+  - DJANGO=django==2.1.2 DRF=3.9.0 DATABASE_URL=postgres://postgres@localhost/test
 
 sudo: false
 install:
-  - pip install $DJANGO && pip install sphinx argparse coveralls djangorestframework==$DRF
+  - pip install $DJANGO && pip install sphinx coveralls djangorestframework==$DRF
   - if [[ "$DATABASE_URL" == postgres:* ]]; then pip install psycopg2; fi
   - if [[ "$DATABASE_URL" == mysql:* ]]; then pip install mysqlclient; fi
   - python setup.py -q install
@@ -27,18 +19,3 @@ script:
   coverage run --source=hvad --omit='hvad/test*' runtests.py
 after_success:
   if [[ $COVERALLS_REPO_TOKEN ]]; then coveralls; fi
-
-matrix:
-  exclude:
-    - python: 3.6
-      env: DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
-    - python: 3.6
-      env: DJANGO=django==1.8.18 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
-    - python: 3.6
-      env: DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=mysql://root@localhost/test
-    - python: 3.6
-      env: DJANGO=django==1.9.13 DRF=3.3.1 DATABASE_URL=postgres://postgres@localhost/test
-    - python: 3.6
-      env: DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=mysql://root@localhost/test
-    - python: 3.6
-      env: DJANGO=django==1.10.7 DRF=3.5.3 DATABASE_URL=postgres://postgres@localhost/test
