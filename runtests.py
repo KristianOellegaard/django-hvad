@@ -59,20 +59,30 @@ ENGINES = {
     'sqlite': 'django.db.backends.sqlite3',
 }
 
+EXTRA = {
+    'django.db.backends.postgresql_psycopg2': {
+        'TEST': {'CHARSET': 'utf8'},
+    },
+    'django.db.backends.mysql': {
+        'TEST': {'CHARSET': 'utf8', 'COLLATION': 'utf8_general_ci'},
+    },
+}
+
 #=============================================================================
 
 def parse_database(url):
     url = urlparse(url)
-    return {
-        'ENGINE': ENGINES[url.scheme],
+    engine = ENGINES[url.scheme]
+    result = {
+        'ENGINE': engine,
         'NAME': url.path.strip('/'),
         'HOST': url.hostname,
         'PORT': url.port,
         'USER': url.username,
         'PASSWORD': url.password,
-        'CHARSET': 'utf8',
-        'COLLATION': 'utf8_general_ci',
     }
+    result.update(EXTRA.get(engine, {}))
+    return result
 
 #=============================================================================
 
