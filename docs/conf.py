@@ -31,7 +31,7 @@ extensions = [
     'github'
 ]
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/2.7', None),
+    'python': ('http://docs.python.org/3.6', None),
     'django': ('http://readthedocs.org/docs/django/en/latest/', None),
 }
 
@@ -42,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'django-hvad'
-copyright = u'2011-2016, Kristian Øllegaard, Jonas Obrist & contributors'
+copyright = u'2011-2018, Kristian Øllegaard, Jonas Obrist & contributors'
 
 version = '2.0'
 release = '2.0.0'
@@ -64,7 +64,6 @@ html_theme_options = {
 html_style = 'stylesheet.css'
 html_static_path = ['_static']
 
-html_use_smartypants = True
 html_show_sourcelink = False
 
 # Custom sidebar templates, maps document names to template names.

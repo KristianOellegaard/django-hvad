@@ -34,8 +34,10 @@ In addition, some settings have changed and must be updated:
       backwards-compatible loading of translations. In hvad2, by default,
       accessing a translated field when no translation is loaded no longer
       causes an automatic attempt to load one. This setting enables
-      that behavior again, for compatibility with code relying on that
-      behavior.
+      that behavior again, for compatibility with code relying on it.
+
+      Please note this is intended as a compatibility setting, which will be removed
+      in the future.
 
 Models
 ======
@@ -48,11 +50,11 @@ code samples will assume you named it ``translations``.
 The new features should simplify your code a lot when it comes to
 manually handling translations and leveraging Django caching and
 prefetching while working on multilingual models. Some incompatible changes
-also had to be performed, and existing code must be updating in the following way:
+also had to be performed, and existing code must be updated in the following way:
 
 .. class:: TranslatableModel(*args, **kwargs)
 
-    Invoking a translatable model constructor now always instanciates and
+    Invoking a translatable model constructor now always instantiates and
     activates a translation. If a ``language_code`` argument is passed,
     the translation will be in that language, otherwise it will be in
     :func:`current language <django.utils.translation.get_language>`.
@@ -126,3 +128,27 @@ also had to be performed, and existing code must be updating in the following wa
         # BECOMES
         instance.translate('en')
         instance.do_something()
+
+Queries
+=======
+
+Due to some limitations on the way queries are combined in Django ORM, one muse be careful
+when filtering on translated fields. Two separate ``filter()`` calls will result on
+filtering separately. Under the hood, translated fields are accessed through a ``JOIN``
+query, and each ``filter()`` call has its own context. That is::
+
+        # Query 1
+        MyModel.objects.language('all').filter(foo='baz', bar=42)
+
+        # Query 2
+        MyModel.objects.language('all').filter(foo='baz').filter(bar=42)
+
+Assuming both ``foo`` and ``bar`` are translated fields, then:
+
+    * Query #1 returns objects that have a language in which **both** ``foo`` and ``bar`` match.
+    * Query #2 returns objects that have a language in which **either** ``foo`` or ``bar`` matches.
+
+This is similar to how Django behaves with joins (because this is how the query is handled).
+Queries that work on a single language are not affected, though depending on the database engine
+the double-join of query #2 might degrade performance.
+

@@ -22,9 +22,12 @@ new versions will usually be introduced when they reach the beta stage.
 
 Thus, django-hvad 2.0 is tested on the following configurations:
 
-- Django 1.8.15, running Python 2.7, 3.4 or 3.5.
-- Django 1.9.10, running Python 2.7, 3.4 or 3.5.
-- Django 1.10.2, running Python 2.7, 3.4 or 3.5.
+- Django 2.1.2, running Python 3.5 or 3.6.
+
+As django-hvad 2.0 is incompatible with older releases, django-hvad 1.8.0 is still
+supported with:
+
+- Django 1.11, running Python 2.7, 3.4 or 3.5.
 
 All tests are run against MySQL and PostgreSQL.
 

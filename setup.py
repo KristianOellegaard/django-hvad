@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 import hvad
 
-with open('README.rst', 'rb') as f:
-    long_description = f.read().decode('utf-8')
+with open('README.rst', 'r') as fd:
+    long_description = fd.read()
 
 setup(
     name = 'django-hvad',
@@ -22,7 +22,7 @@ setup(
     zip_safe=False,
     include_package_data = True,
     install_requires=[
-        'Django>=1.8',
+        'Django>=2.1',
     ],
     classifiers = [
         "Development Status :: 5 - Production/Stable",
@@ -30,8 +30,6 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Database",

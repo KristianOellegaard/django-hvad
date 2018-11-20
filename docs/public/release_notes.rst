@@ -3,7 +3,32 @@ Release Notes
 #############
 
 *****************************
-1.8.0 - current release
+2.0.0 beta - current release
+*****************************
+
+Released on November 20, 2018
+
+Python and Django versions supported:
+
+- Django 2.1 and newer.
+- Python 3.5 and newer.
+- Older versions are **not** supported. Please stick to 1.8.0 for older versions.
+
+This is a major release with breaking changes. Please see the
+:ref:`migration guide <migrate-hvad-1>`.
+
+Major changes:
+
+- Query engine was refactored to use a parameterized `JOIN` clause.
+- Translation caching now works with Django API.
+- Automatic loading has been removed, in favor of upfront caching of translations.
+- Introspection API was reworked (see the new :ref:`translations <model-translations>` accessor).
+
+As many changes have been introduced, this release might introduce more bugs than usual, which
+is why it is flagged as `beta`.
+
+*****************************
+1.8.0
 *****************************
 
 Released on April 28, 2017

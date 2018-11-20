@@ -113,9 +113,9 @@ Releases
 Django-hvad uses the same release pattern as Django. The following versions
 are thus available:
 
-* Stable branch 1.7, available through `PyPI`_ and git branch ``releases/1.7.x``.
-* Stable branch 1.8, available through `PyPI`_ and git branch ``releases/1.8.x``.
-* Development branch 1.9, available through git branch ``master``.
+* Legacy branch 1.8, available through `PyPI`_ and git branch ``releases/1.8.x``.
+* Stable branch 2.0, available through `PyPI`_ and git branch ``releases/2.0.x``.
+* Development branch 2.1, available through git branch ``master``.
 
 Stable branches have minor bugfix releases as needed, with guaranteed compatibility.
 See the `installation guide`_ for details, or have a look at the `release notes`_.
