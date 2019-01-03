@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import hvad
 
-with open('README.rst', 'r') as fd:
+with open('README.rst', 'r', encoding='utf-8') as fd:
     long_description = fd.read()
 
 setup(
