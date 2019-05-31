@@ -143,7 +143,7 @@ class SingleTranslationObject(ForeignObject):
         path = super(SingleTranslationObject, self).get_path_info(filtered_relation)
         return [path[0]._replace(direct=False)]
 
-    def contribute_to_class(self, cls, name, virtual_only=False):
+    def contribute_to_class(self, cls, name, private_only=False):
         """ Prevent the field from appearing into the class, we only want it in queries """
         super(SingleTranslationObject, self).contribute_to_class(cls, name, False)
         delattr(cls, self.name)
