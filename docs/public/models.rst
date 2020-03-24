@@ -46,7 +46,7 @@ A full example of a model with translations::
           translatable fields in :attr:`~django.db.models.Options.order_with_respect_to`.
 .. note:: TranslatedFields cannot contain a field named ``master``, as this name
           is reserved by hvad to refer to the :term:`Shared Model`. Also, special
-          field ``language_code`` can be overriden in order to set it to be a
+          field ``language_code`` can be overridden in order to set it to be a
           different type of field, or change its options.
 
 ***********************
@@ -237,7 +237,7 @@ Custom Querysets
 Once you have a custom queryset, you can use it to override the default ones
 in your manager. This is where it is more complex than a regular manager:
 :class:`~hvad.manager.TranslationManager` uses three types of queryset, that
-can be overriden independently:
+can be overridden independently:
 
 - :attr:`~hvad.manager.TranslationManager.queryset_class` must inherit
   :class:`~hvad.manager.TranslationQueryset`, and will be used for all queries

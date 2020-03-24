@@ -56,7 +56,7 @@ way the form chooses a language for displaying and committing.
   When in **enforce** mode, the form will always use its language, disregarding
   current language and reloading the ``instance`` it is given if it has another
   language loaded.
-* The language can be overriden manually by providing a
+* The language can be overridden manually by providing a
   :meth:`custom clean() method <django.forms.Form.clean>`.
 
 In all cases, the language is not part of the form seen by the browser or sent

@@ -143,8 +143,8 @@ class BaseTranslatableModelForm(BaseModelForm):
     def _post_clean(self):
         ''' Switch the translation on self.instance
             This cannot (and should not) be done in clean() because it could be
-            overriden to change the language. Yet it should be done before save()
-            to allow an overriden save to set some translated field values before
+            overridden to change the language. Yet it should be done before save()
+            to allow an overridden save to set some translated field values before
             invoking super().
         '''
         enforce = 'language_code' in self.cleaned_data

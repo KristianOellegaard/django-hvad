@@ -439,7 +439,7 @@ def prepare_translatable_model(sender, **kwargs):
     #### Now we have to work ####
 
     # Ensure _base_manager cannot be TranslationManager despite use_for_related_fields
-    # 1- it is useless unless default_class is overriden
+    # 1- it is useless unless default_class is overridden
     # 2- in that case, _base_manager is used for saving objects and must not be
     #    translation aware.
     base_mgr = getattr(model, '_base_manager', None)

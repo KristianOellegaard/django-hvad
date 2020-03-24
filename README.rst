@@ -77,7 +77,7 @@ some language-aware queries::
     Book.objects.all()
 
 Compatible by default: returns all objects, without any translated fields attached.
-Starting from v1.0, default behavior can be overriden to work like next query::
+Starting from v1.0, default behavior can be overridden to work like next query::
 
     Book.objects.language().all()
 
