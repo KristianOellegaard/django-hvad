@@ -64,7 +64,7 @@ a language is chosen for serializing and deserializing.
   When in **enforce** mode, the serializer will always use its own language, disregarding
   current language and reloading the ``instance`` it is given if it has another
   language loaded.
-* The language can be overriden manually by providing a custom ``validate()``
+* The language can be overridden manually by providing a custom ``validate()``
   method. This method should set the desired language in ``data['language_code']``.
   Please refer to REST framework
   `documentation <http://www.django-rest-framework.org/api-guide/serializers/#validation>`_
