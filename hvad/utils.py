@@ -3,7 +3,7 @@
 """
 import django
 from django.db.models.fields import FieldDoesNotExist
-from django.utils.translation import get_language
+from django.utils.translation import get_language, get_language_info as original_get_language_info
 from hvad.exceptions import WrongManager
 from hvad.settings import hvad_settings
 
@@ -144,3 +144,8 @@ def minimumDjangoVersion(*args): #pragma: no cover
     if django.VERSION >= args:
         return lambda x: x
     return lambda x: _MinimumDjangoVersionDescriptor(x.__name__, args)
+
+def get_language_info(lang_code):
+    if lang_code == 'zh':
+        lang_code = 'zh-hans'
+    return original_get_language_info(lang_code)

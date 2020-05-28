@@ -19,13 +19,13 @@ from django.urls import reverse
 from django.utils.encoding import force_text, iri_to_uri
 from django.utils.functional import curry
 from django.utils.safestring import mark_safe
-from django.utils.translation import get_language, get_language_info, ugettext_lazy as _
+from django.utils.translation import get_language, ugettext_lazy as _
 from urllib.parse import urlencode, urlparse
 
 from hvad.forms import TranslatableModelForm, translatable_inlineformset_factory, translatable_modelform_factory
 from hvad.manager import TranslationQueryset
 from hvad.settings import hvad_settings
-from hvad.utils import load_translation
+from hvad.utils import load_translation, get_language_info
 
 __all__ = (
     'TranslatableAdmin',
