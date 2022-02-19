@@ -2,7 +2,7 @@
     Mostly intended for internal use and third-party modules.
 """
 import django
-from django.db.models.fields import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist
 from django.utils.translation import get_language, get_language_info as original_get_language_info
 from hvad.exceptions import WrongManager
 from hvad.settings import hvad_settings

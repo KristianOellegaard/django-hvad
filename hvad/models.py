@@ -5,7 +5,7 @@ from django.core import checks
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models, router, transaction
 from django.db.models.base import ModelBase
-from django.db.models.fields import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models.manager import Manager
 from django.db.models.signals import class_prepared
 from django.utils.translation import get_language
